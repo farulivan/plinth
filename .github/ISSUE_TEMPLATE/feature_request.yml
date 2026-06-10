@@ -1,0 +1,57 @@
+name: Feature request
+description: Suggest an enhancement or new capability.
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Suggestions welcome. I keep the shape below close to `docs/adr/` so the thinking can move cleanly from issue to ADR. Feature work that diverges from the freelance roadmap may be declined; the contributor's fork remains MIT for them to run themselves.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What user-visible (tenant editor) or developer-visible issue would this solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: The proposed solution
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other shapes did you weigh and rule out, and why?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - "Editor / dashboard UX"
+        - "Renderer / template behaviour"
+        - "Publish / build pipeline"
+        - "Auth / sessions"
+        - "Custom domains / hostname binding"
+        - "Media pipeline"
+        - "Multi-tenant isolation"
+        - "Operations / deploy"
+        - "Other"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - "1 — would unblock a planned change"
+        - "2 — would improve the current experience"
+        - "3 — nice-to-have"
+    validations:
+      required: true

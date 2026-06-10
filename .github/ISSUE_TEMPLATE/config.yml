@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Reach Farul
+    url: https://github.com/farulivan
+    about: For anything outside a bug report or feature request, reach me on GitHub.
+  - name: Hosted Plinth tenant support
+    url: mailto:farulivan@gmail.com
+    about: Hosted-Plinth tenants — email me directly. GitHub issues are for the open-source code.

@@ -1,0 +1,77 @@
+name: Bug report
+description: Report a defect in the open-source code or the hosted Plinth service.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Plinth is a personal portfolio piece and the foundation of a small freelance practice; issues and PRs are welcome, but I review them asynchronously.
+
+        If your report concerns multi-tenant isolation or any security-relevant behaviour, please use the security channel in [SECURITY.md](../../SECURITY.md) instead of this form.
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which surface?
+      options:
+        - "Hosted dashboard (plinth.farulivan.com)"
+        - "Hosted tenant site (a Plinth-deployed site)"
+        - "Local dev — dashboard"
+        - "Local dev — api"
+        - "Open-source code (cloning, building, tests)"
+        - "Documentation (README, ADR, CONTEXT, ARCHITECTURE)"
+    validations:
+      required: true
+
+  - type: input
+    id: where
+    attributes:
+      label: Where exactly?
+      description: URL, route, command, or file path.
+      placeholder: https://plinth.farulivan.com/dashboard/settings or `pnpm test:integration`
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      placeholder: A clear description of the unexpected behaviour.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Visit the URL
+        2. Click …
+        3. …
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser + OS (if applicable)
+      placeholder: Chrome 138 / macOS 15.5
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - "1 — service unusable or tenant data at risk"
+        - "2 — feature broken, workaround exists"
+        - "3 — visual or minor"
+        - "4 — nit"
+    validations:
+      required: true
