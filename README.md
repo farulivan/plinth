@@ -38,25 +38,25 @@ This codebase demonstrates how I think about:
 
 | Tool | Family | Why this | Where |
 |---|---|---|---|
-| [Next.js](https://nextjs.org) | 15.x, App Router | Server Actions + RSC for the dashboard; same React components consumed by the preview SSR route | `apps/dashboard/` |
-| [Hono](https://hono.dev) | latest | Lean Node HTTP server for upload, SSE, webhook, and Inngest endpoints — first-class SSE + typed RPC to the dashboard, keeps long-lived connections off the dashboard runtime | `apps/api/` |
-| TypeScript | 5.x, `strict` | One language across every app and package; drift impossible through workspace imports | repo root |
-| [Astro](https://astro.build) | 6.x | The per-tenant publish build runs `astro build` against the snapshot — same toolchain that proved itself on Norven | `apps/api/modules/publish/` |
-| [Tailwind](https://tailwindcss.com) | 4.x | CSS-first tokens, no JS config | `apps/dashboard/`, `packages/template-norven/` |
+| [Next.js](https://nextjs.org) | ≥16, App Router | Server Actions + RSC for the dashboard; same React components consumed by the preview SSR route | `apps/dashboard/` |
+| [Hono](https://hono.dev) | ≥4 | Lean Node HTTP server for upload, SSE, webhook, and Inngest endpoints — first-class SSE + typed RPC to the dashboard, keeps long-lived connections off the dashboard runtime | `apps/api/` |
+| TypeScript | ≥6, `strict` | One language across every app and package; drift impossible through workspace imports | repo root |
+| [Astro](https://astro.build) | ≥6 | The per-tenant publish build runs `astro build` against the snapshot — same toolchain that proved itself on Norven | `apps/api/modules/publish/` |
+| [Tailwind](https://tailwindcss.com) | ≥4 | CSS-first tokens, no JS config | `apps/dashboard/`, `packages/template-norven/` |
 | [Drizzle ORM](https://orm.drizzle.team) | latest | Typed migrations; the typed query builder is the only interface to Postgres | `packages/db/` |
-| [Better Auth](https://www.better-auth.com) | latest | Session model is explicit and database-shaped; magic-link + OAuth via plugins; small enough to audit end-to-end | `packages/auth/` |
-| [Inngest](https://www.inngest.com) | latest | Durable queue + DLQ for publish, reaper, and KV sync jobs | `apps/api/inngest/` |
-| [Sharp](https://sharp.pixelplumbing.com) | 0.34.x | AVIF + WebP at upload time | `apps/api/modules/media/` |
-| [Zod](https://zod.dev) | 4.x | Schema is the product — shared by editor form generation, API validation, DB inference, renderer typing | `packages/schema/` |
-| [Vitest](https://vitest.dev) | 4.x | Unit tests on every service | `**/*.test.ts` |
+| [Better Auth](https://www.better-auth.com) | ≥1.6 | Session model is explicit and database-shaped; magic-link + OAuth via plugins; small enough to audit end-to-end | `packages/auth/` |
+| [Inngest](https://www.inngest.com) | ≥4 | Durable queue + DLQ for publish, reaper, and KV sync jobs | `apps/api/inngest/` |
+| [Sharp](https://sharp.pixelplumbing.com) | ≥0.34 | AVIF + WebP at upload time | `apps/api/modules/media/` |
+| [Zod](https://zod.dev) | ≥4 | Schema is the product — shared by editor form generation, API validation, DB inference, renderer typing | `packages/schema/` |
+| [Vitest](https://vitest.dev) | ≥4 | Unit tests on every service | `**/*.test.ts` |
 | [Playwright](https://playwright.dev) + [axe-core](https://github.com/dequelabs/axe-core) | latest | E2E + WCAG AA gates | `tests/e2e/` |
-| [Lighthouse CI](https://github.com/GoogleChrome/lighthouse-ci) | 0.15.x | Per-route budgets on the dashboard preview | `.lighthouserc.json` |
-| [Postgres](https://www.postgresql.org) on [Neon](https://neon.tech) | 16 | Branch-per-PR for preview environments | shared |
+| [Lighthouse CI](https://github.com/GoogleChrome/lighthouse-ci) | ≥0.15 | Per-route budgets on the dashboard preview | `.lighthouserc.json` |
+| [Postgres](https://www.postgresql.org) on [Neon](https://neon.tech) | ≥16 | Branch-per-PR for preview environments | shared |
 | [Cloudflare for SaaS](https://www.cloudflare.com/products/cloudflare-for-platforms/) | — | Multi-tenant TLS, edge routing, KV for hostname lookup | per-tenant routing |
 | [Fly.io](https://fly.io) | — | Container deploys for both apps; OIDC-issued tokens | both apps |
 | GitHub Actions + OIDC | — | Deploy on push to `main` with no long-lived credentials | `.github/workflows/` |
 
-Node `>=22.12.0`, package manager `pnpm 11`.
+Node `>=22.12.0` (development tracks the current LTS via `.nvmrc`), package manager `pnpm >=11`. Exact pins live in the root `package.json` (`engines`, `packageManager`) and per-package manifests — this table records minimums so the prose doesn't rot with every release. The scaffold tracks the latest stable of each tool; if a peer-dependency conflict ever forces one back, the drop is noted in that commit, not here.
 
 ## Key decisions
 
@@ -122,7 +122,7 @@ The dashboard and api deploy as separate Fly.io apps; tenant sites are written d
 ├── SECURITY.md            # vulnerability disclosure
 ├── README.md              # start here
 ├── apps/
-│   ├── dashboard/         # Next.js 15 App Router — UI + auth + Server Actions
+│   ├── dashboard/         # Next.js App Router — UI + auth + Server Actions
 │   └── api/               # Hono Node service — uploads, SSE, webhooks, Inngest
 ├── packages/
 │   ├── schema/            # Zod schemas — single source of truth
