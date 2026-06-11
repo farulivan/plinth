@@ -2,6 +2,9 @@
 # prod runs Neon (Postgres), Upstash (Redis REST), Inngest Cloud, and Cloudflare R2.
 #
 #   docker compose -f docker-compose.dev.yml up -d --wait
+#   docker compose -f docker-compose.dev.yml run --rm minio-init
+#
+# (Or just `./scripts/dev-setup.sh`, which does both plus env + deps + migrate.)
 #
 # Ports (mirrored in .env.example):
 #   5432  Postgres            9000  MinIO S3 API (R2-compatible)
@@ -82,8 +85,12 @@ services:
 
   # One-shot: creates the three buckets the app expects (media, sites, backups
   # per ADR-0011), then exits. Re-running is idempotent (`mb --ignore-existing`).
+  # Behind a profile so `up -d --wait` never gates on an exited container
+  # (compose treats any exited service as a wait failure); run it explicitly
+  # via `run --rm minio-init`.
   minio-init:
     image: minio/mc:latest
+    profiles: ["init"]
     depends_on:
       minio:
         condition: service_healthy
