@@ -1,6 +1,6 @@
 # Security policy
 
-Plinth handles tenant data: user accounts, content drafts, uploaded media, audit logs. The hosted service at plinth.farulivan.com runs with real users and real billing. The attack surface includes the dashboard runtime, the api runtime, multi-tenant Postgres isolation (Row-Level Security), session auth (Lucia v3), custom-hostname binding (Cloudflare for SaaS), webhook receivers (Stripe, Cloudflare, Inngest), and the Cloudflare edge configuration. If you've found something, please report it.
+Plinth handles tenant data: user accounts, content drafts, uploaded media, audit logs. The hosted service at plinth.farulivan.com runs with real users and real billing. The attack surface includes the dashboard runtime, the api runtime, multi-tenant Postgres isolation (Row-Level Security), session auth (Better Auth), custom-hostname binding (Cloudflare for SaaS), webhook receivers (Stripe, Cloudflare, Inngest), and the Cloudflare edge configuration. If you've found something, please report it.
 
 ## Reporting a vulnerability
 

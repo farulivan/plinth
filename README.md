@@ -39,12 +39,12 @@ This codebase demonstrates how I think about:
 | Tool | Family | Why this | Where |
 |---|---|---|---|
 | [Next.js](https://nextjs.org) | 15.x, App Router | Server Actions + RSC for the dashboard; same React components consumed by the preview SSR route | `apps/dashboard/` |
-| [Fastify](https://fastify.dev) | latest | Lean Node HTTP server for upload, SSE, webhook, and Inngest endpoints — keeps long-lived connections off the dashboard runtime | `apps/api/` |
+| [Hono](https://hono.dev) | latest | Lean Node HTTP server for upload, SSE, webhook, and Inngest endpoints — first-class SSE + typed RPC to the dashboard, keeps long-lived connections off the dashboard runtime | `apps/api/` |
 | TypeScript | 5.x, `strict` | One language across every app and package; drift impossible through workspace imports | repo root |
 | [Astro](https://astro.build) | 6.x | The per-tenant publish build runs `astro build` against the snapshot — same toolchain that proved itself on Norven | `apps/api/modules/publish/` |
 | [Tailwind](https://tailwindcss.com) | 4.x | CSS-first tokens, no JS config | `apps/dashboard/`, `packages/template-norven/` |
 | [Drizzle ORM](https://orm.drizzle.team) | latest | Typed migrations; the typed query builder is the only interface to Postgres | `packages/db/` |
-| [Lucia v3](https://lucia-auth.com) | latest | Session model is explicit and database-shaped; thin enough to audit end-to-end | `packages/auth/` |
+| [Better Auth](https://www.better-auth.com) | latest | Session model is explicit and database-shaped; magic-link + OAuth via plugins; small enough to audit end-to-end | `packages/auth/` |
 | [Inngest](https://www.inngest.com) | latest | Durable queue + DLQ for publish, reaper, and KV sync jobs | `apps/api/inngest/` |
 | [Sharp](https://sharp.pixelplumbing.com) | 0.34.x | AVIF + WebP at upload time | `apps/api/modules/media/` |
 | [Zod](https://zod.dev) | 4.x | Schema is the product — shared by editor form generation, API validation, DB inference, renderer typing | `packages/schema/` |
@@ -66,7 +66,7 @@ Ten ADRs cover every load-bearing decision. They are short, self-contained, and 
 - [ADR-0002 · Tenant isolation](./docs/adr/0002-tenant-isolation.md) — `workspace_id` on every row + Postgres RLS enforced by a session-level GUC.
 - [ADR-0003 · Publish pipeline](./docs/adr/0003-publish-pipeline.md) — Inngest queue + per-tenant Astro build + content-addressed snapshots + atomic pointer swap.
 - [ADR-0004 · Custom domains](./docs/adr/0004-custom-domains.md) — Cloudflare for SaaS for automated TLS + hostname-to-workspace routing at the edge.
-- [ADR-0005 · Auth](./docs/adr/0005-auth-model.md) — Lucia v3 with DB-backed sessions and magic-link as the primary login.
+- [ADR-0005 · Auth](./docs/adr/0005-auth-model.md) — Better Auth with DB-backed sessions and magic-link as the primary login.
 - [ADR-0006 · Media pipeline](./docs/adr/0006-media-pipeline.md) — Sharp at upload time, content-addressed S3 paths, Cloudflare CDN delivery.
 - [ADR-0007 · Preview architecture](./docs/adr/0007-preview-architecture.md) — single renderer module, draft SSR through Next, SSE-driven iframe reloads.
 - [ADR-0008 · Repo + runtime topology](./docs/adr/0008-repo-and-runtime-topology.md) — pnpm monorepo with two runtimes (dashboard + api); drift impossible through workspace imports.
@@ -83,7 +83,7 @@ Ten ADRs cover every load-bearing decision. They are short, self-contained, and 
 git clone https://github.com/farulivan/plinth.git
 cd plinth
 pnpm install              # installs workspaces + lefthook git hooks
-cp .env.example .env      # fill in DATABASE_URL, SESSION_SECRET, RESEND_API_KEY, ...
+cp .env.example .env      # fill in DATABASE_URL, BETTER_AUTH_SECRET, RESEND_API_KEY, ...
 pnpm db:push              # apply Drizzle schema to a local or branched Postgres
 pnpm dev                  # runs apps/dashboard:3000 and apps/api:4000 via Turbo
 ```
@@ -123,11 +123,11 @@ The dashboard and api deploy as separate Fly.io apps; tenant sites are written d
 ├── README.md              # start here
 ├── apps/
 │   ├── dashboard/         # Next.js 15 App Router — UI + auth + Server Actions
-│   └── api/               # Fastify Node service — uploads, SSE, webhooks, Inngest
+│   └── api/               # Hono Node service — uploads, SSE, webhooks, Inngest
 ├── packages/
 │   ├── schema/            # Zod schemas — single source of truth
 │   ├── db/                # Drizzle client + RLS helper + migrations
-│   ├── auth/              # Lucia config + session validator
+│   ├── auth/              # Better Auth config + session validator
 │   ├── renderer/          # React components shared between Astro build + preview SSR
 │   ├── template-norven/   # first template (Norven editorial shape)
 │   └── ui/                # shadcn primitives for the dashboard

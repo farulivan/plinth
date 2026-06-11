@@ -6,7 +6,7 @@ The api service is organized as one folder per domain (`modules/media`, `modules
 
 - **Module-per-domain, three-rule layering** (chosen) — routes → service → adapter; Drizzle imported directly in services; no DI container; one folder per domain with colocated tests. Scales the `src/lib/*` pattern Norven already uses, applied to a Node backend.
 - **Hexagonal / ports-and-adapters** — rejected. Wins when infrastructure swap is a real use case (DB engines, message brokers). Plinth's DB is Postgres-via-Drizzle for the foreseeable life of the project; the swap-ability promise costs interfaces + mapping layers for zero payoff.
-- **Clean Architecture (entity → usecase → controller → framework)** — rejected. Four indirection layers and a mapping step between each. The ceremony is for codebases where multiple delivery mechanisms (HTTP, gRPC, CLI, scheduled job) share one domain. Plinth has two callers (Fastify routes + Inngest functions) and one domain — the abstraction is unnecessary and reads as overengineering.
+- **Clean Architecture (entity → usecase → controller → framework)** — rejected. Four indirection layers and a mapping step between each. The ceremony is for codebases where multiple delivery mechanisms (HTTP, gRPC, CLI, scheduled job) share one domain. Plinth has two callers (Hono routes + Inngest functions) and one domain — the abstraction is unnecessary and reads as overengineering.
 - **DDD with aggregates + value objects** — rejected. The domain isn't rich enough to earn aggregates. A `Draft` is a JSON blob validated against a Zod schema; wrapping it in an aggregate root with invariants is theater. DDD pays off when the domain language is the product; Plinth's product is the editor + the published site, not the content model's algebra.
 - **Repository pattern with interfaces** — rejected. Drizzle's typed query builder is the interface; adding a thin `MediaRepository` over it adds a file per entity without removing a dependency. The "we might swap ORMs" hypothesis is the same one the hexagonal pattern serves, and the answer is the same: we will not.
 - **Vertical slice architecture (feature folder owns everything)** — rejected. Vertical slices win when features are independent and change frequently in isolation. Plinth's domains share services across features (media is used by drafts and by publish; publish is used by HTTP and by Inngest). Horizontal modules with one service per domain match the actual reuse pattern; vertical slices would duplicate.
@@ -16,7 +16,7 @@ The api service is organized as one folder per domain (`modules/media`, `modules
 
 - **Three rules, total, enforced by ESLint:**
   1. Routes import services and middleware; never adapters, never Drizzle, never external SDKs.
-  2. Services import adapters, `@plinth/db`, `@plinth/schema`, and other services; never `req`/`res`, never Fastify types.
+  2. Services import adapters, `@plinth/db`, `@plinth/schema`, and other services; never `req`/`res`, never Hono types.
   3. Adapters import only third-party SDKs and `@plinth/schema`; never services, never `@plinth/db`.
 
   An `import/no-restricted-paths` rule makes the graph machine-checkable at lint time. A future reader can know what any file is allowed to depend on without reading the import block.

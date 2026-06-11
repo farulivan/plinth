@@ -4,7 +4,7 @@ I keep this as a one-screen overview of how Plinth is shaped: the render and run
 
 ## Render and runtime model
 
-Plinth runs as two deployable apps over one Postgres database, fronted by Cloudflare for both the dashboard and the per-tenant sites. The dashboard (Next.js 15 App Router) handles UI, auth, and light CRUD via Server Actions; the api (Fastify) handles uploads, SSE preview channels, webhooks, and background jobs through Inngest. Tenant sites are statically built per publish — the renderer is `astro build` against an immutable content snapshot, output goes to S3, and a Cloudflare Worker routes by hostname into the correct per-tenant version path.
+Plinth runs as two deployable apps over one Postgres database, fronted by Cloudflare for both the dashboard and the per-tenant sites. The dashboard (Next.js 15 App Router) handles UI, auth, and light CRUD via Server Actions; the api (Hono) handles uploads, SSE preview channels, webhooks, and background jobs through Inngest. Tenant sites are statically built per publish — the renderer is `astro build` against an immutable content snapshot, output goes to S3, and a Cloudflare Worker routes by hostname into the correct per-tenant version path.
 
 ```mermaid
 graph LR
@@ -19,7 +19,7 @@ graph LR
 
     subgraph Fly.io
       dash[apps/dashboard<br/>Next.js]
-      api[apps/api<br/>Fastify + Inngest]
+      api[apps/api<br/>Hono + Inngest]
     end
 
     pg[(Postgres<br/>RLS-isolated)]
@@ -47,12 +47,12 @@ Two apps plus six shared packages, with dependencies flowing one direction. Apps
 ```mermaid
 graph TD
     dash[apps/dashboard<br/>Next.js App Router]
-    api[apps/api<br/>Fastify + Inngest]
+    api[apps/api<br/>Hono + Inngest]
 
     renderer[packages/renderer<br/>React components]
     schema[packages/schema<br/>Zod definitions]
     db[packages/db<br/>Drizzle client + RLS helper]
-    auth[packages/auth<br/>Lucia config + middleware]
+    auth[packages/auth<br/>Better Auth config + middleware]
     template[packages/template-norven<br/>+ future template-*]
     ui[packages/ui<br/>shadcn primitives]
 
