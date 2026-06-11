@@ -1,0 +1,28 @@
+{
+  "name": "@plinth/schema",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./content": "./src/content/index.ts",
+    "./auth": "./src/auth/index.ts",
+    "./api": "./src/api/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@plinth/eslint-config": "workspace:*",
+    "@plinth/typescript-config": "workspace:*",
+    "eslint": "^9.39.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}
