@@ -37,7 +37,7 @@ Setup:
 git clone https://github.com/farulivan/plinth.git
 cd plinth
 pnpm install
-cp .env.example .env       # fill DATABASE_URL, SESSION_SECRET, RESEND_API_KEY, INTERNAL_API_HMAC_SECRET, ...
+cp .env.example .env       # fill DATABASE_URL, BETTER_AUTH_SECRET, RESEND_API_KEY, INTERNAL_API_HMAC_SECRET, ...
 pnpm db:push               # apply Drizzle schema to your DATABASE_URL
 pnpm dev                   # both apps via Turbo: dashboard:3000 and api:4000
 ```
