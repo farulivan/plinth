@@ -50,3 +50,12 @@ coverage/
 
 # drizzle generated
 drizzle/meta/_journal.json.bak
+
+# typescript incremental build info
+*.tsbuildinfo
+
+# eslint cache
+.eslintcache
+
+# lefthook per-developer overrides (lefthook.yml is the committed config)
+lefthook-local.yml
