@@ -2,6 +2,12 @@ packages:
   - "apps/*"
   - "packages/*"
 
+# pnpm blocks dependency build scripts by default (supply-chain safety); we
+# allowlist only packages that genuinely need to compile a native binary.
+# unrs-resolver: native module resolver used by eslint-plugin-import-x.
+allowBuilds:
+  unrs-resolver: true
+
 # This project deliberately tracks latest-stable releases (see the version policy
 # in README.md), so we opt out of pnpm's new-release age gating — otherwise fresh
 # majors (ESLint 10, TS 6, …) get held back and pnpm churns an auto-exclude list.
