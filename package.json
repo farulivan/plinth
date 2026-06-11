@@ -15,9 +15,15 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "verify": "pnpm run format:check && turbo run lint typecheck test build",
-    "dev": "turbo run dev"
+    "dev": "turbo run dev",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
-    "turbo": "^2.9.18"
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^21.0.2",
+    "lefthook": "^2.1.9",
+    "prettier": "^3.8.4",
+    "turbo": "^2.9.18",
+    "typescript": "^6.0.3"
   }
 }

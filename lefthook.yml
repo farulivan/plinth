@@ -1,0 +1,22 @@
+# Git hooks for Plinth. Wired by `lefthook install`, run via the root `prepare`
+# script on `pnpm install` (pnpm blocks dependency postinstall scripts).
+
+pre-commit:
+  commands:
+    format:
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs,json,css,yml,yaml}"
+      run: pnpm exec prettier --write {staged_files}
+      stage_fixed: true
+    lint:
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs}"
+      run: pnpm lint
+    secrets:
+      run: >-
+        command -v gitleaks >/dev/null 2>&1
+        && gitleaks protect --staged --redact
+        || echo "gitleaks not installed locally — CI enforces the secret scan"
+
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm exec commitlint --edit {1}

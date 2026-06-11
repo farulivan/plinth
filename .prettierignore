@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.next/
+.astro/
+.turbo/
+coverage/
+pnpm-lock.yaml
+*.tsbuildinfo
+
+# Prose docs are hand-authored — don't let Prettier reflow tables/prose.
+*.md

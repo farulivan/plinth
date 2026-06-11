@@ -1,0 +1,8 @@
+# Gitleaks false-positive allowlist.
+#
+# One fingerprint per line, as printed by `gitleaks` in its findings output:
+#   <commit>:<file>:<rule-id>:<line>
+#
+# Only add a fingerprint after confirming the finding is NOT a real secret
+# (e.g. a documented placeholder in .env.example). Never allowlist a real
+# credential — rotate it instead (see SECURITY.md).
