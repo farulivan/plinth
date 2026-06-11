@@ -1,0 +1,9 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# This project deliberately tracks latest-stable releases (see the version policy
+# in README.md), so we opt out of pnpm's new-release age gating — otherwise fresh
+# majors (ESLint 10, TS 6, …) get held back and pnpm churns an auto-exclude list.
+# Reintroduce a non-zero age once the dependency set stabilizes post-MVP.
+minimumReleaseAge: 0
