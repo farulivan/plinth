@@ -8,7 +8,9 @@ packages:
 #   lefthook: its postinstall only runs `lefthook install`, which our root
 #     `prepare` script already does — so decline the build (the binary itself
 #     comes from the platform optional-dependency, no build needed).
+#   esbuild: installs its platform binary at postinstall (pulled by drizzle-kit).
 allowBuilds:
+  esbuild: true
   lefthook: false
   unrs-resolver: true
 
