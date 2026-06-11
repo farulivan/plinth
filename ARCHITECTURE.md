@@ -42,36 +42,46 @@ The deploy boundary for tenant sites is `r2://plinth-sites/tenants/{workspace_id
 
 ## Module layering
 
-Two apps plus six shared packages, with dependencies flowing one direction. Apps depend on packages; packages depend on each other in one direction; nothing else.
+Two apps plus six shared packages, arranged in strict layers. The rule is one sentence: **imports point down, never up, never sideways within a layer** — enforced at lint time by `import/no-restricted-paths` per [ADR-0009](./docs/adr/0009-backend-architecture.md).
 
 ```mermaid
-graph TD
-    dash[apps/dashboard<br/>Next.js App Router]
-    api[apps/api<br/>Hono + Inngest]
+flowchart TD
+    subgraph L4["runtimes — apps/"]
+        direction LR
+        dash["apps/dashboard<br/>Next.js App Router"]
+        api["apps/api<br/>Hono + Inngest"]
+    end
 
-    renderer[packages/renderer<br/>React components]
-    schema[packages/schema<br/>Zod definitions]
-    db[packages/db<br/>Drizzle client + RLS helper]
-    auth[packages/auth<br/>Better Auth config + middleware]
-    template[packages/template-norven<br/>+ future template-*]
-    ui[packages/ui<br/>shadcn primitives]
+    subgraph L3["composition"]
+        direction LR
+        template["packages/template-norven<br/>+ future template-*"]
+        auth["packages/auth<br/>Better Auth + GUC bridge"]
+    end
 
-    dash --> renderer
-    dash --> schema
-    dash --> db
+    subgraph L2["primitives"]
+        direction LR
+        renderer["packages/renderer<br/>React components"]
+        ui["packages/ui<br/>shadcn primitives"]
+        db["packages/db<br/>Drizzle client + RLS helper"]
+    end
+
+    subgraph L1["foundation"]
+        schema["packages/schema<br/>Zod definitions"]
+    end
+
+    dash --> template
     dash --> auth
     dash --> ui
-    api --> schema
-    api --> db
+    api --> template
     api --> auth
-    api --> renderer
-
-    renderer --> schema
-    renderer --> template
-    template --> schema
-    db --> schema
+    template --> renderer
     auth --> db
+    renderer --> schema
+    ui --> schema
+    db --> schema
 ```
+
+The diagram draws each node's closest dependency; lower layers are reachable transitively and directly (both apps also import `db` and `schema` straight, for example) — those edges are omitted for legibility, not forbidden. What *is* forbidden is any arrow that would point up or sideways: a package importing an app, `renderer` importing `template-*` (templates consume the renderer, never the reverse — that's what keeps new templates additive), or `db` importing `auth`.
 
 Each app is the only place HTTP and view code lives. Domain logic — anything that knows about workspaces, drafts, versions, media, or hostnames — lives in `apps/dashboard/server/services/` (dashboard) or `apps/api/modules/*/service.ts` (api), per [ADR-0009](./docs/adr/0009-backend-architecture.md). Shared packages never import from apps; the lint rule fails any reverse import.
 
