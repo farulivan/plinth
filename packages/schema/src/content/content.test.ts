@@ -1,0 +1,94 @@
+import { describe, expect, expectTypeOf, it } from "vitest";
+import { z } from "zod";
+import {
+  defineContentDocument,
+  defineSection,
+  link,
+  longText,
+  looseContentDocument,
+  mediaRef,
+  type MediaRef,
+  shortText,
+} from "./index";
+
+const UUID = "8c7a3c3e-2f6b-4e7a-9f7e-2b1a4d5e6f70";
+
+describe("field primitives", () => {
+  it("shortText trims and bounds", () => {
+    expect(shortText.parse("  Salt House  ")).toBe("Salt House");
+    expect(shortText.safeParse("").success).toBe(false);
+    expect(shortText.safeParse("   ").success).toBe(false);
+    expect(shortText.safeParse("x".repeat(201)).success).toBe(false);
+  });
+
+  it("longText accepts prose and bounds at 5000", () => {
+    expect(longText.parse("A paragraph.\n\nAnother.")).toContain("Another");
+    expect(longText.safeParse("y".repeat(5001)).success).toBe(false);
+  });
+
+  it("link takes absolute URLs and site-relative paths, nothing else", () => {
+    expect(link.parse({ label: "Work", href: "https://norven.example/work" }).href).toMatch(
+      /^https:/,
+    );
+    expect(link.parse({ label: "Work", href: "/work" }).href).toBe("/work");
+    expect(link.safeParse({ label: "Work", href: "work" }).success).toBe(false);
+    expect(link.safeParse({ href: "/work" }).success).toBe(false);
+  });
+});
+
+describe("mediaRef", () => {
+  it("requires the mediaId + alt pairing (the a11y floor)", () => {
+    const valid = mediaRef.parse({ mediaId: UUID, alt: "Coastal house at dusk" });
+    expect(valid.mediaId).toBe(UUID);
+    expect(mediaRef.safeParse({ mediaId: UUID }).success).toBe(false);
+    expect(mediaRef.safeParse({ mediaId: UUID, alt: "  " }).success).toBe(false);
+    expect(mediaRef.safeParse({ mediaId: "not-a-uuid", alt: "x" }).success).toBe(false);
+  });
+
+  it("infers the documented shape", () => {
+    expectTypeOf<MediaRef>().toEqualTypeOf<{ mediaId: string; alt: string }>();
+  });
+});
+
+describe("content documents", () => {
+  const hero = defineSection("hero", z.object({ title: shortText, photo: mediaRef }));
+  const intro = defineSection("intro", z.object({ body: longText }));
+  const doc = defineContentDocument(z.discriminatedUnion("type", [hero, intro]));
+
+  const heroInput = {
+    type: "hero",
+    fields: { title: "Salt House", photo: { mediaId: UUID, alt: "dusk facade" } },
+  };
+
+  it("round-trips and applies defaults (schemaVersion, enabled)", () => {
+    const parsed = doc.parse({ sections: [heroInput] });
+    expect(parsed.schemaVersion).toBe(1);
+    expect(parsed.sections[0]?.enabled).toBe(true);
+  });
+
+  it("discriminates section types and validates their fields", () => {
+    const wrongFields = doc.safeParse({
+      sections: [{ type: "intro", fields: { title: "not an intro field" } }],
+    });
+    expect(wrongFields.success).toBe(false);
+  });
+
+  it("rejects duplicate section types with a pathed issue", () => {
+    const dup = doc.safeParse({ sections: [heroInput, heroInput] });
+    expect(dup.success).toBe(false);
+    if (!dup.success) {
+      expect(dup.error.issues.some((i) => i.path.join(".") === "sections.1.type")).toBe(true);
+    }
+  });
+
+  it("rejects an empty document", () => {
+    expect(doc.safeParse({ sections: [] }).success).toBe(false);
+  });
+
+  it("loose envelope validates structure without template knowledge", () => {
+    const loose = looseContentDocument.parse({
+      sections: [{ type: "anything", fields: { whatever: true } }],
+    });
+    expect(loose.sections[0]?.type).toBe("anything");
+  });
+});
