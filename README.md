@@ -16,23 +16,23 @@ CI / CodeQL / Lighthouse / E2E / Renovate badges land once the workflows ship. R
 [![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen?logo=renovatebot)](https://renovatebot.com)
 -->
 
-> **Status**: docs published, code scaffold in progress. Read the ADRs for the decision surface; commits landing as the monorepo skeleton + first features ship.
+> **Status**: documentation phase complete — eleven ADRs, architecture overview, domain vocabulary, and policies are stable. Foundation scaffold lands next, branch by branch: monorepo + tooling, local dev infra, shared packages (`schema` → `db` → `auth` → `ui` → `renderer`), then both app skeletons, CI/CD, and an end-to-end type-flow verification. Read the ADRs for the decision surface.
 
 ## Why this exists
 
-Plinth is open-source code under MIT and a closed-source operations layer that runs the hosted service. The codebase is meant to be read end-to-end — ten ADRs in `docs/adr/` cover every load-bearing decision and the architecture overview fits on one screen.
+Plinth is open-source code under MIT and a closed-source operations layer that runs the hosted service. The codebase is meant to be read end-to-end — eleven ADRs in `docs/adr/` cover every load-bearing decision and the architecture overview fits on one screen.
 
 It serves two readings:
 
-- **Portfolio piece** for senior frontend / fullstack hiring filters. Production-grade CMS with multi-tenant Postgres, RLS, Inngest-orchestrated builds, Cloudflare Workers, OIDC deploys, axe a11y on every PR, Lighthouse budgets, and ten ADRs of decision documentation.
+- **Portfolio piece** for senior frontend / fullstack hiring filters. Production-grade CMS with multi-tenant Postgres, RLS, Inngest-orchestrated builds, Cloudflare Workers, OIDC deploys, axe a11y on every PR, Lighthouse budgets, and eleven ADRs of decision documentation.
 - **Foundation of a small freelance practice** deploying Plinth-class sites for studios who want a designed site managed through a typed dashboard. Hosted Plinth at plinth.farulivan.com; pricing on request.
 
 This codebase demonstrates how I think about:
 
 - **Architecture** — monorepo with two runtimes, schema-as-product through Zod packages, Postgres RLS for tenant isolation, content-addressed publishing with atomic pointer swap.
 - **Quality gates** — `pnpm verify` runs format, lint, typecheck, tests, build, and bundle budget on every PR; CI adds dependency review, CodeQL, axe a11y, Lighthouse budgets, and a cross-tenant RLS probe test.
-- **Operations** — Fly.io for the dashboard and api, S3 for static tenant sites, Cloudflare for SaaS for multi-tenant TLS and edge routing, OIDC-only deploys, secret scanning at pre-commit and CI.
-- **Documentation discipline** — ten ADRs for load-bearing decisions, an architecture overview that fits on one screen, `CONTEXT.md` fixing domain vocabulary, a deployment runbook, security policy.
+- **Operations** — Fly.io for the dashboard and api (auto-stop at idle), Cloudflare R2 for static tenant sites and media, Cloudflare for SaaS for multi-tenant TLS and edge routing, Sentry for errors, OIDC-only deploys, secret scanning at pre-commit and CI.
+- **Documentation discipline** — eleven ADRs for load-bearing decisions, an architecture overview that fits on one screen, `CONTEXT.md` fixing domain vocabulary, a deployment runbook, security policy.
 
 ## Stack
 
@@ -60,18 +60,19 @@ Node `>=22.12.0` (development tracks the current LTS via `.nvmrc`), package mana
 
 ## Key decisions
 
-Ten ADRs cover every load-bearing decision. They are short, self-contained, and each documents the rejected alternatives:
+Eleven ADRs cover every load-bearing decision. They are short, self-contained, and each documents the rejected alternatives:
 
 - [ADR-0001 · Editor model](./docs/adr/0001-editor-model.md) — field-based editor against a shared Zod schema; visual canvas rejected.
 - [ADR-0002 · Tenant isolation](./docs/adr/0002-tenant-isolation.md) — `workspace_id` on every row + Postgres RLS enforced by a session-level GUC.
 - [ADR-0003 · Publish pipeline](./docs/adr/0003-publish-pipeline.md) — Inngest queue + per-tenant Astro build + content-addressed snapshots + atomic pointer swap.
 - [ADR-0004 · Custom domains](./docs/adr/0004-custom-domains.md) — Cloudflare for SaaS for automated TLS + hostname-to-workspace routing at the edge.
 - [ADR-0005 · Auth](./docs/adr/0005-auth-model.md) — Better Auth with DB-backed sessions and magic-link as the primary login.
-- [ADR-0006 · Media pipeline](./docs/adr/0006-media-pipeline.md) — Sharp at upload time, content-addressed S3 paths, Cloudflare CDN delivery.
+- [ADR-0006 · Media pipeline](./docs/adr/0006-media-pipeline.md) — Sharp at upload time on the api, content-addressed R2 paths, Cloudflare CDN delivery.
 - [ADR-0007 · Preview architecture](./docs/adr/0007-preview-architecture.md) — single renderer module, draft SSR through Next, SSE-driven iframe reloads.
 - [ADR-0008 · Repo + runtime topology](./docs/adr/0008-repo-and-runtime-topology.md) — pnpm monorepo with two runtimes (dashboard + api); drift impossible through workspace imports.
 - [ADR-0009 · Backend architecture](./docs/adr/0009-backend-architecture.md) — module-per-domain with three-rule layering and no DI ceremony.
 - [ADR-0010 · Product strategy](./docs/adr/0010-product-strategy.md) — MIT code, ARR brand, hosted service as the commercial surface.
+- [ADR-0011 · Operational baseline](./docs/adr/0011-operational-baseline.md) — forward-only migrations, Neon pooler, PITR + weekly R2 dumps, per-surface CSP.
 
 ## Architecture
 
@@ -109,7 +110,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for full setup, Conventional Commits ex
 
 ## Deployment
 
-The dashboard and api deploy as separate Fly.io apps; tenant sites are written directly to S3 from the publish worker and served through Cloudflare's edge. GitHub Actions authenticates to Fly.io and AWS via OIDC — no long-lived credentials anywhere. Operational details, security model, cost analysis, and runbook live in [docs/deployment.md](./docs/deployment.md) (when it lands). Edge response headers are committed as Cloudflare Transform Rules, mirroring Norven's posture.
+The dashboard and api deploy as separate Fly.io apps with auto-stop at idle; tenant sites are written directly to Cloudflare R2 from the publish worker and served through Cloudflare's edge — static files stay up even while both apps sleep. GitHub Actions authenticates to Fly.io via OIDC; Cloudflare access uses scoped API tokens stored as repository secrets — no long-lived cloud credentials anywhere. Operational details, security model, cost analysis, and runbook live in [docs/deployment.md](./docs/deployment.md) (when it lands). Security headers follow [ADR-0011](./docs/adr/0011-operational-baseline.md): CSP per surface, the rest as Cloudflare Transform Rules mirroring Norven's posture.
 
 ## Project structure
 
