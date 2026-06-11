@@ -1,3 +1,4 @@
-// Barrel for @plinth/schema. Remaining domains land in their own commits:
-// auth (login, session), api (envelopes).
+// Barrel for @plinth/schema. Remaining domain lands in its own commit:
+// api (envelopes).
 export * from "./content";
+export * from "./auth";
