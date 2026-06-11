@@ -1,0 +1,106 @@
+# Local development services for Plinth. Not used in production —
+# prod runs Neon (Postgres), Upstash (Redis REST), Inngest Cloud, and Cloudflare R2.
+#
+#   docker compose -f docker-compose.dev.yml up -d --wait
+#   docker compose -f docker-compose.dev.yml run --rm minio-init
+#
+# (Or just `./scripts/dev-setup.sh`, which does both plus env + deps + migrate.)
+#
+# Ports (mirrored in .env.example):
+#   5432  Postgres            9000  MinIO S3 API (R2-compatible)
+#   6379  Redis               9001  MinIO console
+#   8079  Upstash-REST proxy  8288  Inngest dev server UI
+
+name: plinth-dev
+
+services:
+  postgres:
+    # Matches Neon's default major. Production floor is ≥16 (README stack table).
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: plinth
+      POSTGRES_PASSWORD: plinth
+      POSTGRES_DB: plinth
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plinth -d plinth"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  # Upstash is a REST API, not the Redis wire protocol. SRH (serverless-redis-http)
+  # emulates Upstash's REST surface in front of a real Redis, so the same
+  # @upstash/* client code runs against UPSTASH_REDIS_REST_URL=http://localhost:8079.
+  redis:
+    # Pinned to 7: closest to Upstash's Redis-compatible API; emulation > latest here.
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  upstash-proxy:
+    image: hiett/serverless-redis-http:latest
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: local-dev-token
+      SRH_CONNECTION_STRING: redis://redis:6379
+    ports:
+      - "8079:80"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  inngest:
+    image: inngest/inngest:latest
+    command: "inngest dev -u http://host.docker.internal:4000/api/inngest --no-discovery"
+    ports:
+      - "8288:8288"
+    extra_hosts:
+      # host-gateway makes host.docker.internal work on Linux too (native on Mac/Win).
+      - "host.docker.internal:host-gateway"
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: plinth
+      MINIO_ROOT_PASSWORD: plinth-local-dev
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  # One-shot: creates the three buckets the app expects (media, sites, backups
+  # per ADR-0011), then exits. Re-running is idempotent (`mb --ignore-existing`).
+  # Behind a profile so `up -d --wait` never gates on an exited container
+  # (compose treats any exited service as a wait failure); run it explicitly
+  # via `run --rm minio-init`.
+  minio-init:
+    image: minio/mc:latest
+    profiles: ["init"]
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 plinth plinth-local-dev &&
+      mc mb --ignore-existing local/plinth-media local/plinth-sites local/plinth-backups &&
+      echo 'buckets ready'
+      "
+
+volumes:
+  postgres-data:
+  minio-data:
