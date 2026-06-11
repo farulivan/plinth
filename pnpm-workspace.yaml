@@ -2,10 +2,14 @@ packages:
   - "apps/*"
   - "packages/*"
 
-# pnpm blocks dependency build scripts by default (supply-chain safety); we
-# allowlist only packages that genuinely need to compile a native binary.
-# unrs-resolver: native module resolver used by eslint-plugin-import-x.
+# pnpm blocks dependency build scripts by default (supply-chain safety); each
+# entry is an explicit decision.
+#   unrs-resolver: native module resolver for eslint-plugin-import-x — must build.
+#   lefthook: its postinstall only runs `lefthook install`, which our root
+#     `prepare` script already does — so decline the build (the binary itself
+#     comes from the platform optional-dependency, no build needed).
 allowBuilds:
+  lefthook: false
   unrs-resolver: true
 
 # This project deliberately tracks latest-stable releases (see the version policy
