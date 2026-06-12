@@ -1,6 +1,16 @@
 import { relations } from "drizzle-orm";
-import { index, pgEnum, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  type AnyPgColumn,
+  index,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { users } from "./auth";
+import { contentVersions } from "./contentVersions";
 
 /**
  * The tenant root. Every tenant-owned table references workspaces.id with
@@ -14,6 +24,12 @@ export const workspaces = pgTable("workspaces", {
   name: text("name").notNull(),
   /** Which template package renders this workspace (ADR-0001). */
   templateId: text("template_id").notNull().default("template-norven"),
+  /** The Live pointer (ADR-0003): promote and rollback are both one UPDATE
+   * here. Lazy callback breaks the workspaces ↔ content_versions import
+   * cycle (Drizzle's documented pattern for circular FKs). */
+  currentVersionId: uuid("current_version_id").references((): AnyPgColumn => contentVersions.id, {
+    onDelete: "set null",
+  }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
