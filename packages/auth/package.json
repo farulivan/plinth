@@ -1,0 +1,27 @@
+{
+  "name": "@plinth/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@plinth/db": "workspace:*",
+    "@plinth/schema": "workspace:*",
+    "better-auth": "^1.6.17"
+  },
+  "devDependencies": {
+    "@plinth/eslint-config": "workspace:*",
+    "@plinth/typescript-config": "workspace:*",
+    "eslint": "^9.39.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}
