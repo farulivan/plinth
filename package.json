@@ -16,6 +16,10 @@
     "format:check": "prettier --check .",
     "verify": "pnpm run format:check && turbo run lint typecheck test build",
     "dev": "turbo run dev",
+    "db:generate": "pnpm --filter @plinth/db db:generate",
+    "db:migrate": "pnpm --filter @plinth/db db:migrate",
+    "db:push": "pnpm --filter @plinth/db db:push",
+    "db:studio": "pnpm --filter @plinth/db db:studio",
     "prepare": "lefthook install"
   },
   "devDependencies": {

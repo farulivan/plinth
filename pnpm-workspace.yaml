@@ -8,8 +8,16 @@ packages:
 #   lefthook: its postinstall only runs `lefthook install`, which our root
 #     `prepare` script already does — so decline the build (the binary itself
 #     comes from the platform optional-dependency, no build needed).
+#   esbuild: installs its platform binary at postinstall (pulled by drizzle-kit).
+#   cpu-features + ssh2 (via testcontainers): optional native crypto acceleration;
+#     both fall back to pure JS, so decline the builds.
+#   protobufjs (via testcontainers): postinstall is codegen we never consume — decline.
 allowBuilds:
+  cpu-features: false
+  esbuild: true
   lefthook: false
+  protobufjs: false
+  ssh2: false
   unrs-resolver: true
 
 # This project deliberately tracks latest-stable releases (see the version policy
