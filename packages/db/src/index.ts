@@ -6,5 +6,5 @@ if (typeof (globalThis as { window?: unknown }).window !== "undefined") {
   throw new Error("@plinth/db is server-only and must never reach a client bundle.");
 }
 
-// Client factory and `withWorkspace` GUC helper land in the next commit.
+export * from "./client";
 export * from "./rls";
