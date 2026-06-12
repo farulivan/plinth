@@ -17,7 +17,11 @@ import { media } from "./schema/media";
  * applies it to a throwaway container.
  *
  * Fail-closed: with the GUC unset, `current_setting(..., true)` returns NULL,
- * the predicate never evaluates true, and every query sees zero rows.
+ * the predicate never evaluates true, and every query sees zero rows. The
+ * NULLIF matters: once a custom GUC has been set in any transaction, Postgres
+ * reverts it to '' (not NULL) at session level — and a bare ''::uuid cast
+ * errors instead of returning empty. Caught by the probe's pooled-connection
+ * test.
  */
 
 /** Session GUC naming the active tenant. Set via `SET LOCAL` inside a
@@ -37,7 +41,7 @@ const tenantTables = [contentDrafts, contentVersions, media, customDomains, audi
 
 export const RLS_TABLE_NAMES: string[] = tenantTables.map((table) => getTableName(table));
 
-const tenantPredicate = `workspace_id = current_setting('${WORKSPACE_GUC}', true)::uuid`;
+const tenantPredicate = `workspace_id = NULLIF(current_setting('${WORKSPACE_GUC}', true), '')::uuid`;
 
 /** ENABLE + FORCE + one `FOR ALL` policy. `USING` covers SELECT/UPDATE/DELETE
  * and `WITH CHECK` covers INSERT plus UPDATE's new rows — exactly the
