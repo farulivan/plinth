@@ -25,6 +25,7 @@
   "devDependencies": {
     "@plinth/eslint-config": "workspace:*",
     "@plinth/typescript-config": "workspace:*",
+    "@testcontainers/postgresql": "^12.0.1",
     "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.1",
