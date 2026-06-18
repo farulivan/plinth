@@ -2,6 +2,8 @@ import type { Db } from "@plinth/db";
 import { accounts, sessions, users, verifications } from "@plinth/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { createEmailSender, type EmailSender } from "./email";
+import { magicLinkPlugin } from "./plugins/magicLink";
 
 export interface CreateAuthOptions {
   db: Db;
@@ -10,6 +12,12 @@ export interface CreateAuthOptions {
   /** BETTER_AUTH_SECRET — apps read env and pass it in; this package never
    * touches process.env. */
   secret: string;
+  /** Resend key + from address; omit for the stdout dev fallback. */
+  resendApiKey?: string;
+  emailFrom?: string;
+  /** Override the sender outright — tests inject a capturing sender. Wins
+   * over resendApiKey/emailFrom. */
+  emailSender?: EmailSender;
 }
 
 /**
@@ -17,7 +25,15 @@ export interface CreateAuthOptions {
  * env + lifecycle, tests inject a containerized db. Magic-link (primary) and
  * Google OAuth plugins land in the next commits; email/password stays off.
  */
-export function createAuth({ db, baseURL, secret }: CreateAuthOptions) {
+export function createAuth({
+  db,
+  baseURL,
+  secret,
+  resendApiKey,
+  emailFrom,
+  emailSender,
+}: CreateAuthOptions) {
+  const sender = emailSender ?? createEmailSender({ resendApiKey, from: emailFrom });
   return betterAuth({
     baseURL,
     secret,
@@ -27,6 +43,9 @@ export function createAuth({ db, baseURL, secret }: CreateAuthOptions) {
       // very config's CLI output (see packages/db/src/schema/auth.ts).
       schema: { user: users, session: sessions, account: accounts, verification: verifications },
     }),
+    // Magic-link is the only credential (ADR-0005); email/password stays off.
+    emailAndPassword: { enabled: false },
+    plugins: [magicLinkPlugin(sender)],
     session: {
       // Sliding expiry per ADR-0005: 30-day sessions, refreshed daily.
       expiresIn: 60 * 60 * 24 * 30,
