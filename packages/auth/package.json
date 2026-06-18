@@ -1,0 +1,49 @@
+{
+  "name": "@plinth/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./middleware/hono": "./src/middleware/hono.ts",
+    "./middleware/next": "./src/middleware/next.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@plinth/db": "workspace:*",
+    "@plinth/schema": "workspace:*",
+    "better-auth": "^1.6.17",
+    "resend": "^6.14.0"
+  },
+  "peerDependencies": {
+    "hono": "^4.12.26",
+    "next": "^16.2.9"
+  },
+  "peerDependenciesMeta": {
+    "hono": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@plinth/eslint-config": "workspace:*",
+    "@plinth/typescript-config": "workspace:*",
+    "@testcontainers/postgresql": "^12.0.1",
+    "drizzle-orm": "^0.45.2",
+    "eslint": "^9.39.1",
+    "hono": "^4.12.26",
+    "next": "^16.2.9",
+    "pg": "^8.21.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}
