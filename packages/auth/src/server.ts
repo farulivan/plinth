@@ -3,6 +3,7 @@ import { accounts, sessions, users, verifications } from "@plinth/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createEmailSender, type EmailSender } from "./email";
+import { googleProvider } from "./plugins/google";
 import { magicLinkPlugin } from "./plugins/magicLink";
 
 export interface CreateAuthOptions {
@@ -18,6 +19,9 @@ export interface CreateAuthOptions {
   /** Override the sender outright — tests inject a capturing sender. Wins
    * over resendApiKey/emailFrom. */
   emailSender?: EmailSender;
+  /** Google OAuth credentials; omit both to leave Google off (ADR-0005). */
+  googleClientId?: string;
+  googleClientSecret?: string;
 }
 
 /**
@@ -32,6 +36,8 @@ export function createAuth({
   resendApiKey,
   emailFrom,
   emailSender,
+  googleClientId,
+  googleClientSecret,
 }: CreateAuthOptions) {
   const sender = emailSender ?? createEmailSender({ resendApiKey, from: emailFrom });
   return betterAuth({
@@ -45,6 +51,10 @@ export function createAuth({
     }),
     // Magic-link is the only credential (ADR-0005); email/password stays off.
     emailAndPassword: { enabled: false },
+    socialProviders: googleProvider({
+      clientId: googleClientId,
+      clientSecret: googleClientSecret,
+    }),
     plugins: [magicLinkPlugin(sender)],
     session: {
       // Sliding expiry per ADR-0005: 30-day sessions, refreshed daily.
