@@ -12,11 +12,14 @@ packages:
 #   cpu-features + ssh2 (via testcontainers): optional native crypto acceleration;
 #     both fall back to pure JS, so decline the builds.
 #   protobufjs (via testcontainers): postinstall is codegen we never consume — decline.
+#   sharp (via next's image optimizer + ADR-0006 media pipeline on apps/api):
+#     native libvips bindings — must build, we use it on both counts.
 allowBuilds:
   cpu-features: false
   esbuild: true
   lefthook: false
   protobufjs: false
+  sharp: true
   ssh2: false
   unrs-resolver: true
 
