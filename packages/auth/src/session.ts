@@ -26,7 +26,9 @@ export async function getSession({
     user: {
       id: result.user.id,
       email: result.user.email,
-      name: result.user.name,
+      // Better Auth stores "no name" as "", but the contract is nullable —
+      // map empty to null so the schema's min(1) holds.
+      name: result.user.name || null,
     },
     activeWorkspaceId: result.session.activeWorkspaceId ?? null,
   });
@@ -39,7 +41,7 @@ export async function getSession({
  * flows through here. Throws if no workspace is active, because a tenant
  * query with no tenant is a bug, not an empty result.
  */
-export function withSessionWorkspace<T>(
+export async function withSessionWorkspace<T>(
   db: Db,
   session: AppSession,
   fn: Parameters<typeof withWorkspace<T>>[2],
