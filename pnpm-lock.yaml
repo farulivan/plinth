@@ -161,6 +161,40 @@ importers:
         specifier: ^8.61.0
         version: 8.61.0(eslint@9.39.4(jiti@2.6.1))(typescript@6.0.3)
 
+  packages/renderer:
+    dependencies:
+      '@plinth/schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
+      '@plinth/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@plinth/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/react':
+        specifier: ^19.2.17
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.17)
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.4(jiti@2.6.1)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.7(react@19.2.7)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.8
+        version: 4.1.8(@types/node@24.13.2)(vite@8.0.16(@types/node@24.13.2)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.22.4)(yaml@2.9.0))
+
   packages/schema:
     dependencies:
       zod:
