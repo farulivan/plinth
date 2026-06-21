@@ -1,12 +1,13 @@
-export { cn } from "./lib/cn";
-export { Button, buttonVariants, type ButtonProps } from "./components/button";
-export { Input, type InputProps } from "./components/input";
-export { Label, type LabelProps } from "./components/label";
-export {
-  Form,
-  FormField,
-  FormLabel,
-  FormDescription,
-  FormMessage,
-  type FormMessageProps,
-} from "./components/form";
+export { cn } from "./lib/utils";
+
+// Form primitives
+export * from "./components/button";
+export * from "./components/input";
+export * from "./components/label";
+export * from "./components/form";
+
+// Overlay primitives
+export * from "./components/dialog";
+export * from "./components/sheet";
+export * from "./components/dropdown-menu";
+export * from "./components/sonner";
