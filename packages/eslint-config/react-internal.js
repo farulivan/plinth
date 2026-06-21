@@ -14,6 +14,9 @@ export const reactInternalConfig = [
       globals: { ...globals.browser },
     },
   },
+  // New JSX transform (tsconfig `jsx: react-jsx`): React need not be in scope,
+  // so disable react-in-jsx-scope / jsx-uses-react.
+  pluginReact.configs.flat["jsx-runtime"],
   {
     plugins: { "react-hooks": pluginReactHooks },
     settings: { react: { version: "detect" } },

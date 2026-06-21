@@ -1,0 +1,4 @@
+{
+  "extends": "@plinth/typescript-config/react-library.json",
+  "include": ["src"]
+}
