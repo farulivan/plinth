@@ -1,0 +1,32 @@
+{
+  "name": "@plinth/template-norven",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@plinth/renderer": "workspace:*",
+    "@plinth/schema": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@plinth/eslint-config": "workspace:*",
+    "@plinth/typescript-config": "workspace:*",
+    "@types/react": "^19.2.17",
+    "eslint": "^9.39.1",
+    "react": "^19.2.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}
