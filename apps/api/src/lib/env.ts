@@ -10,7 +10,8 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(4000),
   // Vars are added as the modules that need them land — DB/auth +
-  // --env-file wiring in 9.3, Sentry DSN in 9.2.
+  // --env-file wiring in 9.3. (SENTRY_DSN_API is read raw in instrument.ts,
+  // which preloads before this contract runs.)
 });
 
 export type Env = z.infer<typeof envSchema>;
