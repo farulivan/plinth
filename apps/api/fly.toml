@@ -1,0 +1,45 @@
+# fly.toml — @plinth/api on Fly.io
+#
+# Deploy from the MONOREPO ROOT (the Dockerfile needs the whole workspace for
+# `turbo prune`):
+#   fly deploy --config apps/api/fly.toml
+#
+# Secrets are NOT in this file — set them with `fly secrets set` (see secrets.md).
+# [env] below holds only non-sensitive config.
+
+app = "plinth-api"          # must be globally unique on Fly; rename per account
+primary_region = "sin"      # Singapore — nearest region to the author/users
+
+[build]
+  dockerfile = "apps/api/Dockerfile" # relative to the repo-root build context
+
+[env]
+  NODE_ENV = "production"
+  PORT = "4000"
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  # Cost posture (ADR-0008): suspend to ~$0 when idle, sub-second resume on the
+  # next request; no machine kept warm.
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+  # Liveness probe hits the dependency-free public /health route (pre-HMAC).
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb" # bump to "1gb" if a real Norven `astro build` OOMs (ADR-0008)

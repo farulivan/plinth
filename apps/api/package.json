@@ -1,0 +1,41 @@
+{
+  "name": "@plinth/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx watch --env-file=../../.env --import ./src/instrument.ts src/server.ts",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.0.5",
+    "@sentry/hono": "^10.59.0",
+    "@sentry/node": "^10.59.0",
+    "better-auth": "^1.6.17",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.26",
+    "pg": "^8.21.0",
+    "resend": "^6.14.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@plinth/auth": "workspace:*",
+    "@plinth/db": "workspace:*",
+    "@plinth/eslint-config": "workspace:*",
+    "@plinth/schema": "workspace:*",
+    "@plinth/typescript-config": "workspace:*",
+    "@types/node": "^24.13.2",
+    "eslint": "^9.39.1",
+    "tsup": "^8.5.0",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}
