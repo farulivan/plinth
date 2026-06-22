@@ -26,6 +26,8 @@ pnpm-debug.log*
 *.pem
 *.key
 fly.toml
+# …but commit the per-app Fly configs — they hold no secrets (see apps/*/secrets.md)
+!apps/*/fly.toml
 .flyctl/
 
 # macOS-specific files
