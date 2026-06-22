@@ -5,13 +5,16 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "tsx watch --import ./src/instrument.ts src/server.ts",
+    "dev": "tsx watch --env-file=../../.env --import ./src/instrument.ts src/server.ts",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.5",
+    "@plinth/auth": "workspace:*",
+    "@plinth/db": "workspace:*",
+    "@plinth/schema": "workspace:*",
     "@sentry/hono": "^10.59.0",
     "@sentry/node": "^10.59.0",
     "hono": "^4.12.26",

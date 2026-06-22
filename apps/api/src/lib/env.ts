@@ -9,9 +9,11 @@ import { z } from "zod";
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(4000),
-  // Vars are added as the modules that need them land — DB/auth +
-  // --env-file wiring in 9.3. (SENTRY_DSN_API is read raw in instrument.ts,
-  // which preloads before this contract runs.)
+  DATABASE_URL: z.url(),
+  BETTER_AUTH_SECRET: z.string().min(1),
+  BETTER_AUTH_URL: z.url(),
+  // SENTRY_DSN_API is read raw in instrument.ts (preloads before this contract).
+  // INTERNAL_API_HMAC_SECRET lands in 9.5 with the internal-HMAC middleware.
 });
 
 export type Env = z.infer<typeof envSchema>;
