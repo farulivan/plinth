@@ -14,6 +14,12 @@ export const nextJsConfig = [
       ...pluginReact.configs.flat.recommended.languageOptions,
       globals: { ...globals.serviceworker, ...globals.browser },
     },
+    rules: {
+      ...pluginReact.configs.flat.recommended.rules,
+      // React 17+ automatic JSX runtime (Next 16 / React 19): no in-scope React
+      // import needed, so turn off react-in-jsx-scope / jsx-uses-react.
+      ...pluginReact.configs.flat["jsx-runtime"].rules,
+    },
   },
   {
     plugins: { "@next/next": pluginNext },
