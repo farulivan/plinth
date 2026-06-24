@@ -1,1 +1,7 @@
-@import "tailwindcss";
+/* Pull in the shared design system: tailwindcss, tw-animate-css, the @theme
+   tokens, and the base layer all live in @plinth/ui's stylesheet. */
+@import "@plinth/ui/globals.css";
+
+/* The shared UI package lives outside this app, so Tailwind's auto source
+   detection (scoped to apps/dashboard) won't reach it — add it explicitly. */
+@source "../../../packages/ui/src/**/*.{ts,tsx}";
