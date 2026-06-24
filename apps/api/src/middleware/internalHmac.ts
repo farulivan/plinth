@@ -1,18 +1,14 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
-
-const TIMESTAMP_HEADER = "x-plinth-timestamp";
-const SIGNATURE_HEADER = "x-plinth-signature";
-/** Replay window: a signed request is only valid for ±5 min. */
-const MAX_SKEW_MS = 5 * 60 * 1000;
+import { MAX_SKEW_MS, SIGNATURE_HEADER, sign, TIMESTAMP_HEADER } from "./sign";
 
 /**
  * Verifies the HMAC envelope on internal routes (dashboard → api, ADR-0008). The
- * dashboard signs `${timestamp}.${method}.${path}.${body}` with the shared
- * INTERNAL_API_HMAC_SECRET; this recomputes it and constant-time compares. A
- * fresh timestamp blocks replay. These routes never face the public internet —
- * the signature is the dashboard-trust boundary, layered under the user session.
+ * dashboard signs the canonical string (see ./sign) with INTERNAL_API_HMAC_SECRET;
+ * this recomputes it and constant-time compares. A fresh timestamp blocks replay.
+ * These routes never face the public internet — the signature is the
+ * dashboard-trust boundary, layered under the user session.
  *
  * External inbound webhooks (Inngest, Cloudflare, Stripe) carry their own vendor
  * signatures and must mount OUTSIDE this guard, not under a module group.
@@ -39,21 +35,6 @@ export function internalHmac(secret: string) {
 
     await next();
   });
-}
-
-/**
- * Canonical signing string → hex HMAC-SHA256. Exported so the dashboard's RPC
- * client (Branch 10) signs with the exact same construction.
- */
-export function sign(
-  secret: string,
-  timestamp: string,
-  method: string,
-  path: string,
-  body: string,
-): string {
-  const message = `${timestamp}.${method}.${path}.${body}`;
-  return createHmac("sha256", secret).update(message).digest("hex");
 }
 
 /** Constant-time hex compare; length-guarded so timingSafeEqual never throws. */
