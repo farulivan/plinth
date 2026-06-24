@@ -14,7 +14,10 @@ packages:
 #   protobufjs (via testcontainers): postinstall is codegen we never consume — decline.
 #   sharp (via next's image optimizer + ADR-0006 media pipeline on apps/api):
 #     native libvips bindings — must build, we use it on both counts.
+#   @sentry/cli (via @sentry/nextjs): downloads the sentry-cli binary used to
+#     upload source maps at build time (CI/prod) — allow the build.
 allowBuilds:
+  "@sentry/cli": true
   cpu-features: false
   esbuild: true
   lefthook: false

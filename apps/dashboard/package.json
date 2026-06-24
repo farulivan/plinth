@@ -18,6 +18,7 @@
     "@plinth/db": "workspace:*",
     "@plinth/schema": "workspace:*",
     "@plinth/ui": "workspace:*",
+    "@sentry/nextjs": "^10.60.0",
     "better-auth": "^1.6.17",
     "hono": "^4.12.26",
     "next": "16.2.9",
