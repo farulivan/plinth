@@ -13,11 +13,13 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
+    "@plinth/api": "workspace:*",
     "@plinth/auth": "workspace:*",
     "@plinth/db": "workspace:*",
     "@plinth/schema": "workspace:*",
     "@plinth/ui": "workspace:*",
     "better-auth": "^1.6.17",
+    "hono": "^4.12.26",
     "next": "16.2.9",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

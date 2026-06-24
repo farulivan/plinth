@@ -12,6 +12,10 @@ const envSchema = z.object({
   DATABASE_URL: z.url(),
   BETTER_AUTH_SECRET: z.string().min(1),
   BETTER_AUTH_URL: z.url(),
+  // Internal RPC to the api (ADR-0008): base URL + the shared HMAC secret the
+  // api's internalHmac verifies. The secret must match the api's value.
+  INTERNAL_API_URL: z.url(),
+  INTERNAL_API_HMAC_SECRET: z.string().min(1),
   // Magic-link delivery: omit both for the stdout dev fallback (ADR-0005).
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().min(1).optional(),
