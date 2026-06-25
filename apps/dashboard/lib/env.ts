@@ -23,4 +23,9 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>;
 
-export const env: Env = envSchema.parse(process.env);
+// `next build` evaluates route modules, which would trip this parse before real
+// values exist. Docker/CI set SKIP_ENV_VALIDATION=1 to defer validation to
+// runtime (where Fly secrets are present); production always parses for real.
+export const env: Env = process.env.SKIP_ENV_VALIDATION
+  ? (process.env as unknown as Env)
+  : envSchema.parse(process.env);

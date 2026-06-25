@@ -1,0 +1,44 @@
+# fly.toml — @plinth/dashboard on Fly.io
+#
+# Deploy from the MONOREPO ROOT (the Dockerfile needs the whole workspace):
+#   fly deploy --config apps/dashboard/fly.toml
+#
+# Secrets are NOT in this file — set them with `fly secrets set` (see secrets.md).
+# The client Sentry DSN is a BUILD arg (inlined), not a runtime secret.
+
+app = "plinth-dashboard"     # must be globally unique on Fly; rename per account
+primary_region = "sin"       # Singapore — nearest region to the author/users
+
+[build]
+  dockerfile = "apps/dashboard/Dockerfile" # relative to the repo-root build context
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  # Cost posture (ADR-0008): suspend to ~$0 when idle, sub-second resume on the
+  # next request; no machine kept warm.
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+  # Liveness probe hits the public, dependency-free /api/health route.
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "15s"
+    method = "GET"
+    path = "/api/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

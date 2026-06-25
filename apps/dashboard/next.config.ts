@@ -1,7 +1,13 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const nextConfig: NextConfig = {
+  // Self-contained server bundle for Docker — Next copies a minimal traced
+  // node_modules so the runtime image stays small.
+  output: "standalone",
+  // Trace from the monorepo root so workspace deps land in the standalone output.
+  outputFileTracingRoot: path.join(import.meta.dirname, "../.."),
   // Workspace packages ship as TS source, so Next must transpile them.
   transpilePackages: ["@plinth/api", "@plinth/auth", "@plinth/db", "@plinth/schema", "@plinth/ui"],
 };
