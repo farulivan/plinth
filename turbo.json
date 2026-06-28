@@ -1,8 +1,13 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
-  "globalEnv": ["NODE_ENV"],
-  "globalPassThroughEnv": ["SENTRY_DSN_API"],
+  "globalEnv": ["NODE_ENV", "NEXT_PUBLIC_SENTRY_DSN_DASHBOARD"],
+  "globalPassThroughEnv": [
+    "SENTRY_DSN_API",
+    "NEXT_RUNTIME",
+    "SKIP_ENV_VALIDATION",
+    "SENTRY_AUTH_TOKEN"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

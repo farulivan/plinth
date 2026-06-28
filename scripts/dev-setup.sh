@@ -37,6 +37,13 @@ fill_secret() {
 fill_secret BETTER_AUTH_SECRET
 fill_secret INTERNAL_API_HMAC_SECRET
 
+step "linking the dashboard to the shared .env"
+# Next only auto-loads .env from the app dir, so symlink the monorepo-root .env
+# into apps/dashboard for `next dev`/`next start`. (The api uses --env-file; the
+# build skips validation, so neither needs this.)
+ln -sf ../../.env apps/dashboard/.env
+echo "apps/dashboard/.env -> ../../.env"
+
 step "installing dependencies (also wires git hooks via lefthook)"
 pnpm install
 

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
-import { internalHmac, sign } from "./internalHmac";
+import { internalHmac } from "./internalHmac";
+import { sign } from "./sign";
 
 const SECRET = "test-hmac-secret-value";
 const PATH = "/guarded/echo";

@@ -39,7 +39,7 @@ cd plinth
 ./scripts/dev-setup.sh
 ```
 
-The script is idempotent — it copies `.env.example` to `.env` (every default already matches the compose stack), generates `BETTER_AUTH_SECRET` and `INTERNAL_API_HMAC_SECRET` if empty, installs dependencies, starts the services with health gates, creates the MinIO buckets, applies migrations, and seeds Norven as workspace #0. Re-run it anytime; it never overwrites values you've set. Then:
+The script is idempotent — it copies `.env.example` to `.env` (every default already matches the compose stack), generates `BETTER_AUTH_SECRET` and `INTERNAL_API_HMAC_SECRET` if empty, symlinks that root `.env` into `apps/dashboard/` so Next loads it for `pnpm dev` (the api reads the root `.env` directly via `--env-file`), installs dependencies, starts the services with health gates, creates the MinIO buckets, applies migrations, and seeds Norven as workspace #0. Re-run it anytime; it never overwrites values you've set. Then:
 
 ```bash
 pnpm dev                   # both apps via Turbo: dashboard:3000 and api:4000
