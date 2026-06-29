@@ -1,0 +1,53 @@
+name: CI
+
+# The only always-on gate (the CI philosophy in ADR-0008 / README): fast and
+# fundamental, runs on every PR and on main. The heavy lanes — e2e + axe,
+# Lighthouse, CodeQL, Fly deploys — live in their own workflows and stay
+# dispatch-only until the product is demo-ready.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same ref so a force-push doesn't queue duplicates.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  secret-scan:
+    name: secret scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # read the PR's commit range to scan
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so gitleaks can diff the PR's commits
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          # gitleaks-action v2 requires GITHUB_TOKEN to scan PRs. Comments need
+          # pull-requests:write — disabled, so a leak just fails this job (the
+          # gate) under a read-only token. Free for personal repos.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+
+  verify:
+    name: verify
+    runs-on: ubuntu-latest # Docker is preinstalled — the RLS probe needs it
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # version comes from package.json packageManager
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # format-check + lint + typecheck + test (incl. the cross-tenant RLS probe
+      # via testcontainers, ADR-0002) + build, across every workspace via Turbo.
+      - run: pnpm verify

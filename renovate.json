@@ -1,0 +1,35 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:best-practices", ":semanticCommitScope(deps)"],
+  "timezone": "Asia/Jakarta",
+  "schedule": ["before 9am on monday"],
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "Group non-major updates per workspace to keep PRs reviewable.",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchFileNames": ["apps/api/**"],
+      "groupName": "api deps"
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchFileNames": ["apps/dashboard/**"],
+      "groupName": "dashboard deps"
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchFileNames": ["packages/**"],
+      "groupName": "package deps"
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchFileNames": ["package.json"],
+      "groupName": "root deps"
+    },
+    {
+      "description": "All GitHub Actions bumps land in one PR.",
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions"
+    }
+  ]
+}
