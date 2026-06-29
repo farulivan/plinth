@@ -21,13 +21,20 @@ jobs:
   secret-scan:
     name: secret scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # read the PR's commit range to scan
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # full history so gitleaks can diff the PR's commits
       - uses: gitleaks/gitleaks-action@v2
         env:
-          # Free for public + personal repos; an org account needs GITLEAKS_LICENSE.
+          # gitleaks-action v2 requires GITHUB_TOKEN to scan PRs. Comments need
+          # pull-requests:write — disabled, so a leak just fails this job (the
+          # gate) under a read-only token. Free for personal repos.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
 
   verify:
