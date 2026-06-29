@@ -1,0 +1,36 @@
+name: Deploy api
+
+# Built but disabled. Skeletons aren't worth deploying, and this needs a Fly
+# deploy token configured first. Runnable via "Run workflow" to prove it's wired;
+# flip on by uncommenting the push trigger once the product is demo-ready.
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - "apps/api/**"
+  #     - "packages/**"
+  #     - ".github/workflows/deploy-api.yml"
+
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false # never cancel a deploy mid-flight
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      # App-scoped deploy token (`fly tokens create deploy -a plinth-api`), stored
+      # as a repo secret — least privilege, not an account token. Builds on Fly's
+      # remote builders, so the runner needs no Docker and the whole monorepo is
+      # the context the Dockerfile's `turbo prune` expects.
+      - run: flyctl deploy --config apps/api/fly.toml --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN_API }}
