@@ -1,0 +1,32 @@
+name: Lighthouse
+
+# Built but disabled. Performance + a11y budgets on the dashboard (the public
+# /login for now; more routes as the editor lands). Dispatch-only until the
+# product is demo-ready. Budgets live in .lighthouserc.json.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    name: lhci
+    runs-on: ubuntu-latest
+    env:
+      # Build + serve without real secrets; the audited /login needs none.
+      SKIP_ENV_VALIDATION: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @plinth/dashboard build
+      - run: pnpm dlx @lhci/cli@latest autorun
