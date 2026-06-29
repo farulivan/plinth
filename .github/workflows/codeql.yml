@@ -1,0 +1,31 @@
+name: CodeQL
+
+# Static security analysis. Too slow for the per-PR fast lane, so it runs weekly
+# on main plus on demand — findings land in the repo's Security tab.
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: analyze
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # upload results to code scanning
+      actions: read # required for private repos
+    steps:
+      - uses: actions/checkout@v4
+      # One combined analysis covers the whole TS/JS monorepo; CodeQL extracts
+      # from source, so no build step is needed.
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
