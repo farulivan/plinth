@@ -6,17 +6,20 @@ I built Plinth as a typed, multi-tenant CMS for editorial marketing sites. It is
 
 [![Code license: MIT](https://img.shields.io/badge/code%20license-MIT-blue)](./LICENSE.md)
 
-<!--
-CI / CodeQL / Lighthouse / E2E / Renovate badges land once the workflows ship. Reinstate when ready:
-
 [![CI](https://github.com/farulivan/plinth/actions/workflows/ci.yml/badge.svg)](https://github.com/farulivan/plinth/actions/workflows/ci.yml)
+
+<!--
+More badges as their workflows run regularly / the Renovate app is installed:
+
 [![CodeQL](https://github.com/farulivan/plinth/actions/workflows/codeql.yml/badge.svg)](https://github.com/farulivan/plinth/actions/workflows/codeql.yml)
 [![Lighthouse](https://github.com/farulivan/plinth/actions/workflows/lighthouse.yml/badge.svg)](https://github.com/farulivan/plinth/actions/workflows/lighthouse.yml)
 [![E2E](https://github.com/farulivan/plinth/actions/workflows/e2e.yml/badge.svg)](https://github.com/farulivan/plinth/actions/workflows/e2e.yml)
 [![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen?logo=renovatebot)](https://renovatebot.com)
 -->
 
-> **Status**: documentation phase complete — eleven ADRs, architecture overview, domain vocabulary, and policies are stable. Foundation scaffold lands next, branch by branch: monorepo + tooling, local dev infra, shared packages (`schema` → `db` → `auth` → `ui` → `renderer`), then both app skeletons, CI/CD, and an end-to-end type-flow verification. Read the ADRs for the decision surface.
+> **Status**: foundation scaffold complete. Both runtimes boot and containerize; the cross-tenant Postgres RLS probe and the fast CI gate (`pnpm verify` + secret scan) pass on every PR; magic-link auth is wired; and the dashboard↔api contract is proven end-to-end — the typed Hono RPC client infers the api's response shape through `hc<AppType>`, so renaming a shared Zod field fails the dashboard's typecheck. Heavy CI lanes (CodeQL, Lighthouse, E2E, Fly deploys) are built and dispatch-only until the product is demo-ready.
+>
+> **Next**: the vertical slice — login → edit fields → live preview → publish → static tenant site. Deferred behind it: the publish pipeline (Inngest + Astro), the real Norven content port, custom domains, the editor UI, and Stripe billing. The ADRs in `docs/adr/` cover the decision surface.
 
 ## Why this exists
 
@@ -24,14 +27,14 @@ Plinth is open-source code under MIT and a closed-source operations layer that r
 
 It serves two readings:
 
-- **Portfolio piece** for senior frontend / fullstack hiring filters. Production-grade CMS with multi-tenant Postgres, RLS, Inngest-orchestrated builds, Cloudflare Workers, OIDC deploys, axe a11y on every PR, Lighthouse budgets, and eleven ADRs of decision documentation.
+- **Portfolio piece** for senior frontend / fullstack hiring filters. Production-grade CMS with multi-tenant Postgres, RLS, Inngest-orchestrated builds, Cloudflare Workers, scoped-token deploys, axe a11y on every PR, Lighthouse budgets, and eleven ADRs of decision documentation.
 - **Foundation of a small freelance practice** deploying Plinth-class sites for studios who want a designed site managed through a typed dashboard. Hosted Plinth at plinth.farulivan.com; pricing on request.
 
 This codebase demonstrates how I think about:
 
 - **Architecture** — monorepo with two runtimes, schema-as-product through Zod packages, Postgres RLS for tenant isolation, content-addressed publishing with atomic pointer swap.
 - **Quality gates** — `pnpm verify` runs format, lint, typecheck, tests, build, and bundle budget on every PR; CI adds dependency review, CodeQL, axe a11y, Lighthouse budgets, and a cross-tenant RLS probe test.
-- **Operations** — Fly.io for the dashboard and api (auto-stop at idle), Cloudflare R2 for static tenant sites and media, Cloudflare for SaaS for multi-tenant TLS and edge routing, Sentry for errors, OIDC-only deploys, secret scanning at pre-commit and CI.
+- **Operations** — Fly.io for the dashboard and api (auto-stop at idle), Cloudflare R2 for static tenant sites and media, Cloudflare for SaaS for multi-tenant TLS and edge routing, Sentry for errors, app-scoped Fly deploy tokens, secret scanning at pre-commit and CI.
 - **Documentation discipline** — eleven ADRs for load-bearing decisions, an architecture overview that fits on one screen, `CONTEXT.md` fixing domain vocabulary, a deployment runbook, security policy.
 
 ## Stack
