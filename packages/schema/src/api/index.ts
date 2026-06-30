@@ -8,3 +8,4 @@ export {
   type ApiError,
 } from "./errors";
 export { ok, err, envelope, type Ok, type Err, type Envelope } from "./envelope";
+export { mediaItem, type MediaItem } from "./media";

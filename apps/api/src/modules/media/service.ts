@@ -1,7 +1,10 @@
+import type { MediaItem } from "@plinth/schema/api";
+
 /**
- * Business logic for the media domain — composes db (Postgres rows) with adapter
- * (Cloudflare R2 + Sharp). Framework-agnostic: no Hono import, so the same
- * functions can run from a route or an Inngest job (ADR-0009). Impl lands with
- * the media pipeline.
+ * Media listing for the active workspace. Returns an empty list until the media
+ * pipeline lands (ADR-0006) — it exists now to give `GET /media` a typed response
+ * so the dashboard's Hono RPC client infers the shape end-to-end.
  */
-export {};
+export function listMedia(): MediaItem[] {
+  return [];
+}
