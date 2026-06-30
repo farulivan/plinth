@@ -1,10 +1,11 @@
 import { Hono } from "hono";
 import type { AppBindings } from "../../context";
+import { listMedia } from "./service";
 
 /**
- * HTTP surface for the media domain (uploads, listing, transform requests).
- * Routes are the only layer that speaks Hono; they delegate to service and never
- * touch db or adapter directly (ADR-0009). Endpoints land with the media
- * pipeline — `media.list` arrives in Branch 12 to prove the RPC type flow.
+ * HTTP surface for the media domain. `GET /media` returns the workspace's media
+ * (empty for now). Routes delegate to service and never touch db or adapter
+ * directly (ADR-0009); the typed response is what the dashboard's RPC client
+ * infers from.
  */
-export const mediaRoutes = new Hono<AppBindings>();
+export const mediaRoutes = new Hono<AppBindings>().get("/", (c) => c.json(listMedia()));
