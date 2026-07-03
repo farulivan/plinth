@@ -33,7 +33,7 @@ It serves two readings:
 This codebase demonstrates how I think about:
 
 - **Architecture** — monorepo with two runtimes, schema-as-product through Zod packages, Postgres RLS for tenant isolation, content-addressed publishing with atomic pointer swap.
-- **Quality gates** — `pnpm verify` runs format, lint, typecheck, tests, build, and bundle budget on every PR; CI adds dependency review, CodeQL, axe a11y, Lighthouse budgets, and a cross-tenant RLS probe test.
+- **Quality gates** — `pnpm verify` runs format, lint, typecheck, tests, and build on every PR; CI adds dependency review, CodeQL, axe a11y, Lighthouse budgets, and a cross-tenant RLS probe test.
 - **Operations** — Fly.io for the dashboard and api (auto-stop at idle), Cloudflare R2 for static tenant sites and media, Cloudflare for SaaS for multi-tenant TLS and edge routing, Sentry for errors, app-scoped Fly deploy tokens, secret scanning at pre-commit and CI.
 - **Documentation discipline** — eleven ADRs for load-bearing decisions, an architecture overview that fits on one screen, `CONTEXT.md` fixing domain vocabulary, a deployment runbook, security policy.
 
@@ -104,9 +104,9 @@ For a hosted-Plinth tenant: open <https://plinth.farulivan.com> and sign in. The
 | `pnpm test:e2e` | Playwright E2E + axe-core a11y against the dashboard |
 | `pnpm test:integration` | Integration tests against a testcontainers Postgres (includes cross-tenant RLS probe) |
 | `pnpm lint` / `pnpm format` | ESLint + Prettier across the workspace |
-| `pnpm check` | TypeScript typecheck across every package |
+| `pnpm typecheck` | TypeScript typecheck across every package |
 | `pnpm db:push` / `pnpm db:migrate` / `pnpm db:studio` | Drizzle schema management |
-| `pnpm verify` | Full gate: format + lint + check + test + build + bundle budget |
+| `pnpm verify` | Full gate: format + lint + typecheck + test + build |
 | `pnpm deploy:dashboard` / `pnpm deploy:api` | Fly.io deploys (CI runs these on push to `main`) |
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for full setup, Conventional Commits expectations, and PR expectations.
@@ -132,11 +132,12 @@ The dashboard and api deploy as separate Fly.io apps with auto-stop at idle; ten
 │   ├── schema/            # Zod schemas — single source of truth
 │   ├── db/                # Drizzle client + RLS helper + migrations
 │   ├── auth/              # Better Auth config + session validator
+│   ├── internal-rpc/      # dashboard→api HMAC envelope (one module signs + verifies)
 │   ├── renderer/          # React components shared between Astro build + preview SSR
 │   ├── template-norven/   # first template (Norven editorial shape)
 │   └── ui/                # shadcn primitives for the dashboard
 ├── docs/
-│   ├── adr/               # 10 ADRs for every load-bearing decision
+│   ├── adr/               # 11 ADRs for every load-bearing decision
 │   ├── deployment.md      # operations runbook (TBD)
 │   └── operations.md      # reapers + KV sync + DLQ playbook (TBD)
 ├── .github/
