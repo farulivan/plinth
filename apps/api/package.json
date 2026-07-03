@@ -8,8 +8,7 @@
     "dist"
   ],
   "exports": {
-    "./app": "./src/app.ts",
-    "./hmac": "./src/middleware/sign.ts"
+    "./app": "./src/app.ts"
   },
   "scripts": {
     "build": "tsup",
@@ -33,6 +32,7 @@
     "@plinth/auth": "workspace:*",
     "@plinth/db": "workspace:*",
     "@plinth/eslint-config": "workspace:*",
+    "@plinth/internal-rpc": "workspace:*",
     "@plinth/schema": "workspace:*",
     "@plinth/typescript-config": "workspace:*",
     "@types/node": "^24.13.2",
