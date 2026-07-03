@@ -21,6 +21,7 @@ export default {
         "schema",
         "db",
         "auth",
+        "internal-rpc",
         "renderer",
         "ui",
         "template-norven",
