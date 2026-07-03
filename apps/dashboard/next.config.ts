@@ -8,8 +8,17 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // Trace from the monorepo root so workspace deps land in the standalone output.
   outputFileTracingRoot: path.join(import.meta.dirname, "../.."),
-  // Workspace packages ship as TS source, so Next must transpile them.
-  transpilePackages: ["@plinth/api", "@plinth/auth", "@plinth/db", "@plinth/schema", "@plinth/ui"],
+  // Workspace packages ship as TS source, so Next must transpile the ones the
+  // dashboard imports at runtime. @plinth/api is deliberately absent: only
+  // `import type { AppType }` crosses that boundary, and type imports are
+  // erased before bundling.
+  transpilePackages: [
+    "@plinth/auth",
+    "@plinth/db",
+    "@plinth/internal-rpc",
+    "@plinth/schema",
+    "@plinth/ui",
+  ],
 };
 
 export default withSentryConfig(nextConfig, {
