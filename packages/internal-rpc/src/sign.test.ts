@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { sign } from "./index";
 
-const SECRET = "0123456789abcdef0123456789abcdef";
+// Deliberately wordy fixture: high-entropy strings trip the secret scanner.
+const SECRET = "test-internal-rpc-secret-32-char";
 const TS = "1750000000000";
 
 describe("sign", () => {

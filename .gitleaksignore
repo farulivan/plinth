@@ -6,3 +6,8 @@
 # Only add a fingerprint after confirming the finding is NOT a real secret
 # (e.g. a documented placeholder in .env.example). Never allowlist a real
 # credential — rotate it instead (see SECURITY.md).
+
+# Test fixture: hex-looking HMAC constant in the sign() unit test. Not a
+# credential; the line was reworded to a low-entropy string in a follow-up,
+# but this fingerprint clears the original commit in the PR range.
+466a2fb2a681847e03f2a6043dbda2f2b18aa5f1:packages/internal-rpc/src/sign.test.ts:generic-api-key:4
