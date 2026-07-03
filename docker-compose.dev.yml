@@ -7,7 +7,7 @@
 # (Or just `./scripts/dev-setup.sh`, which does both plus env + deps + migrate.)
 #
 # Ports (mirrored in .env.example):
-#   5432  Postgres            9000  MinIO S3 API (R2-compatible)
+#   5433  Postgres            9000  MinIO S3 API (R2-compatible)
 #   6379  Redis               9001  MinIO console
 #   8079  Upstash-REST proxy  8288  Inngest dev server UI
 
@@ -22,7 +22,10 @@ services:
       POSTGRES_PASSWORD: plinth
       POSTGRES_DB: plinth
     ports:
-      - "5432:5432"
+      # Host 5433, not 5432: a host-level Postgres (Homebrew, Postgres.app)
+      # binds 127.0.0.1:5432 and shadows a Docker wildcard publish for every
+      # localhost connection — the classic silent "wrong server" failure.
+      - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:

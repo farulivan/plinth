@@ -65,7 +65,7 @@ step "done"
 cat <<'EOF'
 
   Services:
-    Postgres        postgres://plinth:plinth@localhost:5432/plinth
+    Postgres        postgres://plinth:plinth@localhost:5433/plinth
     Upstash REST    http://localhost:8079  (token: local-dev-token)
     Inngest UI      http://localhost:8288
     MinIO console   http://localhost:9001  (plinth / plinth-local-dev)
