@@ -1,6 +1,14 @@
 import "server-only";
 import { z } from "zod";
 
+/** Optional env var where `KEY=` (what dotenv yields for a blank line in .env)
+ * means "unset" — empty coerces to undefined before the min(1) check, honoring
+ * .env.example's "leave empty for the dev fallback" contract. */
+const optionalEnv = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z.string().min(1).optional(),
+);
+
 /**
  * The dashboard's server-side environment contract. Apps own env parsing (the
  * api does the same); shared packages take config values and never read
@@ -13,12 +21,14 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(1),
   BETTER_AUTH_URL: z.url(),
   // Internal RPC to the api (ADR-0008): base URL + the shared HMAC secret the
-  // api's internalHmac verifies. The secret must match the api's value.
+  // api's internalHmac verifies. Must match the api's value; ≥32 chars enforced
+  // (dev-setup.sh generates one via `openssl rand -base64 32`).
   INTERNAL_API_URL: z.url(),
-  INTERNAL_API_HMAC_SECRET: z.string().min(1),
-  // Magic-link delivery: omit both for the stdout dev fallback (ADR-0005).
-  RESEND_API_KEY: z.string().min(1).optional(),
-  EMAIL_FROM: z.string().min(1).optional(),
+  INTERNAL_API_HMAC_SECRET: z.string().min(32),
+  // Magic-link delivery: leave both empty/unset for the stdout dev fallback
+  // (ADR-0005).
+  RESEND_API_KEY: optionalEnv,
+  EMAIL_FROM: optionalEnv,
 });
 
 export type Env = z.infer<typeof envSchema>;

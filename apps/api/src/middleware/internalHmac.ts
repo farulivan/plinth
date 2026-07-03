@@ -1,14 +1,15 @@
 import { timingSafeEqual } from "node:crypto";
+import { MAX_SKEW_MS, SIGNATURE_HEADER, sign, TIMESTAMP_HEADER } from "@plinth/internal-rpc";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
-import { MAX_SKEW_MS, SIGNATURE_HEADER, sign, TIMESTAMP_HEADER } from "./sign";
 
 /**
  * Verifies the HMAC envelope on internal routes (dashboard → api, ADR-0008). The
- * dashboard signs the canonical string (see ./sign) with INTERNAL_API_HMAC_SECRET;
- * this recomputes it and constant-time compares. A fresh timestamp blocks replay.
- * These routes never face the public internet — the signature is the
- * dashboard-trust boundary, layered under the user session.
+ * dashboard signs the canonical string (see @plinth/internal-rpc) with
+ * INTERNAL_API_HMAC_SECRET; this recomputes it and constant-time compares. A
+ * fresh timestamp bounds replay to the skew window. These routes never face the
+ * public internet — the signature is the dashboard-trust boundary, layered
+ * under the user session.
  *
  * External inbound webhooks (Inngest, Cloudflare, Stripe) carry their own vendor
  * signatures and must mount OUTSIDE this guard, not under a module group.
@@ -28,7 +29,8 @@ export function internalHmac(secret: string) {
 
     // Hono caches the body, so a downstream c.req.json()/text() still works.
     const body = await c.req.text();
-    const expected = sign(secret, timestamp, c.req.method, new URL(c.req.url).pathname, body);
+    const url = new URL(c.req.url);
+    const expected = sign(secret, timestamp, c.req.method, url.pathname + url.search, body);
     if (!safeEqualHex(signature, expected)) {
       throw new HTTPException(401, { message: "Invalid signature" });
     }

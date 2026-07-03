@@ -19,7 +19,7 @@ The api service is organized as one folder per domain (`modules/media`, `modules
   2. Services import adapters, `@plinth/db`, `@plinth/schema`, and other services; never `req`/`res`, never Hono types.
   3. Adapters import only third-party SDKs and `@plinth/schema`; never services, never `@plinth/db`.
 
-  An `import/no-restricted-paths` rule makes the graph machine-checkable at lint time. A future reader can know what any file is allowed to depend on without reading the import block.
+  A `no-restricted-imports` rule makes the graph machine-checkable at lint time. A future reader can know what any file is allowed to depend on without reading the import block.
 
 - **Routes are thin.** Validate input with a Zod schema (often re-imported from `@plinth/schema`), call the relevant service, format the response. Routes that exceed ~50 lines almost always have logic that belongs in a service; the threshold is a soft refactor signal, not a hard rule.
 - **Services are plain functions, not classes.** They accept typed inputs and return typed outputs. They never see `req`/`res`. Tests instantiate the service with mocked adapters (via `vi.mock` or direct factory injection) and assert pure input/output behavior. The "no classes" default is because class state encourages stateful services that fight horizontal scaling — function services are stateless on construction.

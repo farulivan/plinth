@@ -1,9 +1,9 @@
+import { sign } from "@plinth/internal-rpc";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import { internalHmac } from "./internalHmac";
-import { sign } from "./sign";
 
-const SECRET = "test-hmac-secret-value";
+const SECRET = "test-hmac-secret-value-32-chars!";
 const PATH = "/guarded/echo";
 
 function appWithGuard() {
@@ -64,9 +64,32 @@ describe("internalHmac", () => {
     const body = "{}";
     const res = await appWithGuard().request(PATH, {
       method: "POST",
-      headers: signedHeaders(body, { secret: "wrong-secret" }),
+      headers: signedHeaders(body, { secret: "wrong-secret-also-32-chars-long!" }),
       body,
     });
     expect(res.status).toBe(401);
+  });
+
+  it("verifies the query string: same path, different params fails", async () => {
+    const body = "{}";
+    const ts = Date.now().toString();
+    const headers = {
+      "content-type": "application/json",
+      "x-plinth-timestamp": ts,
+      "x-plinth-signature": sign(SECRET, ts, "POST", `${PATH}?page=1`, body),
+    };
+    const signedOk = await appWithGuard().request(`${PATH}?page=1`, {
+      method: "POST",
+      headers,
+      body,
+    });
+    expect(signedOk.status).toBe(200);
+
+    const tampered = await appWithGuard().request(`${PATH}?page=2`, {
+      method: "POST",
+      headers,
+      body,
+    });
+    expect(tampered.status).toBe(401);
   });
 });

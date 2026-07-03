@@ -13,9 +13,9 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
-    "@plinth/api": "workspace:*",
     "@plinth/auth": "workspace:*",
     "@plinth/db": "workspace:*",
+    "@plinth/internal-rpc": "workspace:*",
     "@plinth/schema": "workspace:*",
     "@plinth/ui": "workspace:*",
     "@sentry/nextjs": "^10.60.0",
@@ -29,6 +29,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@plinth/api": "workspace:*",
     "@plinth/eslint-config": "workspace:*",
     "@plinth/typescript-config": "workspace:*",
     "@tailwindcss/postcss": "^4",

@@ -9,7 +9,9 @@ export const dynamic = "force-dynamic";
 
 export default async function MediaPage() {
   const res = await api.media.$get();
-  const items = await res.json();
+  // Module routes speak the shared envelope; this route has no error arm yet,
+  // so `ok` narrows to `true` and `data` is the typed payload.
+  const { data: items } = await res.json();
 
   return (
     <main className="mx-auto max-w-2xl p-8">

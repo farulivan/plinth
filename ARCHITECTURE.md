@@ -42,7 +42,7 @@ The deploy boundary for tenant sites is `r2://plinth-sites/tenants/{workspace_id
 
 ## Module layering
 
-Two apps plus six shared packages, arranged in strict layers. The rule is one sentence: **imports point down, never up, never sideways within a layer** — enforced at lint time by `import/no-restricted-paths` per [ADR-0009](./docs/adr/0009-backend-architecture.md).
+Two apps plus seven shared packages, arranged in strict layers. The rule is one sentence: **imports point down, never up, never sideways within a layer** — enforced at lint time by `no-restricted-imports` per [ADR-0009](./docs/adr/0009-backend-architecture.md).
 
 ```mermaid
 flowchart TD
@@ -66,7 +66,9 @@ flowchart TD
     end
 
     subgraph L1["foundation"]
+        direction LR
         schema["packages/schema<br/>Zod definitions"]
+        rpc["packages/internal-rpc<br/>HMAC envelope"]
     end
 
     dash --> template
@@ -81,7 +83,7 @@ flowchart TD
     db --> schema
 ```
 
-The diagram draws each node's closest dependency; lower layers are reachable transitively and directly (both apps also import `db` and `schema` straight, for example) — those edges are omitted for legibility, not forbidden. What *is* forbidden is any arrow that would point up or sideways: a package importing an app, `renderer` importing `template-*` (templates consume the renderer, never the reverse — that's what keeps new templates additive), or `db` importing `auth`.
+The diagram draws each node's closest dependency; lower layers are reachable transitively and directly (both apps also import `db`, `schema`, and `internal-rpc` straight, for example) — those edges are omitted for legibility, not forbidden. What *is* forbidden is any arrow that would point up or sideways: a package importing an app, `renderer` importing `template-*` (templates consume the renderer, never the reverse — that's what keeps new templates additive), or `db` importing `auth`.
 
 Each app is the only place HTTP and view code lives. Domain logic — anything that knows about workspaces, drafts, versions, media, or hostnames — lives in `apps/dashboard/server/services/` (dashboard) or `apps/api/modules/*/service.ts` (api), per [ADR-0009](./docs/adr/0009-backend-architecture.md). Shared packages never import from apps; the lint rule fails any reverse import.
 

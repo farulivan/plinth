@@ -13,8 +13,9 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(1),
   BETTER_AUTH_URL: z.url(),
   // Shared secret for the dashboard→api HMAC envelope (ADR-0008). The dashboard
-  // signs with the same value (Branch 10); recommend ≥32 random chars.
-  INTERNAL_API_HMAC_SECRET: z.string().min(1),
+  // signs with the same value. ≥32 chars enforced — dev-setup.sh generates one
+  // via `openssl rand -base64 32`.
+  INTERNAL_API_HMAC_SECRET: z.string().min(32),
   // SENTRY_DSN_API is read raw in instrument.ts (preloads before this contract).
 });
 
