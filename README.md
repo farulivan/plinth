@@ -83,14 +83,27 @@ Eleven ADRs cover every load-bearing decision. They are short, self-contained, a
 
 ## Quick start
 
+Two run modes, one repo (dev/prod parity):
+
+**Dev loop** — HMR, TS source, services in Docker:
+
 ```bash
 git clone https://github.com/farulivan/plinth.git
 cd plinth
-pnpm install              # installs workspaces + lefthook git hooks
-cp .env.example .env      # fill in DATABASE_URL, BETTER_AUTH_SECRET, RESEND_API_KEY, ...
-pnpm db:push              # apply Drizzle schema to a local or branched Postgres
+./scripts/dev-setup.sh    # env + secrets + deps + services + migrate + seed (idempotent)
 pnpm dev                  # runs apps/dashboard:3000 and apps/api:4000 via Turbo
 ```
+
+Sign in as `dev@plinth.local` (or any email) — without a Resend key the magic-link URL prints to the dashboard task's logs; open it from there.
+
+**Production-parity run** — the same Docker images the deploys ship, booted locally with `NODE_ENV=production` and the runtime env contract validated for real:
+
+```bash
+pnpm local-prod           # build images → postgres → migrate + seed → boot → smoke tests
+pnpm local-prod:down      # tear it down
+```
+
+It binds the same :3000/:4000, so run one mode at a time. `scripts/smoke.sh` asserts liveness on both apps, the HMAC trust boundary (unsigned rejected, signed accepted, tampered query rejected), and magic-link issuance. Run it before merging anything that touches Dockerfiles, dependencies, build config, or env contracts — this mode catches the class of bug `pnpm dev` structurally cannot (standalone-output tracing, bundle runtime closure, env parsing at boot, prod cookie behavior, container networking).
 
 For a hosted-Plinth tenant: open <https://plinth.farulivan.com> and sign in. The freelance workflow includes a 30-minute discovery call before onboarding.
 
@@ -99,13 +112,16 @@ For a hosted-Plinth tenant: open <https://plinth.farulivan.com> and sign in. The
 | Command | What it does |
 |---|---|
 | `pnpm dev` | Run both apps locally via Turbo (dashboard + api + watcher) |
+| `pnpm local-prod` / `pnpm local-prod:down` | Boot / tear down the production images against a local stack (`docker-compose.local-prod.yml`) |
+| `pnpm seed` | Seed Norven as workspace #0 with a dev user and sample draft (idempotent) |
+| `pnpm smoke` | Smoke-test a running deployment (liveness + HMAC boundary + magic-link issuance) |
 | `pnpm build` | Production build for every app and package |
 | `pnpm test` | Vitest unit tests across the workspace |
 | `pnpm test:e2e` | Playwright E2E + axe-core a11y against the dashboard |
 | `pnpm test:integration` | Integration tests against a testcontainers Postgres (includes cross-tenant RLS probe) |
 | `pnpm lint` / `pnpm format` | ESLint + Prettier across the workspace |
 | `pnpm typecheck` | TypeScript typecheck across every package |
-| `pnpm db:push` / `pnpm db:migrate` / `pnpm db:studio` | Drizzle schema management |
+| `pnpm db:migrate` / `pnpm db:push` / `pnpm db:studio` | Drizzle schema management (`migrate` is the parity path; `push` is a schema-iteration shortcut) |
 | `pnpm verify` | Full gate: format + lint + typecheck + test + build |
 | `pnpm deploy:dashboard` / `pnpm deploy:api` | Fly.io deploys (CI runs these on push to `main`) |
 
