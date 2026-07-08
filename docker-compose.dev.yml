@@ -49,7 +49,7 @@ services:
       retries: 15
 
   upstash-proxy:
-    image: hiett/serverless-redis-http:latest
+    image: hiett/serverless-redis-http:latest@sha256:5b0bb9239fce53abf87b2018a7a0deb9ec7bd900c5360738fe5fbeeb426f9150
     environment:
       SRH_MODE: env
       SRH_TOKEN: local-dev-token
@@ -61,7 +61,10 @@ services:
         condition: service_healthy
 
   inngest:
-    image: inngest/inngest:latest
+    # The un-versioned upstreams (inngest, srh, minio, mc) are digest-pinned so
+    # dev and CI stay reproducible; Renovate bumps the digests. postgres/redis
+    # keep semantic version tags above.
+    image: inngest/inngest:latest@sha256:2260a12c955a0aa35ccc17f235bf9dd82b1b8eb03dd48de44e643de2445bd811
     command: "inngest dev -u http://host.docker.internal:4000/api/inngest --no-discovery"
     ports:
       - "8288:8288"
@@ -70,7 +73,7 @@ services:
       - "host.docker.internal:host-gateway"
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:latest@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: plinth
@@ -92,7 +95,7 @@ services:
   # (compose treats any exited service as a wait failure); run it explicitly
   # via `run --rm minio-init`.
   minio-init:
-    image: minio/mc:latest
+    image: minio/mc:latest@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
     profiles: ["init"]
     depends_on:
       minio:
