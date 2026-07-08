@@ -45,7 +45,20 @@ The script is idempotent — it copies `.env.example` to `.env` (every default a
 pnpm dev                   # both apps via Turbo: dashboard:3000 and api:4000
 ```
 
+Sign in as `dev@plinth.local` (or any email). Without a Resend key the magic-link URL prints to the dashboard task's logs — open it from there.
+
 Useful local endpoints once the stack is up: Inngest dev UI at `http://localhost:8288`, MinIO console at `http://localhost:9001` (`plinth` / `plinth-local-dev`).
+
+### Production-parity run
+
+`pnpm dev` optimizes for iteration speed; `pnpm local-prod` optimizes for catching what dev mode structurally cannot. It builds the **same Docker images the Fly deploys ship**, boots them with `NODE_ENV=production` and the runtime env contract validated for real (no `SKIP_ENV_VALIDATION`), applies migrations through the same `drizzle-kit migrate` path the deploy lane runs, seeds, and finishes with `scripts/smoke.sh` — liveness on both apps, the HMAC trust boundary, and magic-link issuance.
+
+```bash
+pnpm local-prod            # build → postgres → migrate + seed → boot → smoke
+pnpm local-prod:down       # tear down
+```
+
+Run it before opening a PR that touches Dockerfiles, dependencies, build config, or env contracts (CI's `Images` workflow builds and boots both images on such PRs as a backstop). The stack binds the same `:3000`/`:4000` as `pnpm dev` — run one mode at a time.
 
 `pnpm install` triggers `lefthook install` via the `prepare` script, which wires the commit-msg and pre-commit git hooks. If you ever lose them (re-init the repo, swap worktrees) re-run `pnpm install` or `pnpm exec lefthook install`.
 
@@ -56,6 +69,9 @@ The hosted Plinth service at plinth.farulivan.com runs against production secret
 | Command | What it does |
 |---|---|
 | `pnpm dev` | Run both apps via Turbo (dashboard + api + watchers). |
+| `pnpm local-prod` / `pnpm local-prod:down` | Boot / tear down the production images against a local stack. |
+| `pnpm seed` | Seed Norven as workspace #0 with a dev user and a sample draft (idempotent). |
+| `pnpm smoke` | Smoke-test a running deployment (liveness, HMAC boundary, magic-link issuance). |
 | `pnpm build` | Production build for every app and package. |
 | `pnpm test` | Vitest unit tests across the workspace. |
 | `pnpm test:integration` | Integration tests against testcontainers Postgres (includes cross-tenant RLS probe). |
