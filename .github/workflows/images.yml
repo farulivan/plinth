@@ -1,0 +1,74 @@
+name: Images
+
+# Prod-parity guard: build the SAME Dockerfiles the Fly deploys ship and boot
+# each image against its health endpoint, so image rot (standalone-output
+# tracing, runtime closure, env contracts) surfaces on the PR that causes it,
+# not at deploy time. Paths-filtered so the always-on fast gate (ci.yml)
+# stays fast; `pnpm local-prod` is the richer local equivalent.
+on:
+  pull_request:
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "turbo.json"
+      - ".github/workflows/images.yml"
+
+concurrency:
+  group: images-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-boot:
+    name: ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: api
+            port: 4000
+            health: /health
+          - app: dashboard
+            port: 3000
+            health: /api/health
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          load: true
+          tags: plinth-${{ matrix.app }}:pr
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+      - name: boot and probe ${{ matrix.health }}
+        run: |
+          # Dummy-but-valid env: the runtime contracts validate shape at boot,
+          # and the db pools are lazy, so the health probe needs no database.
+          # Values are deliberately wordy fakes (secret scanner stays quiet).
+          docker run -d --name app -p ${{ matrix.port }}:${{ matrix.port }} \
+            -e DATABASE_URL=postgres://ci:ci@localhost:5432/ci \
+            -e BETTER_AUTH_URL=http://localhost:3000 \
+            -e BETTER_AUTH_SECRET=ci-dummy-secret-ci-dummy-secret-ci \
+            -e INTERNAL_API_URL=http://localhost:4000 \
+            -e INTERNAL_API_HMAC_SECRET=ci-dummy-secret-ci-dummy-secret-ci \
+            plinth-${{ matrix.app }}:pr
+          for i in $(seq 1 30); do
+            if curl -fsS "http://localhost:${{ matrix.port }}${{ matrix.health }}"; then
+              echo
+              echo "healthy after ~$((i * 2))s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "container never became healthy"
+          exit 1
+      - name: container logs
+        if: failure()
+        run: docker logs app 2>&1 || true
