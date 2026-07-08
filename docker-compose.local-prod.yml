@@ -1,0 +1,61 @@
+# Production-parity local stack (dev/prod parity, the "built" run mode).
+# Builds the SAME Dockerfiles the Fly deploys ship and runs them with
+# NODE_ENV=production and the runtime env contract validated for real — the
+# bugs `pnpm dev` cannot catch (standalone-output tracing, bundle runtime
+# closure, env parsing at boot, prod cookie behavior, container networking)
+# surface here instead of in production.
+#
+# Run via `pnpm local-prod` (scripts/local-prod.sh: build → postgres →
+# migrate + seed from the host → apps → scripts/smoke.sh). Tear down with
+# `pnpm local-prod:down`. The apps publish the same :3000/:4000 as `pnpm dev`,
+# so stop the dev servers first. This file grows with the features: MinIO,
+# Redis, and Inngest join when the media and publish pipelines land.
+
+name: plinth-local-prod
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: plinth
+      POSTGRES_PASSWORD: plinth
+      POSTGRES_DB: plinth
+    ports:
+      # 5434: the dev stack owns 5433 (and host Postgres installs own 5432),
+      # so both stacks can run side by side. Published only so the host can
+      # run the same drizzle-kit migrate path the deploy lane uses.
+      - "5434:5432"
+    volumes:
+      - local-prod-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plinth -d plinth"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file: .env.local-prod
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+    env_file: .env.local-prod
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+volumes:
+  local-prod-postgres-data:
