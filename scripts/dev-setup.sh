@@ -59,7 +59,7 @@ else
 fi
 
 step "seed data"
-node scripts/seed.ts
+pnpm seed
 
 step "done"
 cat <<'EOF'

@@ -14,18 +14,30 @@ importers:
       '@commitlint/config-conventional':
         specifier: ^21.0.2
         version: 21.0.2
+      '@plinth/db':
+        specifier: workspace:*
+        version: link:packages/db
+      '@plinth/template-norven':
+        specifier: workspace:*
+        version: link:packages/template-norven
       '@plinth/typescript-config':
         specifier: workspace:*
         version: link:packages/typescript-config
       '@types/node':
         specifier: ^24.13.2
         version: 24.13.2
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(kysely@0.29.2)(pg@8.21.0)
       lefthook:
         specifier: ^2.1.9
         version: 2.1.9
       prettier:
         specifier: ^3.8.4
         version: 3.8.4
+      tsx:
+        specifier: ^4.22.4
+        version: 4.22.4
       turbo:
         specifier: ^2.9.18
         version: 2.9.18
