@@ -15,7 +15,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "verify": "pnpm run format:check && turbo run lint typecheck test build",
-    "dev": "turbo run dev",
+    "dev": "./scripts/dev-preflight.sh && turbo run dev",
     "db:generate": "pnpm --filter @plinth/db db:generate",
     "db:migrate": "pnpm --filter @plinth/db db:migrate",
     "db:push": "pnpm --filter @plinth/db db:push",

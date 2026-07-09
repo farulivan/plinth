@@ -13,6 +13,13 @@
 
 name: plinth-dev
 
+# No restart policies, deliberately: the stack starts on demand from the
+# `pnpm dev` preflight (scripts/dev-preflight.sh) and stays down otherwise.
+# Resident services would squat default ports (redis 6379, minio 9000/9001)
+# on a multi-project machine every time Docker starts — the same collision
+# class that forced postgres off 5432. Docker-restart amnesia is harmless
+# here: the next `pnpm dev` just starts the services again.
+
 services:
   postgres:
     # Matches Neon's default major. Production floor is ≥16 (README stack table).
