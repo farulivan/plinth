@@ -44,6 +44,7 @@ describe("withSessionWorkspace", () => {
       withSessionWorkspace(
         null as unknown as Db,
         {
+          sessionId: crypto.randomUUID(),
           user: { id: crypto.randomUUID(), email: "a@plinth.test", name: null },
           activeWorkspaceId: null,
         },
