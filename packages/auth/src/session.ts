@@ -23,6 +23,7 @@ export async function getSession({
   if (!result) return null;
 
   return appSession.parse({
+    sessionId: result.session.id,
     user: {
       id: result.user.id,
       email: result.user.email,

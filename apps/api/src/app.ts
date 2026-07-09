@@ -5,6 +5,7 @@ import { Hono } from "hono";
 import { type AppBindings, dbContext } from "./context";
 import { env } from "./lib/env";
 import { internalHmac } from "./middleware/internalHmac";
+import { requireSession } from "./middleware/requireSession";
 import { domainsRoutes } from "./modules/domains/routes";
 import { mediaRoutes } from "./modules/media/routes";
 import { publishRoutes } from "./modules/publish/routes";
@@ -23,14 +24,16 @@ const auth = createAuth({ db, baseURL: env.BETTER_AUTH_URL, secret: env.BETTER_A
  *
  * `/health` is registered before the guard chain so the liveness probe stays
  * public and dependency-free (no HMAC, no session, no db). Every module route
- * then runs behind internalHmac (the dashboard-trust boundary, ADR-0008), then
- * session + db context.
+ * then runs behind internalHmac (the dashboard-trust boundary, ADR-0008), the
+ * session resolver + db context, and requireSession — module routes always
+ * speak to a signed-in user; anonymous surfaces mount outside the chain.
  */
 export const app = new Hono<AppBindings>()
   .get("/health", (c) => c.json({ status: "ok" }))
   .use(internalHmac(env.INTERNAL_API_HMAC_SECRET))
   .use(sessionMiddleware(auth))
   .use(dbContext(db))
+  .use(requireSession())
   .route("/media", mediaRoutes)
   .route("/publish", publishRoutes)
   .route("/domains", domainsRoutes);
