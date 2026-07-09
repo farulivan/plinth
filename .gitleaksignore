@@ -11,3 +11,8 @@
 # credential; the line was reworded to a low-entropy string in a follow-up,
 # but this fingerprint clears the original commit in the PR range.
 466a2fb2a681847e03f2a6043dbda2f2b18aa5f1:packages/internal-rpc/src/sign.test.ts:generic-api-key:4
+
+# Test fixture: the Better Auth test secret in the workspace-guard suite.
+# Not a credential; reworded to a repetitive low-entropy string in a
+# follow-up, but this fingerprint clears the original commit in the PR range.
+42ceb479b341073fbdc09b2af96daa3d7b8f401a:packages/auth/src/workspace.test.ts:generic-api-key:37

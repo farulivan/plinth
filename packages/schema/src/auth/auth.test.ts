@@ -39,14 +39,17 @@ describe("magic-link protocol", () => {
 describe("session contract", () => {
   it("accepts a fresh user with no workspace", () => {
     const s = appSession.parse({
+      sessionId: UUID,
       user: { id: UUID, email: "dev@plinth.local" },
       activeWorkspaceId: null,
     });
     expect(s.activeWorkspaceId).toBeNull();
+    expect(s.sessionId).toBe(UUID);
   });
 
   it("normalizes the nested email too", () => {
     const s = appSession.parse({
+      sessionId: UUID,
       user: { id: UUID, email: "Dev@PLINTH.local" },
       activeWorkspaceId: UUID,
     });

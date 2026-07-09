@@ -18,9 +18,12 @@ export type SessionUser = z.infer<typeof sessionUser>;
  * `packages/auth` — the contract between auth and the rest of the system.
  * `activeWorkspaceId` is the custom session column from ADR-0005; the db
  * layer's GUC bridge (`withWorkspace`) consumes it to scope RLS. Null until
- * the user creates or joins their first workspace.
+ * the user creates or joins their first workspace. `sessionId` identifies the
+ * session row itself so workspace switching updates only the device that
+ * asked (ADR-0005), never the user's other sessions.
  */
 export const appSession = z.object({
+  sessionId: z.uuid(),
   user: sessionUser,
   activeWorkspaceId: z.uuid().nullable(),
 });

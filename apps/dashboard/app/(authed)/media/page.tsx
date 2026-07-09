@@ -9,8 +9,19 @@ export const dynamic = "force-dynamic";
 
 export default async function MediaPage() {
   const res = await api.media.$get();
-  // Module routes speak the shared envelope; this route has no error arm yet,
-  // so `ok` narrows to `true` and `data` is the typed payload.
+  // Guard middleware (requireSession) answers outside the typed route union,
+  // so non-2xx is checked at the transport level; the typed envelope below
+  // covers the route's own arms.
+  if (!res.ok) {
+    return (
+      <main className="mx-auto max-w-2xl p-8">
+        <h1 className="text-2xl font-semibold">Media</h1>
+        <p className="text-muted-foreground mt-4 text-sm">
+          Couldn’t load media (status {res.status}). Sign out and back in, then retry.
+        </p>
+      </main>
+    );
+  }
   const { data: items } = await res.json();
 
   return (
