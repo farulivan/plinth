@@ -1,5 +1,6 @@
+import type { ComponentMap } from "@plinth/renderer";
 import { describeSectionFields, sectionTypeOf, type FieldDescriptor } from "@plinth/schema/content";
-import { norvenDocument, norvenSection } from "@plinth/template-norven";
+import { norvenComponents, norvenDocument, norvenSection } from "@plinth/template-norven";
 import type { z } from "zod";
 
 /**
@@ -23,6 +24,9 @@ export interface TemplateSpec {
   label: string;
   document: z.ZodType;
   sections: SectionSpec[];
+  /** Section React components for SSR rendering — preview now, publish later
+   * (ADR-0007: one renderer for both). */
+  components: ComponentMap;
 }
 
 function humanize(type: string): string {
@@ -45,6 +49,7 @@ export const templates: Record<string, TemplateSpec> = {
     label: "Norven",
     document: norvenDocument,
     sections: norvenSection.options.map(toSectionSpec),
+    components: norvenComponents,
   },
 };
 

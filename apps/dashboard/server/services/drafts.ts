@@ -72,6 +72,34 @@ export async function getEditorData(db: Db, workspaceId: string): Promise<Editor
   });
 }
 
+export interface PreviewData {
+  document: LooseContentDocument;
+  templateId: string;
+}
+
+/** Draft by id for the preview route — null (→ 404) when the id is unknown
+ * OR belongs to another workspace; RLS makes both cases indistinguishable. */
+export async function getDraftForPreview(
+  db: Db,
+  workspaceId: string,
+  draftId: string,
+): Promise<PreviewData | null> {
+  const [workspace] = await db
+    .select({ templateId: workspaces.templateId })
+    .from(workspaces)
+    .where(eq(workspaces.id, workspaceId));
+  if (!workspace) return null;
+
+  const [draft] = await withWorkspace(db, workspaceId, (tx) =>
+    tx
+      .select({ document: contentDrafts.document })
+      .from(contentDrafts)
+      .where(eq(contentDrafts.id, draftId)),
+  );
+  if (!draft) return null;
+  return { document: draft.document, templateId: workspace.templateId };
+}
+
 /** Persist a full draft document (the editor autosaves whole documents —
  * drafts are small and whole-document writes cannot interleave stale field
  * patches). Returns the row's updated timestamp for the save indicator. */
