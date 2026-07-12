@@ -16,7 +16,9 @@ const nextConfig: NextConfig = {
     "@plinth/auth",
     "@plinth/db",
     "@plinth/internal-rpc",
+    "@plinth/renderer",
     "@plinth/schema",
+    "@plinth/template-norven",
     "@plinth/ui",
   ],
 };
