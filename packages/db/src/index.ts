@@ -7,4 +7,5 @@ if (typeof (globalThis as { window?: unknown }).window !== "undefined") {
 }
 
 export * from "./client";
+export * from "./contentHash";
 export * from "./rls";
