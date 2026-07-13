@@ -7,6 +7,7 @@ import { env } from "./lib/env";
 import { internalHmac } from "./middleware/internalHmac";
 import { requireSession } from "./middleware/requireSession";
 import { domainsRoutes } from "./modules/domains/routes";
+import { draftEventsRoutes } from "./modules/draft-events/routes";
 import { mediaRoutes } from "./modules/media/routes";
 import { publishRoutes } from "./modules/publish/routes";
 
@@ -36,6 +37,7 @@ export const app = new Hono<AppBindings>()
   .use(requireSession())
   .route("/media", mediaRoutes)
   .route("/publish", publishRoutes)
-  .route("/domains", domainsRoutes);
+  .route("/domains", domainsRoutes)
+  .route("/draft-events", draftEventsRoutes);
 
 export type AppType = typeof app;

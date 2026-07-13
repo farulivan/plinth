@@ -1,0 +1,17 @@
+# Preview events terminate on the api and reach the browser through a dashboard proxy
+
+[ADR-0007](./0007-preview-architecture.md) fixed the preview loop's transport — SSE, one-way, browser-native reconnect — but left open where the browser's `EventSource` actually connects. The dashboard and the api are different origins, and the api sits behind the internal HMAC seam ([ADR-0008](./0008-repo-and-runtime-topology.md)) that browsers cannot speak. Decision: the event hub lives on the api (`/draft-events/:draftId`, an in-process channel-per-draft pub/sub with the ring buffer ADR-0007 prescribes), and the browser connects to a same-origin dashboard route handler (`/preview/[draftId]/events`) that opens the HMAC-signed upstream stream with the caller's cookie attached and pipes the response body through untouched. Saves publish through the same seam: after a durable draft write, the save action POSTs the document's content hash to the api, best-effort.
+
+## Considered options
+
+- **API-hosted hub behind a dashboard streaming proxy (chosen).** The api stays browser-free: no CORS, no credentialed cross-origin surface, and the Fly service can stay private. Authorization composes from existing parts — the proxy requires a session, and the upstream request re-enters the normal middleware chain (HMAC → session → requireSession) plus an RLS visibility probe on the draft id. Events that originate on the api itself — the publish pipeline's status transitions are next — can join the same hub without new plumbing.
+- **CORS-with-credentials from the browser straight to the api — rejected.** Exposes the api origin publicly and adds a second, browser-facing auth surface to a service designed to accept only signed internal traffic; every future api route would inherit the CORS review burden.
+- **Dashboard-local in-process hub, no api involvement — rejected.** Fewest moving parts, but the internal-rpc seam is one-directional (dashboard→api): events born on the api could never reach a hub living in the dashboard process.
+
+## Consequences
+
+- The hub is in-memory: one api instance sees every publish and every subscriber. **Trade-off accepted:** scaling the api horizontally means moving the hub onto Redis pub/sub — the publish/subscribe/ring-buffer surface is shaped so that swap stays behind one module, and ADR-0007 already anticipates it.
+- The stream sends a ping every 25 s so idle connections survive Fly's edge proxy and buffering intermediaries; on a drop, `EventSource` reconnects with `Last-Event-ID` and the api replays from the per-channel ring buffer (last 20 events).
+- Per-section validation refines ADR-0007's "a draft that fails validation does not render": the preview validates each section independently, rendering finished sections normally and an inline placeholder for unfinished ones, so half-typed content no longer blanks the whole page mid-edit.
+- ADR-0007's `data-prefers-reduced-motion="reduce"` on `<html>` is set after hydration by the preview's client component: the dashboard's root layout owns `<html>`, so the server cannot render the attribute there, and a pre-hydration inline script mutating it trips React's server/client attribute check. Motion runtimes read the guard when they initialize, which is always after it is set; if preview ever gets its own root layout, the attribute moves into server markup.
+- When [ADR-0011](./0011-operational-baseline.md)'s dashboard CSP lands, `/preview/*` needs a `frame-ancestors 'self'` carve-out from the blanket `'none'`.

@@ -1,10 +1,12 @@
 "use server";
 
 import { getSession } from "@plinth/auth";
+import { contentHash } from "@plinth/db";
 import { looseContentDocument } from "@plinth/schema";
 import { err, ok, type Envelope } from "@plinth/schema/api";
 import { headers } from "next/headers";
 import { z } from "zod";
+import { api } from "@/lib/api-client";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
 import { DraftNotFoundError, saveDraftDocument } from "@/server/services/drafts";
@@ -44,6 +46,19 @@ export async function saveDraft(
       id.data,
       parsed.data,
     );
+
+    // Best-effort preview ping (ADR-0007): the write above is already
+    // durable, so a failed notify costs one live reload — never the save.
+    try {
+      const response = await api["draft-events"][":draftId"].$post({
+        param: { draftId: id.data },
+        json: { hash: contentHash(parsed.data) },
+      });
+      if (!response.ok) console.error("[saveDraft] preview notify rejected:", response.status);
+    } catch (error) {
+      console.error("[saveDraft] preview notify failed:", error);
+    }
+
     return ok({ savedAt: savedAt.toISOString() });
   } catch (error) {
     if (error instanceof DraftNotFoundError) {
