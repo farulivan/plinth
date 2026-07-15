@@ -1,8 +1,8 @@
 import { createAuth } from "@plinth/auth";
 import { sessionMiddleware } from "@plinth/auth/middleware/hono";
-import { createDb } from "@plinth/db";
 import { Hono } from "hono";
 import { type AppBindings, dbContext } from "./context";
+import { db } from "./lib/db";
 import { env } from "./lib/env";
 import { internalHmac } from "./middleware/internalHmac";
 import { requireSession } from "./middleware/requireSession";
@@ -11,10 +11,9 @@ import { draftEventsRoutes } from "./modules/draft-events/routes";
 import { mediaRoutes } from "./modules/media/routes";
 import { publishRoutes } from "./modules/publish/routes";
 
-// Shared singletons. createDb builds a lazy pg pool (no connection until the
-// first query); createAuth constructs the Better Auth instance. Neither touches
-// the network at boot, so the app starts without a reachable database.
-const { db } = createDb({ connectionString: env.DATABASE_URL });
+// Shared singletons. The pool lives in lib/db (the Inngest functions share
+// it); createAuth constructs the Better Auth instance. Neither touches the
+// network at boot, so the app starts without a reachable database.
 const auth = createAuth({ db, baseURL: env.BETTER_AUTH_URL, secret: env.BETTER_AUTH_SECRET });
 
 /**
