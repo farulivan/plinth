@@ -31,6 +31,15 @@ BETTER_AUTH_URL=http://localhost:3000
 BETTER_AUTH_SECRET=$(openssl rand -base64 32)
 INTERNAL_API_URL=http://api:4000
 INTERNAL_API_HMAC_SECRET=$(openssl rand -base64 32)
+# Publish pipeline (ADR-0003): the env contract requires these at boot. The
+# local-prod stack has no MinIO/Inngest services yet and the prod api image
+# cannot run the astro builder (ADR-0013) — publish here queues and fails;
+# use \`pnpm dev\` to exercise the full pipeline until the parity work lands.
+INNGEST_DEV=1
+R2_ENDPOINT_URL=http://minio:9000
+R2_ACCESS_KEY_ID=plinth
+R2_SECRET_ACCESS_KEY=plinth-local-dev
+R2_BUCKET_SITES=plinth-sites
 EOF
   echo "created .env.local-prod with generated secrets"
 else
