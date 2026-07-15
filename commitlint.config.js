@@ -23,6 +23,7 @@ export default {
         "auth",
         "internal-rpc",
         "renderer",
+        "site-builder",
         "ui",
         "template-norven",
         "typescript-config",
