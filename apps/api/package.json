@@ -18,6 +18,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.980.0",
     "@hono/node-server": "^2.0.5",
     "@hono/zod-validator": "^0.7.4",
     "@sentry/hono": "^10.59.0",
@@ -25,6 +26,7 @@
     "better-auth": "^1.6.17",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.26",
+    "inngest": "^3.44.0",
     "pg": "^8.21.0",
     "resend": "^6.14.0",
     "zod": "^4.4.3"
@@ -35,6 +37,7 @@
     "@plinth/eslint-config": "workspace:*",
     "@plinth/internal-rpc": "workspace:*",
     "@plinth/schema": "workspace:*",
+    "@plinth/template-norven": "workspace:*",
     "@plinth/typescript-config": "workspace:*",
     "@types/node": "^24.13.2",
     "eslint": "^9.39.1",
