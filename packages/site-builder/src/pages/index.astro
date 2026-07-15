@@ -1,0 +1,38 @@
+---
+/**
+ * The one page of every tenant site (single-page templates for v1): render
+ * the snapshot through the same Document/component pair the preview uses
+ * (ADR-0003/0007 — one renderer, two surfaces). Throwing here fails the
+ * astro build, which the publish job reports as a failed version — an
+ * invalid snapshot must never publish silently.
+ */
+import { readFileSync } from "node:fs";
+import { Document, type ComponentMap } from "@plinth/renderer";
+import { looseContentDocument } from "@plinth/schema";
+import { norvenComponents } from "@plinth/template-norven";
+
+const templates: Record<string, ComponentMap> = {
+  "template-norven": norvenComponents,
+};
+
+const snapshotPath = process.env.SNAPSHOT_PATH;
+if (!snapshotPath) throw new Error("SNAPSHOT_PATH is required (ADR-0013).");
+const templateId = process.env.TEMPLATE_ID ?? "template-norven";
+const components = templates[templateId];
+if (!components) throw new Error(`Template "${templateId}" is not registered in site-builder.`);
+
+const document = looseContentDocument.parse(JSON.parse(readFileSync(snapshotPath, "utf8")));
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{process.env.SITE_TITLE ?? "Site"}</title>
+  </head>
+  <body>
+    <Document document={document} components={components} />
+  </body>
+</html>

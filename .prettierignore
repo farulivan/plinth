@@ -10,5 +10,9 @@ pnpm-lock.yaml
 # TOML has no Prettier parser without a plugin (fly.toml, etc.)
 *.toml
 
+# Astro has no Prettier parser without prettier-plugin-astro; the one .astro
+# page is hand-formatted (packages/site-builder).
+*.astro
+
 # Prose docs are hand-authored — don't let Prettier reflow tables/prose.
 *.md
