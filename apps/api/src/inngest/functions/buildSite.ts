@@ -1,9 +1,11 @@
+import { NonRetriableError } from "inngest";
 import { db } from "../../lib/db";
 import {
   buildVersion,
   markVersionBuilding,
   markVersionFailed,
   promoteVersion,
+  UnbuildableVersionError,
   uploadVersion,
 } from "../../modules/publish/service";
 import { inngest } from "../client";
@@ -22,7 +24,8 @@ import { inngest } from "../client";
 export const buildSite = inngest.createFunction(
   {
     id: "build-site",
-    retries: 3,
+    // ADR-0003: 3 attempts total (first run + 2 retries), exponential backoff.
+    retries: 2,
     concurrency: { key: "event.data.workspaceId", limit: 1 },
     onFailure: async ({ event }) => {
       const { workspaceId, versionId } = event.data.event.data;
@@ -35,9 +38,16 @@ export const buildSite = inngest.createFunction(
 
     await step.run("mark-building", () => markVersionBuilding(db, workspaceId, versionId));
 
-    const { outDir } = await step.run("astro-build", () =>
-      buildVersion(db, { workspaceId, versionId }),
-    );
+    const { outDir } = await step.run("astro-build", async () => {
+      try {
+        return await buildVersion(db, { workspaceId, versionId });
+      } catch (error) {
+        if (error instanceof UnbuildableVersionError) {
+          throw new NonRetriableError(error.message, { cause: error });
+        }
+        throw error;
+      }
+    });
 
     const { files } = await step.run("upload-to-r2", () =>
       uploadVersion({ workspaceId, versionNumber, outDir }),

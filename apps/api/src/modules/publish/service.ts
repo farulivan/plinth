@@ -175,6 +175,15 @@ export async function retryPublish(
 
 // --- build side (called from the Inngest function, ADR-0003) ---
 
+/** A version that can never build (workspace or snapshot gone) — retrying is
+ * pointless, so the job converts this to a non-retriable failure. */
+export class UnbuildableVersionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnbuildableVersionError";
+  }
+}
+
 export async function markVersionBuilding(db: Db, workspaceId: string, versionId: string) {
   await setVersionStatus(db, workspaceId, versionId, "building");
 }
@@ -193,8 +202,12 @@ export async function buildVersion(
     getWorkspaceMeta(db, input.workspaceId),
     getVersionSnapshot(db, input.workspaceId, input.versionId),
   ]);
-  if (!meta) throw new Error(`Workspace ${input.workspaceId} no longer exists.`);
-  if (!snapshot) throw new Error(`Version ${input.versionId} has no snapshot in this workspace.`);
+  if (!meta) throw new UnbuildableVersionError(`Workspace ${input.workspaceId} no longer exists.`);
+  if (!snapshot) {
+    throw new UnbuildableVersionError(
+      `Version ${input.versionId} has no snapshot in this workspace.`,
+    );
+  }
   return runSiteBuild({ versionId: input.versionId, templateId: meta.templateId, snapshot });
 }
 
