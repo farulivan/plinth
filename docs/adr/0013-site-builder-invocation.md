@@ -1,0 +1,17 @@
+# Site builder: a workspace Astro package invoked out of process with a file-passed snapshot
+
+[ADR-0003](./0003-publish-pipeline.md) fixed the build engine (Astro, reusing `packages/renderer`) but not the invocation shape. Decision: the builder is a workspace package, `packages/site-builder` — a minimal Astro project whose one page renders `@plinth/renderer`'s `Document` with the template's components. The Inngest build step writes the version snapshot to a per-version temp directory, then runs `pnpm --filter @plinth/site-builder run build:site` with three env vars: `SNAPSHOT_PATH` (the JSON file), `TEMPLATE_ID` (selects the component map), and `OUT_DIR` (astro's output target inside the same temp directory). The step uploads `OUT_DIR` to R2 and the temp paths never collide across concurrent builds.
+
+## Considered options
+
+- **Out-of-process `astro build` via pnpm filter, snapshot as a file (chosen).** Astro's CLI is its supported entry point; a child process gives the 60-second budget a real kill switch (hard timeout on the process, not a hung await), crashes stay in the child, and vite's module graph memory is reclaimed per build instead of accreting in the api process. File-passed input keeps the builder a pure function of its env — trivially testable by hand (`SNAPSHOT_PATH=… pnpm --filter @plinth/site-builder run build:site`).
+- **In-process Astro JS API — rejected.** Not a stable embedding surface; a build crash or leak would take the api (and every open SSE stream) with it.
+- **`renderToStaticMarkup` + a hand-written HTML shell, no Astro — rejected.** Fewer moving parts today, but it re-answers questions Astro has already answered (asset hashing, CSS extraction, image handling) exactly when the Norven content port starts needing them; ADR-0003 chose Astro for that reason.
+- **A separate builder service/machine — deferred, not rejected.** The right shape at scale (builds can't contend with api latency), but it adds a deploy unit and a work-dispatch protocol the MVP doesn't need. The out-of-process seam here is the boundary a future extraction would cut along.
+
+## Consequences
+
+- The `build:site` script is deliberately NOT named `build`, so `turbo run build` (verify, CI) never invokes astro — the builder only runs with a snapshot to build.
+- **Trade-off accepted: the production api image cannot run builds yet.** It ships only the tsup bundle; `pnpm --filter` needs the workspace source and the builder's node_modules. The go-live branch closes this by adding the pruned site-builder workspace to the api image (or extracting the builder per the deferred option). Until then the pipeline is exercised in `pnpm dev` and the local-prod stack's publish path reports a failed build honestly.
+- The builder renders with React only (`@astrojs/react`); no client scripts are emitted for the stub sections. When the Norven port introduces styles, fonts, and motion, they enter through this package's astro config without touching the pipeline.
+- Each build gets a fresh temp workdir keyed by version id; the OS owns cleanup of `tmpdir()`, and failed builds leave their workdir behind for inspection.

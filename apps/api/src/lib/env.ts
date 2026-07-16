@@ -6,6 +6,13 @@ import { z } from "zod";
  * once at boot; a missing or malformed var fails fast here. Import { env }
  * downstream instead of touching process.env.
  */
+/** dotenv turns `KEY=` into an empty string; treat that as unset so optional
+ * vars don't fail their shape check. */
+const optionalEnv = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z.string().min(1).optional(),
+);
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(4000),
@@ -16,6 +23,18 @@ const envSchema = z.object({
   // signs with the same value. ≥32 chars enforced — dev-setup.sh generates one
   // via `openssl rand -base64 32`.
   INTERNAL_API_HMAC_SECRET: z.string().min(32),
+  // Inngest (ADR-0003). Local: INNGEST_DEV=1 targets the compose dev server and
+  // needs no keys. Production: unset INNGEST_DEV, set both keys via Fly secrets
+  // (the SDK reads INNGEST_SIGNING_KEY from process.env for endpoint auth).
+  INNGEST_DEV: optionalEnv,
+  INNGEST_EVENT_KEY: optionalEnv,
+  INNGEST_SIGNING_KEY: optionalEnv,
+  // R2 / S3-compatible storage for published sites (ADR-0003). Local: the
+  // compose MinIO. Production: the R2 account endpoint + scoped API tokens.
+  R2_ENDPOINT_URL: z.url(),
+  R2_ACCESS_KEY_ID: z.string().min(1),
+  R2_SECRET_ACCESS_KEY: z.string().min(1),
+  R2_BUCKET_SITES: z.string().min(1),
   // SENTRY_DSN_API is read raw in instrument.ts (preloads before this contract).
 });
 
