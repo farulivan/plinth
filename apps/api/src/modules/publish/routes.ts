@@ -39,15 +39,19 @@ export const publishRoutes = new Hono<AppBindings>()
           err("internal", `Template "${result.templateId}" is not registered on the api.`),
           { status: ERROR_STATUS.internal },
         );
-      case "invalid-draft":
+      case "invalid-draft": {
+        // Name the offenders in the message itself — the bar shows one line,
+        // and "something is invalid" without a pointer is undebuggable.
+        const fields = Object.keys(result.fieldErrors).slice(0, 5).join(", ");
         return c.json(
           err(
             "validation_failed",
-            "The draft has empty or invalid sections — fix them in the editor, then publish.",
+            `Not ready to publish — fix in the editor: ${fields}. (A section you can't finish yet can be toggled off.)`,
             result.fieldErrors,
           ),
           { status: ERROR_STATUS.validation_failed },
         );
+      }
     }
   })
   .get("/status", async (c) => {

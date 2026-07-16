@@ -1,8 +1,10 @@
 import { contentHash, type Db } from "@plinth/db";
+import type { LooseContentDocument } from "@plinth/schema";
 import type { FieldErrors, VersionSummary } from "@plinth/schema/api";
+import { sectionTypeOf } from "@plinth/schema/content";
 // The /manifest subpath is schemas only — the api validates documents but
 // never renders, so the components (.tsx, React) stay out of its graph.
-import { norvenDocument } from "@plinth/template-norven/manifest";
+import { norvenSection } from "@plinth/template-norven/manifest";
 import type { z } from "zod";
 import { enqueuePublish, runSiteBuild, uploadSiteDir } from "./adapter";
 import {
@@ -31,11 +33,49 @@ import {
  */
 
 /** The api-side template registry: publish must not trust the dashboard's
- * validation (signed ≠ correct), so the strict document schema lives on both
+ * validation (signed ≠ correct), so the strict section schemas live on both
  * sides. One entry per template package, same as the dashboard's registry. */
-const templateDocuments: Record<string, z.ZodType> = {
-  "template-norven": norvenDocument,
+const templateSections: Record<string, Record<string, z.ZodType>> = {
+  "template-norven": Object.fromEntries(
+    norvenSection.options.map((section) => [sectionTypeOf(section), section]),
+  ),
 };
+
+/**
+ * The publish gate (ADR-0007's strict counterpart to loose saves), applied
+ * per ENABLED section: a disabled section renders nothing, so a half-typed
+ * one must not block the publish — it stays in the snapshot, skipped by the
+ * renderer, resumable later. This is also the escape hatch while the editor
+ * cannot delete sections: toggling one off is how you park it.
+ *
+ * Field errors are keyed "<sectionType>.<fieldPath>" (not array indexes) so
+ * the message names what the user sees in the editor.
+ */
+function validateForPublish(
+  sectionSchemas: Record<string, z.ZodType>,
+  draft: LooseContentDocument,
+): FieldErrors | null {
+  const errors: FieldErrors = {};
+  const enabled = draft.sections.filter((section) => section.enabled);
+  if (enabled.length === 0) {
+    return { document: ["Enable at least one section before publishing."] };
+  }
+  for (const section of enabled) {
+    const schema = sectionSchemas[section.type];
+    if (!schema) {
+      errors[section.type] = ["This section is not part of the template."];
+      continue;
+    }
+    const parsed = schema.safeParse(section);
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) {
+        const path = [section.type, ...issue.path.filter((part) => part !== "fields")].join(".");
+        (errors[path] ??= []).push(issue.message);
+      }
+    }
+  }
+  return Object.keys(errors).length > 0 ? errors : null;
+}
 
 export type PublishRequestResult =
   | { outcome: "created" | "reused"; version: VersionSummary }
@@ -58,30 +98,20 @@ function toSummary(row: VersionRow): VersionSummary {
   };
 }
 
-function toFieldErrors(error: z.ZodError): FieldErrors {
-  const fieldErrors: FieldErrors = {};
-  for (const issue of error.issues) {
-    const path = issue.path.join(".") || "document";
-    (fieldErrors[path] ??= []).push(issue.message);
-  }
-  return fieldErrors;
-}
-
 export async function requestPublish(
   db: Db,
   input: { workspaceId: string; userId: string },
 ): Promise<PublishRequestResult> {
   const meta = await getWorkspaceMeta(db, input.workspaceId);
   if (!meta) return { outcome: "no-draft" };
-  const schema = templateDocuments[meta.templateId];
-  if (!schema) return { outcome: "unknown-template", templateId: meta.templateId };
+  const sectionSchemas = templateSections[meta.templateId];
+  if (!sectionSchemas) return { outcome: "unknown-template", templateId: meta.templateId };
 
   const draft = await getDraftDocument(db, input.workspaceId);
   if (!draft) return { outcome: "no-draft" };
 
-  const strict = schema.safeParse(draft);
-  if (!strict.success)
-    return { outcome: "invalid-draft", fieldErrors: toFieldErrors(strict.error) };
+  const fieldErrors = validateForPublish(sectionSchemas, draft);
+  if (fieldErrors) return { outcome: "invalid-draft", fieldErrors };
 
   // Hash the stored draft document (not the strict parse output) so this key
   // equals the preview's hash for the same content.

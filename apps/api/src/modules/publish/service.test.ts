@@ -55,7 +55,7 @@ beforeEach(() => {
 });
 
 describe("requestPublish", () => {
-  it("rejects a draft that fails the strict template schema, with field paths", async () => {
+  it("rejects an enabled section that fails the strict schema, keyed by type.field", async () => {
     vi.mocked(dbFns.getDraftDocument).mockResolvedValue({
       schemaVersion: 1,
       sections: [{ type: "intro", enabled: true, fields: { heading: "", body: "x" } }],
@@ -65,8 +65,39 @@ describe("requestPublish", () => {
 
     expect(result.outcome).toBe("invalid-draft");
     if (result.outcome !== "invalid-draft") return;
-    expect(Object.keys(result.fieldErrors)).toContain("sections.0.fields.heading");
+    expect(Object.keys(result.fieldErrors)).toContain("intro.heading");
     expect(dbFns.createVersion).not.toHaveBeenCalled();
+  });
+
+  it("ignores disabled sections — a half-finished hidden section cannot block publish", async () => {
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue({
+      schemaVersion: 1,
+      sections: [
+        { type: "hero", enabled: false, fields: { title: "" } }, // no photo, unfinishable
+        ...validDraft.sections,
+      ],
+    } as LooseContentDocument);
+    vi.mocked(dbFns.findVersionByIdempotencyKey).mockResolvedValue(null);
+    vi.mocked(dbFns.createVersion).mockResolvedValue(versionRow("queued"));
+
+    const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
+
+    expect(result.outcome).toBe("created");
+  });
+
+  it("refuses a document with no enabled sections", async () => {
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue({
+      schemaVersion: 1,
+      sections: [{ type: "intro", enabled: false, fields: { heading: "x", body: "y" } }],
+    } as LooseContentDocument);
+
+    const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
+
+    expect(result.outcome).toBe("invalid-draft");
+    if (result.outcome !== "invalid-draft") return;
+    expect(result.fieldErrors["document"]).toEqual([
+      "Enable at least one section before publishing.",
+    ]);
   });
 
   it("reuses the existing version when the content hash matches (idempotency)", async () => {
