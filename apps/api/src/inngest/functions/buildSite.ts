@@ -55,6 +55,14 @@ export const buildSite = inngest.createFunction(
 
     await step.run("promote", () => promoteVersion(db, workspaceId, versionId));
 
+    // The edge learns about the new version from this event (ADR-0004,
+    // trigger point deviating from its Postgres-trigger wording — the emit
+    // lives here, next to the pointer swap it mirrors).
+    await step.sendEvent("emit-promoted", {
+      name: "site/version.promoted",
+      data: { workspaceId, versionId, versionNumber },
+    });
+
     return { versionId, versionNumber, files };
   },
 );

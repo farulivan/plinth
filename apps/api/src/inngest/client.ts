@@ -15,6 +15,11 @@ type Events = {
   "site/publish.requested": {
     data: { workspaceId: string; versionId: string; versionNumber: number };
   };
+  /** Emitted by the build function after the pointer swap; the KV-sync
+   * function pushes the mapping to the edge (ADR-0004). */
+  "site/version.promoted": {
+    data: { workspaceId: string; versionId: string; versionNumber: number };
+  };
 };
 
 export const inngest = new Inngest({
