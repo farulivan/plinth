@@ -1,11 +1,25 @@
-import { createHmac } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 
 /** Header carrying the request timestamp (ms epoch) of the HMAC envelope. */
 export const TIMESTAMP_HEADER = "x-plinth-timestamp";
 /** Header carrying the hex HMAC-SHA256 signature. */
 export const SIGNATURE_HEADER = "x-plinth-signature";
+/** Header carrying sha256(body) for binary payloads (ADR-0006 uploads): the
+ * signature's body slot holds this digest instead of the raw bytes, so
+ * multipart bodies never round-trip through text decoding. The verifier
+ * recomputes the digest from the raw bytes and rejects a mismatch — the body
+ * stays tamper-proof, one hash removed. */
+export const BODY_HASH_HEADER = "x-plinth-body-sha256";
 /** Replay window: a signed request is only valid for ±5 min. */
 export const MAX_SKEW_MS = 5 * 60 * 1000;
+
+/** sha256 hex of a binary body — what BODY_HASH_HEADER carries and what the
+ * canonical string's body slot holds for binary-signed requests. */
+export function hashBody(body: Uint8Array | ArrayBuffer): string {
+  return createHash("sha256")
+    .update(body instanceof ArrayBuffer ? new Uint8Array(body) : body)
+    .digest("hex");
+}
 
 /**
  * The dashboard→api HMAC envelope (ADR-0008): canonical string → hex
