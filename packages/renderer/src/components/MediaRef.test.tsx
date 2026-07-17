@@ -2,24 +2,49 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { MediaRef } from "./MediaRef";
 
+const HASH = "a".repeat(64);
+
+const media = (width: number, height: number) => ({
+  mediaId: "11111111-1111-1111-1111-111111111111",
+  alt: "Salt House facade",
+  contentHash: HASH,
+  width,
+  height,
+});
+
 describe("MediaRef", () => {
-  it("renders an img with the resolved src and the field's alt", () => {
-    const html = renderToStaticMarkup(
-      <MediaRef
-        media={{ mediaId: "11111111-1111-1111-1111-111111111111", alt: "Salt House facade" }}
-      />,
+  it("renders a picture with avif/webp sources and a jpeg fallback carrying alt + dimensions", () => {
+    const html = renderToStaticMarkup(<MediaRef media={media(1600, 1200)} loading="lazy" />);
+
+    expect(html).toContain('<source type="image/avif"');
+    expect(html).toContain('<source type="image/webp"');
+    expect(html).toContain(`src="/_media/${HASH}/w1600.jpeg"`);
+    expect(html).toContain(
+      `srcSet="/_media/${HASH}/w400.avif 400w, /_media/${HASH}/w800.avif 800w, /_media/${HASH}/w1200.avif 1200w, /_media/${HASH}/w1600.avif 1600w"`,
     );
-    expect(html).toMatchInlineSnapshot(
-      `"<link rel="preload" as="image" href="/media/11111111-1111-1111-1111-111111111111"/><img src="/media/11111111-1111-1111-1111-111111111111" alt="Salt House facade"/>"`,
-    );
+    expect(html).toContain('alt="Salt House facade"');
+    expect(html).toContain('width="1600" height="1200"');
   });
 
-  it("forwards extra img attributes but not src/alt", () => {
-    const html = renderToStaticMarkup(
-      <MediaRef media={{ mediaId: "abc", alt: "x" }} className="rounded" loading="lazy" />,
-    );
-    expect(html).toMatchInlineSnapshot(
-      `"<img src="/media/abc" alt="x" class="rounded" loading="lazy"/>"`,
-    );
+  it("lists only the widths that exist — never an upscale", () => {
+    const html = renderToStaticMarkup(<MediaRef media={media(1000, 750)} />);
+
+    expect(html).toContain(`src="/_media/${HASH}/w800.jpeg"`);
+    expect(html).not.toContain("w1200");
+    expect(html).not.toContain("w1600");
+  });
+
+  it("keeps one variant for originals smaller than the smallest width", () => {
+    const html = renderToStaticMarkup(<MediaRef media={media(300, 200)} />);
+
+    expect(html).toContain(`src="/_media/${HASH}/w400.jpeg"`);
+    expect(html).not.toContain("w800");
+  });
+
+  it("forwards extra img attributes but never src/alt/srcSet", () => {
+    const html = renderToStaticMarkup(<MediaRef media={media(400, 300)} className="rounded" />);
+
+    expect(html).toContain('class="rounded"');
+    expect(html).toContain('alt="Salt House facade"');
   });
 });

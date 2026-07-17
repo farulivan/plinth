@@ -7,9 +7,18 @@ import { z } from "zod";
  * "Coastal house at dusk" in a hero and "Salt House — west facade" in a
  * gallery caption. The required pairing is the schema-enforced a11y floor
  * (ADR-0001) — a publish cannot pass validation with a missing alt.
+ *
+ * contentHash/width/height are copied from the media row at pick time
+ * (ADR-0014): variants are content-addressed and immutable, so freezing them
+ * into the field makes every snapshot self-renderable — the builder and the
+ * preview derive `/_media/{contentHash}/w{width}.{format}` URLs without a
+ * media-table read, and width/height reserve layout space against CLS.
  */
 export const mediaRef = z.object({
   mediaId: z.uuid(),
   alt: z.string().trim().min(1).max(300),
+  contentHash: z.string().regex(/^[0-9a-f]{64}$/),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
 });
 export type MediaRef = z.infer<typeof mediaRef>;
