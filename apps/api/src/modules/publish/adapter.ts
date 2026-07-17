@@ -3,10 +3,11 @@ import { mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { promisify } from "node:util";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import type { LooseContentDocument } from "@plinth/schema";
 import { inngest } from "../../inngest/client";
 import { env } from "../../lib/env";
+import { s3 } from "../../lib/s3";
 import { contentTypeFor } from "./contentTypes";
 
 /**
@@ -19,18 +20,6 @@ const execFileAsync = promisify(execFile);
 /** Astro's budget is 60 s (ADR-0003); the hard kill leaves headroom for cold
  * vite caches before Inngest's retry takes over. */
 const BUILD_TIMEOUT_MS = 180_000;
-
-// region "auto" + path-style: R2 ignores region, and MinIO (the local stand-in)
-// requires path-style addressing.
-const s3 = new S3Client({
-  region: "auto",
-  endpoint: env.R2_ENDPOINT_URL,
-  credentials: {
-    accessKeyId: env.R2_ACCESS_KEY_ID,
-    secretAccessKey: env.R2_SECRET_ACCESS_KEY,
-  },
-  forcePathStyle: true,
-});
 
 export async function enqueuePublish(input: {
   workspaceId: string;
