@@ -26,6 +26,7 @@ const R2_ENDPOINT_URL = process.env.R2_ENDPOINT_URL ?? "http://localhost:9000";
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID ?? "plinth";
 const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY ?? "plinth-local-dev";
 const BUCKET = process.env.R2_BUCKET_SITES ?? "plinth-sites";
+const MEDIA_BUCKET = process.env.R2_BUCKET_MEDIA ?? "plinth-media";
 const HOST_SUFFIX = process.env.TENANT_HOST_SUFFIX ?? ".localhost";
 const WORKER_DIR = join(import.meta.dirname, "../apps/worker-router");
 
@@ -38,6 +39,29 @@ const s3 = new S3Client({
 
 async function wrangler(args: string[]): Promise<void> {
   await execFileAsync("pnpm", ["exec", "wrangler", ...args], { cwd: WORKER_DIR });
+}
+
+/** Copy every object under an S3 prefix into wrangler's local R2 simulation. */
+async function syncPrefix(bucket: string, prefix: string, tmp: string): Promise<number> {
+  const listed = await s3.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix }));
+  const keys = (listed.Contents ?? []).flatMap((entry) => (entry.Key ? [entry.Key] : []));
+  for (const key of keys) {
+    const object = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+    const file = join(tmp, key.split("/").join("__"));
+    await writeFile(file, await object.Body!.transformToByteArray());
+    await wrangler([
+      "r2",
+      "object",
+      "put",
+      `${bucket}/${key}`,
+      "--file",
+      file,
+      "--content-type",
+      object.ContentType ?? "application/octet-stream",
+      "--local",
+    ]);
+  }
+  return keys.length;
 }
 
 async function main() {
@@ -81,28 +105,15 @@ async function main() {
       "--local",
     ]);
 
-    const prefix = `tenants/${workspace.id}/v${version.versionNumber}/`;
-    const listed = await s3.send(new ListObjectsV2Command({ Bucket: BUCKET, Prefix: prefix }));
-    const keys = (listed.Contents ?? []).flatMap((entry) => (entry.Key ? [entry.Key] : []));
-    for (const key of keys) {
-      const object = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
-      const file = join(tmp, key.split("/").join("__"));
-      await writeFile(file, await object.Body!.transformToByteArray());
-      await wrangler([
-        "r2",
-        "object",
-        "put",
-        `${BUCKET}/${key}`,
-        "--file",
-        file,
-        "--content-type",
-        object.ContentType ?? "application/octet-stream",
-        "--local",
-      ]);
-    }
+    const siteCount = await syncPrefix(
+      BUCKET,
+      `tenants/${workspace.id}/v${version.versionNumber}/`,
+      tmp,
+    );
+    const mediaCount = await syncPrefix(MEDIA_BUCKET, `tenants/${workspace.id}/`, tmp);
 
     console.log(
-      `- ${hostname} → v${version.versionNumber} (${keys.length} objects) — http://${hostname}:8787/`,
+      `- ${hostname} → v${version.versionNumber} (${siteCount} site + ${mediaCount} media objects) — http://${hostname}:8787/`,
     );
   }
 

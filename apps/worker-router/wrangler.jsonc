@@ -25,5 +25,9 @@
       "binding": "SITES",
       "bucket_name": "plinth-sites",
     },
+    {
+      "binding": "MEDIA",
+      "bucket_name": "plinth-media",
+    },
   ],
 }
