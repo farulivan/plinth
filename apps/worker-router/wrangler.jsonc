@@ -1,0 +1,29 @@
+/**
+ * The tenant edge router (ADR-0003/0004): Host → KV mapping → per-version R2
+ * path. `wrangler dev` simulates both bindings locally (.wrangler/state);
+ * `pnpm worker:sync` seeds them from Postgres + MinIO after a publish.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "plinth-worker-router",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-16",
+  "observability": {
+    "enabled": true,
+  },
+  "upload_source_maps": true,
+  "kv_namespaces": [
+    {
+      "binding": "TENANT_HOSTS",
+      // Placeholder — the real namespace id lands with go-live (the local
+      // simulator ignores the value).
+      "id": "00000000000000000000000000000000",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "SITES",
+      "bucket_name": "plinth-sites",
+    },
+  ],
+}

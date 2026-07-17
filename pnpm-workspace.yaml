@@ -16,6 +16,8 @@ packages:
 #     native libvips bindings — must build, we use it on both counts.
 #   @sentry/cli (via @sentry/nextjs): downloads the sentry-cli binary used to
 #     upload source maps at build time (CI/prod) — allow the build.
+#   workerd (via wrangler + vitest-pool-workers): installs the Workers runtime
+#     binary — wrangler dev and the worker-router tests need it.
 allowBuilds:
   "@sentry/cli": true
   cpu-features: false
@@ -25,6 +27,7 @@ allowBuilds:
   sharp: true
   ssh2: false
   unrs-resolver: true
+  workerd: true
 
 # This project deliberately tracks latest-stable releases (see the version policy
 # in README.md), so we opt out of pnpm's new-release age gating — otherwise fresh

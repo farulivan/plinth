@@ -17,6 +17,7 @@ export default {
         // apps
         "dashboard",
         "api",
+        "worker-router",
         // packages
         "schema",
         "db",

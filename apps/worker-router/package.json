@@ -1,0 +1,22 @@
+{
+  "name": "@plinth/worker-router",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "test": "vitest run --passWithNoTests",
+    "cf-typegen": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.12.4",
+    "@plinth/eslint-config": "workspace:*",
+    "@types/node": "^26.1.1",
+    "eslint": "^9.39.1",
+    "typescript": "^6.0.3",
+    "vitest": "~3.2.0",
+    "wrangler": "^4.111.0"
+  }
+}

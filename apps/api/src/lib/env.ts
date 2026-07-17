@@ -35,6 +35,14 @@ const envSchema = z.object({
   R2_ACCESS_KEY_ID: z.string().min(1),
   R2_SECRET_ACCESS_KEY: z.string().min(1),
   R2_BUCKET_SITES: z.string().min(1),
+  // Tenant hostname suffix appended to the workspace slug (ADR-0004):
+  // ".farulivan.com" in production, ".localhost" against wrangler dev.
+  TENANT_HOST_SUFFIX: z.string().min(1).default(".localhost"),
+  // Cloudflare KV sync credentials — production only; absent locally, where
+  // `pnpm worker:sync` seeds the simulated KV instead.
+  CLOUDFLARE_API_TOKEN: optionalEnv,
+  CLOUDFLARE_ACCOUNT_ID: optionalEnv,
+  CLOUDFLARE_KV_NAMESPACE_ID: optionalEnv,
   // SENTRY_DSN_API is read raw in instrument.ts (preloads before this contract).
 });
 
