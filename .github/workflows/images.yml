@@ -62,6 +62,7 @@ jobs:
             -e R2_ACCESS_KEY_ID=ci-dummy \
             -e R2_SECRET_ACCESS_KEY=ci-dummy-secret-ci-dummy-secret-ci \
             -e R2_BUCKET_SITES=ci-dummy-bucket \
+            -e R2_BUCKET_MEDIA=ci-dummy-bucket \
             plinth-${{ matrix.app }}:pr
           for i in $(seq 1 30); do
             if curl -fsS "http://localhost:${{ matrix.port }}${{ matrix.health }}"; then
