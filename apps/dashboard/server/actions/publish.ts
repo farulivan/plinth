@@ -44,3 +44,30 @@ export async function retryBuild(
     return err("internal", "Could not reach the publish service — try again.");
   }
 }
+
+export async function getVersionHistory(): Promise<
+  Envelope<{ currentVersionId: string | null; versions: VersionSummary[] }>
+> {
+  try {
+    const response = await api.publish.versions.$get();
+    return (await response.json()) as Envelope<{
+      currentVersionId: string | null;
+      versions: VersionSummary[];
+    }>;
+  } catch (error) {
+    console.error("[getVersionHistory] transport failure:", error);
+    return err("internal", "Could not reach the publish service.");
+  }
+}
+
+export async function rollbackTo(
+  versionId: string,
+): Promise<Envelope<{ version: VersionSummary }>> {
+  try {
+    const response = await api.publish.rollback.$post({ json: { versionId } });
+    return (await response.json()) as Envelope<{ version: VersionSummary }>;
+  } catch (error) {
+    console.error("[rollbackTo] transport failure:", error);
+    return err("internal", "Could not reach the publish service — try again.");
+  }
+}

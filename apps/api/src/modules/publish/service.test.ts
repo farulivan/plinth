@@ -3,12 +3,13 @@ import type { LooseContentDocument } from "@plinth/schema";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as adapter from "./adapter";
 import * as dbFns from "./db";
-import { requestPublish, retryPublish } from "./service";
+import { requestPublish, retryPublish, rollbackToVersion } from "./service";
 
 // Factory mocks (not automock) so the real modules never evaluate — adapter
 // constructs an S3 client from the env contract at import time.
 vi.mock("./adapter", () => ({
   enqueuePublish: vi.fn(),
+  emitPromoted: vi.fn(),
   runSiteBuild: vi.fn(),
   uploadSiteDir: vi.fn(),
 }));
@@ -19,6 +20,7 @@ vi.mock("./db", () => ({
   getVersion: vi.fn(),
   getVersionSnapshot: vi.fn(),
   latestVersion: vi.fn(),
+  listVersions: vi.fn(),
   createVersion: vi.fn(),
   setVersionStatus: vi.fn(),
   promoteWorkspaceVersion: vi.fn(),
@@ -147,6 +149,31 @@ describe("requestPublish", () => {
       "inngest unreachable",
     );
     expect(dbFns.setVersionStatus).toHaveBeenCalledWith(db, WORKSPACE, VERSION, "failed");
+  });
+});
+
+describe("rollbackToVersion", () => {
+  it("refuses versions that never built — their artifacts don't exist", async () => {
+    vi.mocked(dbFns.getVersion).mockResolvedValue(versionRow("failed"));
+
+    const result = await rollbackToVersion(db, { workspaceId: WORKSPACE, versionId: VERSION });
+
+    expect(result).toEqual({ outcome: "not-built", status: "failed" });
+    expect(dbFns.promoteWorkspaceVersion).not.toHaveBeenCalled();
+  });
+
+  it("repoints the live version and announces it for KV sync", async () => {
+    vi.mocked(dbFns.getVersion).mockResolvedValue(versionRow("built"));
+
+    const result = await rollbackToVersion(db, { workspaceId: WORKSPACE, versionId: VERSION });
+
+    expect(result.outcome).toBe("rolled-back");
+    expect(dbFns.promoteWorkspaceVersion).toHaveBeenCalledWith(db, WORKSPACE, VERSION);
+    expect(adapter.emitPromoted).toHaveBeenCalledWith({
+      workspaceId: WORKSPACE,
+      versionId: VERSION,
+      versionNumber: 4,
+    });
   });
 });
 

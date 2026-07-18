@@ -46,12 +46,21 @@ describe("describeSectionFields", () => {
     });
   });
 
-  it("marks repeatable groups as arrays", () => {
+  it("marks repeatable groups as arrays and describes their row shape", () => {
     expect(describeSectionFields(projectsLike).at(-1)).toEqual({
       kind: "array",
       name: "items",
       optional: false,
+      item: [
+        { kind: "shortText", name: "title", optional: false, maxLength: 200 },
+        { kind: "media", name: "image", optional: false },
+      ],
     });
+  });
+
+  it("refuses primitive arrays — rows must be objects", () => {
+    const rogue = defineSection("rogue", z.object({ tags: z.array(shortText) }));
+    expect(() => describeSectionFields(rogue)).toThrow(/must hold objects/);
   });
 
   it("fails loudly on a primitive it does not know", () => {

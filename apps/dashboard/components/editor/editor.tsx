@@ -28,10 +28,14 @@ export function Editor({
   draftId,
   templateId,
   initialDocument,
+  onSaved,
 }: {
   draftId: string;
   templateId: string;
   initialDocument: LooseContentDocument;
+  /** Fires with the saved document's content hash — the publish bar's
+   * "unpublished changes" comparison rides on it. */
+  onSaved?: (contentHash: string) => void;
 }) {
   const template = templateFor(templateId);
   const [document, setDocument] = useState(initialDocument);
@@ -39,6 +43,10 @@ export function Editor({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveSeq = useRef(0);
   const isFirstRender = useRef(true);
+  const onSavedRef = useRef(onSaved);
+  useEffect(() => {
+    onSavedRef.current = onSaved;
+  });
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -56,6 +64,7 @@ export function Editor({
           setSave(
             result.ok ? { status: "saved" } : { status: "error", detail: result.error.message },
           );
+          if (result.ok) onSavedRef.current?.(result.data.contentHash);
         })
         // The action itself never throws, so a rejection means the request
         // never got an answer (server down, offline). Same chip, plain words.

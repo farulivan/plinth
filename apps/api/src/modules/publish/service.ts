@@ -6,7 +6,7 @@ import { sectionTypeOf } from "@plinth/schema/content";
 // never renders, so the components (.tsx, React) stay out of its graph.
 import { norvenSection } from "@plinth/template-norven/manifest";
 import type { z } from "zod";
-import { enqueuePublish, runSiteBuild, uploadSiteDir } from "./adapter";
+import { emitPromoted, enqueuePublish, runSiteBuild, uploadSiteDir } from "./adapter";
 import {
   createVersion,
   findVersionByIdempotencyKey,
@@ -15,6 +15,7 @@ import {
   getVersionSnapshot,
   getWorkspaceMeta,
   latestVersion,
+  listVersions,
   promoteWorkspaceVersion,
   setVersionStatus,
   type VersionRow,
@@ -154,6 +155,45 @@ export async function getPublishStatus(
     currentVersionId: meta?.currentVersionId ?? null,
     latest: latest ? toSummary(latest) : null,
   };
+}
+
+export async function getVersionHistory(
+  db: Db,
+  workspaceId: string,
+): Promise<{ currentVersionId: string | null; versions: VersionSummary[] }> {
+  const [meta, rows] = await Promise.all([
+    getWorkspaceMeta(db, workspaceId),
+    listVersions(db, workspaceId),
+  ]);
+  return {
+    currentVersionId: meta?.currentVersionId ?? null,
+    versions: rows.map(toSummary),
+  };
+}
+
+export type RollbackResult =
+  | { outcome: "rolled-back"; version: VersionSummary }
+  | { outcome: "not-found" }
+  | { outcome: "not-built"; status: VersionSummary["status"] };
+
+/** Rollback IS the promote mechanism pointed backwards (ADR-0003): one row
+ * update plus the same KV-sync event. Only built versions qualify — their R2
+ * artifacts exist by construction. */
+export async function rollbackToVersion(
+  db: Db,
+  input: { workspaceId: string; versionId: string },
+): Promise<RollbackResult> {
+  const version = await getVersion(db, input.workspaceId, input.versionId);
+  if (!version) return { outcome: "not-found" };
+  if (version.status !== "built") return { outcome: "not-built", status: version.status };
+
+  await promoteWorkspaceVersion(db, input.workspaceId, input.versionId);
+  await emitPromoted({
+    workspaceId: input.workspaceId,
+    versionId: version.id,
+    versionNumber: version.versionNumber,
+  });
+  return { outcome: "rolled-back", version: toSummary(version) };
 }
 
 export async function retryPublish(

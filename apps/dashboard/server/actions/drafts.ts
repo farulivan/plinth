@@ -26,7 +26,7 @@ import { DraftNotFoundError, saveDraftDocument } from "@/server/services/drafts"
 export async function saveDraft(
   draftId: string,
   document: unknown,
-): Promise<Envelope<{ savedAt: string }>> {
+): Promise<Envelope<{ savedAt: string; contentHash: string }>> {
   try {
     const session = await getSession({ auth, headers: await headers() });
     if (!session?.activeWorkspaceId) {
@@ -47,19 +47,23 @@ export async function saveDraft(
       parsed.data,
     );
 
+    const hash = contentHash(parsed.data);
+
     // Best-effort preview ping (ADR-0007): the write above is already
     // durable, so a failed notify costs one live reload — never the save.
     try {
       const response = await api["draft-events"][":draftId"].$post({
         param: { draftId: id.data },
-        json: { hash: contentHash(parsed.data) },
+        json: { hash },
       });
       if (!response.ok) console.error("[saveDraft] preview notify rejected:", response.status);
     } catch (error) {
       console.error("[saveDraft] preview notify failed:", error);
     }
 
-    return ok({ savedAt: savedAt.toISOString() });
+    // The hash rides back so the publish bar can compare draft vs live
+    // version without a second round trip ("unpublished changes").
+    return ok({ savedAt: savedAt.toISOString(), contentHash: hash });
   } catch (error) {
     if (error instanceof DraftNotFoundError) {
       return err("not_found", "This draft no longer belongs to your active workspace.");

@@ -104,6 +104,18 @@ export async function latestVersion(db: Db, workspaceId: string): Promise<Versio
   return row ?? null;
 }
 
+/** Newest-first history for the rollback UI — bounded to the retention
+ * window's size (ADR-0003 keeps 10 per tenant). */
+export async function listVersions(db: Db, workspaceId: string): Promise<VersionRow[]> {
+  return withWorkspace(db, workspaceId, (tx) =>
+    tx
+      .select(versionColumns)
+      .from(contentVersions)
+      .orderBy(desc(contentVersions.versionNumber))
+      .limit(10),
+  );
+}
+
 /** Insert an immutable snapshot with the next monotonic version number.
  * Two racing publishes can pick the same number (max+1 in one tx each); the
  * unique index rejects the loser and we retake the max — bounded retries

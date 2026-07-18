@@ -29,6 +29,16 @@ export async function enqueuePublish(input: {
   await inngest.send({ name: "site/publish.requested", data: input });
 }
 
+/** Announce a pointer swap that happened outside the build job (rollback) so
+ * the KV-sync function converges the edge, same as a promote (ADR-0004). */
+export async function emitPromoted(input: {
+  workspaceId: string;
+  versionId: string;
+  versionNumber: number;
+}): Promise<void> {
+  await inngest.send({ name: "site/version.promoted", data: input });
+}
+
 /**
  * Runs `astro build` in packages/site-builder against a snapshot file
  * (ADR-0013): the snapshot goes to a temp dir, the builder reads it via env,
