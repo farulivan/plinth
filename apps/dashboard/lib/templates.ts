@@ -29,8 +29,10 @@ export interface TemplateSpec {
   components: ComponentMap;
 }
 
+/** "photoHero" → "Photo hero". Manifest types are camelCase identifiers. */
 function humanize(type: string): string {
-  return type.charAt(0).toUpperCase() + type.slice(1);
+  const spaced = type.replace(/([A-Z])/g, " $1").toLowerCase();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
 function toSectionSpec(section: z.ZodType): SectionSpec {

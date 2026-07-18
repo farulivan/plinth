@@ -27,15 +27,15 @@ export interface EditorData {
   templateId: string;
 }
 
-/** Norven-first onboarding default: one filled intro section so the editor
- * opens non-empty and the document satisfies the envelope's min(1). Becomes
- * template-aware when a second template lands. */
+/** Norven-first onboarding default: one filled statement section so the
+ * editor opens non-empty and the document satisfies the envelope's min(1).
+ * Becomes template-aware when a second template lands. */
 const DEFAULT_DOCUMENT: LooseContentDocument = looseContentDocument.parse({
   sections: [
     {
-      type: "intro",
+      type: "statement",
       fields: {
-        heading: "Welcome to your site",
+        eyebrow: "The practice",
         body: "This draft was created when you first opened the editor. Replace this text with your own — every save is automatic.",
       },
     },
