@@ -3,7 +3,13 @@ import { err, ERROR_STATUS, ok } from "@plinth/schema/api";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppBindings } from "../../context";
-import { getPublishStatus, requestPublish, retryPublish } from "./service";
+import {
+  getPublishStatus,
+  getVersionHistory,
+  requestPublish,
+  retryPublish,
+  rollbackToVersion,
+} from "./service";
 
 /**
  * HTTP surface for the publish domain (ADR-0003): trigger a publish, poll
@@ -14,6 +20,7 @@ import { getPublishStatus, requestPublish, retryPublish } from "./service";
  */
 
 const retryBody = z.object({ versionId: z.uuid() });
+const rollbackBody = z.object({ versionId: z.uuid() });
 
 export const publishRoutes = new Hono<AppBindings>()
   .post("/", async (c) => {
@@ -63,6 +70,51 @@ export const publishRoutes = new Hono<AppBindings>()
     }
     return c.json(ok(await getPublishStatus(c.get("db"), workspaceId)));
   })
+  .get("/versions", async (c) => {
+    const workspaceId = c.get("workspaceId");
+    if (!workspaceId) {
+      return c.json(err("unauthorized", "An active workspace is required."), {
+        status: ERROR_STATUS.unauthorized,
+      });
+    }
+    return c.json(ok(await getVersionHistory(c.get("db"), workspaceId)));
+  })
+  .post(
+    "/rollback",
+    zValidator("json", rollbackBody, (result, c) => {
+      if (!result.success) {
+        return c.json(err("validation_failed", "Expected { versionId }."), {
+          status: ERROR_STATUS.validation_failed,
+        });
+      }
+    }),
+    async (c) => {
+      const workspaceId = c.get("workspaceId");
+      if (!workspaceId) {
+        return c.json(err("unauthorized", "An active workspace is required."), {
+          status: ERROR_STATUS.unauthorized,
+        });
+      }
+
+      const result = await rollbackToVersion(c.get("db"), {
+        workspaceId,
+        versionId: c.req.valid("json").versionId,
+      });
+      switch (result.outcome) {
+        case "rolled-back":
+          return c.json(ok({ version: result.version }));
+        case "not-found":
+          return c.json(err("not_found", "No such version in the active workspace."), {
+            status: ERROR_STATUS.not_found,
+          });
+        case "not-built":
+          return c.json(
+            err("conflict", `Only built versions can go live — this one is ${result.status}.`),
+            { status: ERROR_STATUS.conflict },
+          );
+      }
+    },
+  )
   .post(
     "/retry",
     zValidator("json", retryBody, (result, c) => {
