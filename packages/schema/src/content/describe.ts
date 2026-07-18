@@ -13,7 +13,7 @@ export type FieldDescriptor =
   | { kind: "longText"; name: string; optional: boolean; maxLength: number }
   | { kind: "link"; name: string; optional: boolean }
   | { kind: "media"; name: string; optional: boolean }
-  | { kind: "array"; name: string; optional: boolean };
+  | { kind: "array"; name: string; optional: boolean; item: FieldDescriptor[] };
 
 /** Strings up to this render as a single-line input; longer as a textarea. */
 const LONG_TEXT_THRESHOLD = 500;
@@ -46,7 +46,18 @@ function describeField(name: string, schema: z.ZodType): FieldDescriptor {
     if (keys.join(",") === "href,label") return { kind: "link", name, optional };
   }
 
-  if (inner.def.type === "array") return { kind: "array", name, optional };
+  if (inner.def.type === "array") {
+    const element = (inner as z.ZodArray<z.ZodType>).element;
+    if (element.def.type !== "object") {
+      throw new Error(
+        `Array field "${name}" must hold objects — primitive arrays have no editor row shape.`,
+      );
+    }
+    const item = Object.entries((element as z.ZodObject).shape).map(([itemName, itemSchema]) =>
+      describeField(itemName, itemSchema as z.ZodType),
+    );
+    return { kind: "array", name, optional, item };
+  }
 
   throw new Error(
     `No field descriptor for "${name}" (schema type "${inner.def.type}") — ` +
