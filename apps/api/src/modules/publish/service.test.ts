@@ -34,7 +34,11 @@ const VERSION = "00000000-0000-0000-0000-000000000003";
 const validDraft = {
   schemaVersion: 1,
   sections: [
-    { type: "intro", enabled: true, fields: { heading: "Hello", body: "A finished body." } },
+    {
+      type: "statement",
+      enabled: true,
+      fields: { eyebrow: "The practice", body: "A finished body." },
+    },
   ],
 } as LooseContentDocument;
 
@@ -60,14 +64,14 @@ describe("requestPublish", () => {
   it("rejects an enabled section that fails the strict schema, keyed by type.field", async () => {
     vi.mocked(dbFns.getDraftDocument).mockResolvedValue({
       schemaVersion: 1,
-      sections: [{ type: "intro", enabled: true, fields: { heading: "", body: "x" } }],
+      sections: [{ type: "statement", enabled: true, fields: { eyebrow: "", body: "x" } }],
     } as LooseContentDocument);
 
     const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
 
     expect(result.outcome).toBe("invalid-draft");
     if (result.outcome !== "invalid-draft") return;
-    expect(Object.keys(result.fieldErrors)).toContain("intro.heading");
+    expect(Object.keys(result.fieldErrors)).toContain("statement.eyebrow");
     expect(dbFns.createVersion).not.toHaveBeenCalled();
   });
 
@@ -75,7 +79,7 @@ describe("requestPublish", () => {
     vi.mocked(dbFns.getDraftDocument).mockResolvedValue({
       schemaVersion: 1,
       sections: [
-        { type: "hero", enabled: false, fields: { title: "" } }, // no photo, unfinishable
+        { type: "photoHero", enabled: false, fields: { title: "" } }, // no photo yet
         ...validDraft.sections,
       ],
     } as LooseContentDocument);
@@ -90,7 +94,7 @@ describe("requestPublish", () => {
   it("refuses a document with no enabled sections", async () => {
     vi.mocked(dbFns.getDraftDocument).mockResolvedValue({
       schemaVersion: 1,
-      sections: [{ type: "intro", enabled: false, fields: { heading: "x", body: "y" } }],
+      sections: [{ type: "statement", enabled: false, fields: { eyebrow: "x", body: "y" } }],
     } as LooseContentDocument);
 
     const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
