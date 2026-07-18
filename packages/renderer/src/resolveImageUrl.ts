@@ -1,11 +1,13 @@
 /**
- * Resolves a media row id to a URL the published site can load.
+ * Resolves a media variant to the URL a rendered page loads it from.
  *
- * MVP is the identity transform (ADR-0006/0007): a stable root-relative path
- * the tenant site's edge worker maps to the right R2 object. No CDN
- * resize/format params yet — they arrive with the media pipeline, behind this
- * same signature so call sites never change.
+ * Same-origin by design (ADR-0014): `/_media/{contentHash}/w{width}.{format}`
+ * — the worker-router maps it into the media bucket using the hostname's
+ * workspace, and the dashboard proxies the identical path for previews. No
+ * base URL, no env: content-addressed paths are immutable and the origin
+ * decides the tenant. The signature is the kept seam from ADR-0007 — a
+ * future signed-URL gate changes this function, never its call sites.
  */
-export function resolveImageUrl(mediaId: string): string {
-  return `/media/${mediaId}`;
+export function resolveImageUrl(contentHash: string, width: number, format: string): string {
+  return `/_media/${contentHash}/w${width}.${format}`;
 }

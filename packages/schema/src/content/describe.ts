@@ -40,7 +40,9 @@ function describeField(name: string, schema: z.ZodType): FieldDescriptor {
 
   if (inner.def.type === "object") {
     const keys = Object.keys((inner as z.ZodObject).shape).sort();
-    if (keys.join(",") === "alt,mediaId") return { kind: "media", name, optional };
+    if (keys.join(",") === "alt,contentHash,height,mediaId,width") {
+      return { kind: "media", name, optional };
+    }
     if (keys.join(",") === "href,label") return { kind: "link", name, optional };
   }
 

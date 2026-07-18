@@ -40,6 +40,7 @@ R2_ENDPOINT_URL=http://minio:9000
 R2_ACCESS_KEY_ID=plinth
 R2_SECRET_ACCESS_KEY=plinth-local-dev
 R2_BUCKET_SITES=plinth-sites
+R2_BUCKET_MEDIA=plinth-media
 EOF
   echo "created .env.local-prod with generated secrets"
 else

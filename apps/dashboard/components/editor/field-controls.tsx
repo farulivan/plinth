@@ -11,6 +11,7 @@ import {
 import { Input } from "@plinth/ui/components/input";
 import { Textarea } from "@plinth/ui/components/textarea";
 import type { Control, FieldValues } from "react-hook-form";
+import { MediaField } from "./media-field";
 
 /** "cta" → "Cta", "heading" → "Heading". Field names are manifest-authored
  * identifiers; template packages own nicer labels when they need them. */
@@ -116,9 +117,7 @@ export function FieldControl({
       );
     case "media":
       return (
-        <div className="text-muted-foreground rounded-md border border-dashed p-3 text-sm">
-          {labelFor(descriptor.name)} — the media picker arrives with the media pipeline.
-        </div>
+        <MediaField control={control} name={descriptor.name} label={labelFor(descriptor.name)} />
       );
     case "array":
       return (

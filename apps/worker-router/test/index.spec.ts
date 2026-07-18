@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 const HOST = "norven.localhost";
 const BASE = `https://${HOST}`;
+const MEDIA_HASH = "b".repeat(64);
 const TENANT_CSP =
   "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; " +
   "img-src 'self' data: https://*.r2.cloudflarestorage.com; connect-src 'self'; frame-ancestors 'self'";
@@ -19,6 +20,9 @@ beforeEach(async () => {
   });
   await env.SITES.put("tenants/ws-norven/v3/_astro/site.a1b2c3.css", "body{margin:0}", {
     httpMetadata: { contentType: "text/css; charset=utf-8" },
+  });
+  await env.MEDIA.put(`tenants/ws-norven/${MEDIA_HASH}/w400.webp`, "not-really-webp", {
+    httpMetadata: { contentType: "image/webp" },
   });
 });
 
@@ -72,6 +76,23 @@ describe("worker-router", () => {
     const response = await SELF.fetch(`${BASE}/%2e%2e/ws-other/v1/index.html`);
 
     expect(response.status).toBe(404);
+  });
+
+  it("serves media variants from the hostname's workspace, cached immutably", async () => {
+    const response = await SELF.fetch(`${BASE}/_media/${MEDIA_HASH}/w400.webp`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("image/webp");
+    expect(response.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+    expect(await response.text()).toBe("not-really-webp");
+  });
+
+  it("404s media paths that don't match the variant shape or don't exist", async () => {
+    const malformed = await SELF.fetch(`${BASE}/_media/not-a-hash/w400.webp`);
+    const missing = await SELF.fetch(`${BASE}/_media/${"c".repeat(64)}/w400.webp`);
+
+    expect(malformed.status).toBe(404);
+    expect(missing.status).toBe(404);
   });
 
   it("rejects non-read methods", async () => {

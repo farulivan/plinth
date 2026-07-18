@@ -46,6 +46,14 @@ export default {
     const mapping = await env.TENANT_HOSTS.get<TenantHostMapping>(url.hostname, "json");
     if (!mapping) return notFound();
 
+    // Media variants (ADR-0014): same-origin /_media paths resolve into the
+    // media bucket under the hostname's workspace — cross-tenant reads are
+    // impossible by construction, and version paths never collide with the
+    // reserved /_media prefix.
+    if (url.pathname.startsWith("/_media/")) {
+      return serveMedia(env.MEDIA, mapping.workspaceId, url.pathname, request.method === "HEAD");
+    }
+
     const object = await lookup(env.SITES, mapping, url.pathname);
     if (!object) return notFound();
 
@@ -65,6 +73,29 @@ export default {
     return new Response(request.method === "HEAD" ? null : object.body, { headers });
   },
 } satisfies ExportedHandler<Env>;
+
+const MEDIA_PATH = /^\/_media\/([0-9a-f]{64})\/(w\d{3,4}\.(?:avif|webp|jpeg))$/;
+
+async function serveMedia(
+  bucket: R2Bucket,
+  workspaceId: string,
+  pathname: string,
+  isHead: boolean,
+): Promise<Response> {
+  const match = MEDIA_PATH.exec(pathname);
+  if (!match) return notFound();
+  const [, contentHash, variant] = match;
+
+  const object = await bucket.get(`tenants/${workspaceId}/${contentHash}/${variant}`);
+  if (!object) return notFound();
+
+  const headers = new Headers(SECURITY_HEADERS);
+  headers.set("content-type", object.httpMetadata?.contentType ?? "application/octet-stream");
+  headers.set("etag", object.httpEtag);
+  // Content-addressed: the bytes behind this URL can never change.
+  headers.set("cache-control", "public, max-age=31536000, immutable");
+  return new Response(isHead ? null : object.body, { headers });
+}
 
 function notFound(): Response {
   return new Response("Site not found", {

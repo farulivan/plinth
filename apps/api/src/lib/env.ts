@@ -35,6 +35,7 @@ const envSchema = z.object({
   R2_ACCESS_KEY_ID: z.string().min(1),
   R2_SECRET_ACCESS_KEY: z.string().min(1),
   R2_BUCKET_SITES: z.string().min(1),
+  R2_BUCKET_MEDIA: z.string().min(1),
   // Tenant hostname suffix appended to the workspace slug (ADR-0004):
   // ".farulivan.com" in production, ".localhost" against wrangler dev.
   TENANT_HOST_SUFFIX: z.string().min(1).default(".localhost"),

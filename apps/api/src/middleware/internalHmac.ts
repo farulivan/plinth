@@ -1,5 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
-import { MAX_SKEW_MS, SIGNATURE_HEADER, sign, TIMESTAMP_HEADER } from "@plinth/internal-rpc";
+import {
+  BODY_HASH_HEADER,
+  hashBody,
+  MAX_SKEW_MS,
+  SIGNATURE_HEADER,
+  sign,
+  TIMESTAMP_HEADER,
+} from "@plinth/internal-rpc";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 
@@ -27,10 +34,24 @@ export function internalHmac(secret: string) {
       throw new HTTPException(401, { message: "Stale or invalid timestamp" });
     }
 
-    // Hono caches the body, so a downstream c.req.json()/text() still works.
-    const body = await c.req.text();
+    // Hono caches the body, so a downstream c.req.json()/formData() still
+    // works. Binary payloads (uploads, ADR-0006) sign sha256(body) in the
+    // body slot (BODY_HASH_HEADER) instead of the raw bytes; the digest is
+    // recomputed from the bytes here so they stay tamper-proof.
+    const bodyHash = c.req.header(BODY_HASH_HEADER);
+    let bodySlot: string;
+    if (bodyHash) {
+      const bytes = await c.req.arrayBuffer();
+      if (!safeEqualHex(bodyHash, hashBody(bytes))) {
+        throw new HTTPException(401, { message: "Body digest mismatch" });
+      }
+      bodySlot = bodyHash;
+    } else {
+      bodySlot = await c.req.text();
+    }
+
     const url = new URL(c.req.url);
-    const expected = sign(secret, timestamp, c.req.method, url.pathname + url.search, body);
+    const expected = sign(secret, timestamp, c.req.method, url.pathname + url.search, bodySlot);
     if (!safeEqualHex(signature, expected)) {
       throw new HTTPException(401, { message: "Invalid signature" });
     }

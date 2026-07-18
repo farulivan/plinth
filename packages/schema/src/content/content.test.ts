@@ -36,17 +36,37 @@ describe("field primitives", () => {
   });
 });
 
+const MEDIA_REF = {
+  mediaId: UUID,
+  alt: "Coastal house at dusk",
+  contentHash: "a".repeat(64),
+  width: 1600,
+  height: 1200,
+};
+
 describe("mediaRef", () => {
   it("requires the mediaId + alt pairing (the a11y floor)", () => {
-    const valid = mediaRef.parse({ mediaId: UUID, alt: "Coastal house at dusk" });
+    const valid = mediaRef.parse(MEDIA_REF);
     expect(valid.mediaId).toBe(UUID);
-    expect(mediaRef.safeParse({ mediaId: UUID }).success).toBe(false);
-    expect(mediaRef.safeParse({ mediaId: UUID, alt: "  " }).success).toBe(false);
-    expect(mediaRef.safeParse({ mediaId: "not-a-uuid", alt: "x" }).success).toBe(false);
+    expect(mediaRef.safeParse({ ...MEDIA_REF, alt: undefined }).success).toBe(false);
+    expect(mediaRef.safeParse({ ...MEDIA_REF, alt: "  " }).success).toBe(false);
+    expect(mediaRef.safeParse({ ...MEDIA_REF, mediaId: "not-a-uuid" }).success).toBe(false);
+  });
+
+  it("requires the frozen variant identity (ADR-0014)", () => {
+    expect(mediaRef.safeParse({ ...MEDIA_REF, contentHash: "short" }).success).toBe(false);
+    expect(mediaRef.safeParse({ ...MEDIA_REF, width: 0 }).success).toBe(false);
+    expect(mediaRef.safeParse({ ...MEDIA_REF, height: -1 }).success).toBe(false);
   });
 
   it("infers the documented shape", () => {
-    expectTypeOf<MediaRef>().toEqualTypeOf<{ mediaId: string; alt: string }>();
+    expectTypeOf<MediaRef>().toEqualTypeOf<{
+      mediaId: string;
+      alt: string;
+      contentHash: string;
+      width: number;
+      height: number;
+    }>();
   });
 });
 
@@ -57,7 +77,7 @@ describe("content documents", () => {
 
   const heroInput = {
     type: "hero",
-    fields: { title: "Salt House", photo: { mediaId: UUID, alt: "dusk facade" } },
+    fields: { title: "Salt House", photo: { ...MEDIA_REF, alt: "dusk facade" } },
   };
 
   it("round-trips and applies defaults (schemaVersion, enabled)", () => {
