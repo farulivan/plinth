@@ -1,8 +1,10 @@
 import type { ComponentMap } from "@plinth/renderer";
-import { Frame } from "./Frame";
-import { Hero } from "./Hero";
-import { Intro } from "./Intro";
-import { Projects } from "./Projects";
+import { Contact } from "./Contact";
+import { FeaturedProjects } from "./FeaturedProjects";
+import { PhotoHero } from "./PhotoHero";
+import { Statement } from "./Statement";
+import { Stats } from "./Stats";
+import { Testimonial } from "./Testimonial";
 
 /**
  * Binds Norven section types to their components — the map the renderer's
@@ -10,8 +12,10 @@ import { Projects } from "./Projects";
  * manifest's section `type` literals.
  */
 export const norvenComponents: ComponentMap = {
-  hero: Hero,
-  intro: Intro,
-  projects: Projects,
-  frame: Frame,
+  photoHero: PhotoHero,
+  statement: Statement,
+  featuredProjects: FeaturedProjects,
+  stats: Stats,
+  testimonial: Testimonial,
+  contact: Contact,
 };

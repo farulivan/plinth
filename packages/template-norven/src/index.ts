@@ -1,19 +1,26 @@
 export {
-  heroSection,
-  introSection,
-  projectsSection,
-  frameSection,
+  photoHeroSection,
+  statementSection,
+  featuredProjectsSection,
+  statsSection,
+  testimonialSection,
+  contactSection,
   norvenSection,
   norvenDocument,
   type NorvenDocument,
-  type HeroFields,
-  type IntroFields,
-  type ProjectsFields,
-  type FrameFields,
+  type PhotoHeroFields,
+  type StatementFields,
+  type FeaturedProjectsFields,
+  type StatsFields,
+  type TestimonialFields,
+  type ContactFields,
 } from "./manifest";
 
-export { Hero } from "./sections/Hero";
-export { Intro } from "./sections/Intro";
-export { Projects } from "./sections/Projects";
-export { Frame } from "./sections/Frame";
+export { PhotoHero } from "./sections/PhotoHero";
+export { Statement } from "./sections/Statement";
+export { FeaturedProjects } from "./sections/FeaturedProjects";
+export { Stats } from "./sections/Stats";
+export { Testimonial } from "./sections/Testimonial";
+export { Contact } from "./sections/Contact";
+export { Frame } from "./media/Frame";
 export { norvenComponents } from "./sections";
