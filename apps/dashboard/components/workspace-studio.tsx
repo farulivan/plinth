@@ -1,0 +1,93 @@
+"use client";
+
+import type { LooseContentDocument } from "@plinth/schema";
+import type { PublishStatus } from "@plinth/schema/api";
+import { Button } from "@plinth/ui/components/button";
+import { useState } from "react";
+import { Editor } from "@/components/editor/editor";
+import { PublishBar } from "@/components/publish/publish-bar";
+
+/** Preview pane widths (ADR-0007): common device cuts plus the pane itself. */
+const PREVIEW_WIDTHS = [
+  { label: "375", width: 375 },
+  { label: "768", width: 768 },
+  { label: "1280", width: 1280 },
+  { label: "Full", width: null },
+] as const;
+
+/**
+ * The one-screen workspace: publish bar, editor, live preview. Client-side
+ * because three concerns share state — the editor's saves feed the publish
+ * bar's unpublished-changes cue, and the preview pane's width toggle is UI
+ * state. The iframe still reloads itself (SSE inside the preview page).
+ */
+export function WorkspaceStudio({
+  draftId,
+  templateId,
+  initialDocument,
+  initialStatus,
+  initialDraftHash,
+}: {
+  draftId: string;
+  templateId: string;
+  initialDocument: LooseContentDocument;
+  initialStatus: PublishStatus;
+  initialDraftHash: string;
+}) {
+  const [draftHash, setDraftHash] = useState<string | null>(initialDraftHash);
+  const [previewWidth, setPreviewWidth] = useState<number | null>(null);
+
+  return (
+    <main className="mx-auto max-w-7xl space-y-6 p-8">
+      <PublishBar initial={initialStatus} draftHash={draftHash} />
+      <div className="grid gap-8 lg:grid-cols-2">
+        <div className="min-w-0">
+          <Editor
+            draftId={draftId}
+            templateId={templateId}
+            initialDocument={initialDocument}
+            onSaved={setDraftHash}
+          />
+        </div>
+        <aside className="hidden min-w-0 lg:block">
+          <div className="sticky top-8 space-y-2">
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-muted-foreground text-sm font-medium">Preview</h2>
+              <div className="flex items-center gap-1">
+                {PREVIEW_WIDTHS.map((option) => (
+                  <Button
+                    key={option.label}
+                    type="button"
+                    size="sm"
+                    variant={previewWidth === option.width ? "secondary" : "ghost"}
+                    onClick={() => setPreviewWidth(option.width)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+                <a
+                  href={`/preview/${draftId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-muted-foreground hover:text-foreground ml-2 text-sm underline underline-offset-4"
+                >
+                  Open in new tab
+                </a>
+              </div>
+            </div>
+            <div
+              className="mx-auto max-w-full transition-[width]"
+              style={{ width: previewWidth ?? "100%" }}
+            >
+              <iframe
+                src={`/preview/${draftId}`}
+                title="Live preview"
+                className="h-[calc(100vh-8rem)] w-full rounded-lg border bg-white"
+              />
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  );
+}

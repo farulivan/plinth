@@ -1,9 +1,9 @@
 import { getSession, listUserWorkspaces } from "@plinth/auth";
+import { contentHash } from "@plinth/db";
 import type { PublishStatus } from "@plinth/schema/api";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { Editor } from "@/components/editor/editor";
-import { PublishBar } from "@/components/publish/publish-bar";
+import { WorkspaceStudio } from "@/components/workspace-studio";
 import { api } from "@/lib/api-client";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
@@ -12,7 +12,8 @@ import { getEditorData } from "@/server/services/drafts";
 // The draft is per-request state; nothing here can prerender.
 export const dynamic = "force-dynamic";
 
-/** Dashboard home IS the editor (Norven-first: one workspace, one draft). */
+/** Dashboard home IS the studio (Norven-first: one workspace, one draft):
+ * publish bar, schema-driven editor, live preview. */
 export default async function EditorPage() {
   const session = await getSession({ auth, headers: await headers() });
   if (!session) redirect("/login");
@@ -38,37 +39,13 @@ export default async function EditorPage() {
     // api unreachable — the bar's first poll retries.
   }
 
-  // Split view: form left, live preview right (ADR-0007's iframe transport).
-  // The iframe reloads itself via the SSE loop inside the preview page, so
-  // the editor never has to reach into it.
   return (
-    <main className="mx-auto max-w-7xl space-y-6 p-8">
-      <PublishBar initial={initialStatus} />
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div className="min-w-0">
-          <Editor draftId={draftId} templateId={templateId} initialDocument={document} />
-        </div>
-        <aside className="hidden min-w-0 lg:block">
-          <div className="sticky top-8 space-y-2">
-            <div className="flex items-baseline justify-between">
-              <h2 className="text-muted-foreground text-sm font-medium">Preview</h2>
-              <a
-                href={`/preview/${draftId}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-4"
-              >
-                Open in new tab
-              </a>
-            </div>
-            <iframe
-              src={`/preview/${draftId}`}
-              title="Live preview"
-              className="h-[calc(100vh-8rem)] w-full rounded-lg border bg-white"
-            />
-          </div>
-        </aside>
-      </div>
-    </main>
+    <WorkspaceStudio
+      draftId={draftId}
+      templateId={templateId}
+      initialDocument={document}
+      initialStatus={initialStatus}
+      initialDraftHash={contentHash(document)}
+    />
   );
 }

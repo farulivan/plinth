@@ -60,25 +60,34 @@ export function templateFor(templateId: string): TemplateSpec | null {
 /** Blank field values for a freshly added section. Loose-savable as a draft;
  * the form surfaces the required-field errors inline until they're filled. */
 export function emptyFieldsFor(spec: SectionSpec): Record<string, unknown> {
-  const fields: Record<string, unknown> = {};
-  for (const descriptor of spec.fields) {
+  return emptyValuesFor(spec.fields);
+}
+
+/** Blank values for one array row — same rules, scoped to the item shape. */
+export function emptyItemFor(item: FieldDescriptor[]): Record<string, unknown> {
+  return emptyValuesFor(item);
+}
+
+function emptyValuesFor(descriptors: FieldDescriptor[]): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
+  for (const descriptor of descriptors) {
     if (descriptor.optional) continue;
     switch (descriptor.kind) {
       case "shortText":
       case "longText":
-        fields[descriptor.name] = "";
+        values[descriptor.name] = "";
         break;
       case "link":
-        fields[descriptor.name] = { label: "", href: "" };
+        values[descriptor.name] = { label: "", href: "" };
         break;
       case "array":
-        fields[descriptor.name] = [];
+        values[descriptor.name] = [];
         break;
       case "media":
-        // No media library yet (ADR-0006) — leave absent; the form shows the
-        // placeholder and publish-grade validation flags it.
+        // Left absent: the picker fills the whole object at once, and the
+        // publish gate flags a missing image.
         break;
     }
   }
-  return fields;
+  return values;
 }
