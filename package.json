@@ -21,6 +21,7 @@
     "db:push": "pnpm --filter @plinth/db db:push",
     "db:studio": "pnpm --filter @plinth/db db:studio",
     "seed": "tsx scripts/seed.ts",
+    "seed:norven": "pnpm --filter @plinth/api seed:norven",
     "worker:sync": "tsx scripts/worker-sync.ts",
     "local-prod": "./scripts/local-prod.sh",
     "local-prod:down": "docker compose -f docker-compose.local-prod.yml down",

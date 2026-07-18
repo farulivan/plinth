@@ -20,25 +20,53 @@ const connectionString =
 const SEED_USER = { email: "dev@plinth.local", name: "Dev User" };
 const SEED_WORKSPACE = { slug: "norven", name: "Norven", templateId: "template-norven" };
 
-/** Media-free sections only — hero and projects require media rows, which
- * don't exist until the media pipeline lands (ADR-0006). Parsed through the
- * template manifest so the seed can never produce a draft the editor and
- * publish path wouldn't accept. */
+/** Media-free sections only — photoHero and featuredProjects need media
+ * rows, which this base seed can't create (the images go through the Sharp
+ * pipeline); `pnpm seed:norven` layers the full landing page with photos on
+ * top. Parsed through the template manifest so the seed can never produce a
+ * draft the editor and publish path wouldn't accept. */
 const sampleDocument = norvenDocument.parse({
   sections: [
     {
-      type: "intro",
+      type: "statement",
       fields: {
-        heading: "Architecture for places that already exist",
-        body: "Norven is a fictional architecture studio. This draft was created by the local seed so the editor opens non-empty — replace every field with real content, or publish it as-is to see the pipeline move.",
+        eyebrow: "The practice",
+        body: "Norven is an architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
       },
     },
     {
-      type: "frame",
+      type: "stats",
       fields: {
-        heading: "Start a conversation",
-        body: "The studio takes on a small number of projects each year. Tell us about the site, the constraints, and the ambition.",
-        cta: { label: "Get in touch", href: "/contact" },
+        items: [
+          { value: "118", label: "Built" },
+          { value: "26", label: "In studio" },
+          { value: "42", label: "Awards & citations" },
+          { value: "17", label: "Years continuous practice" },
+        ],
+      },
+    },
+    {
+      type: "testimonial",
+      fields: {
+        attribution: "Client, Salt House",
+        context: "Tjøme · 2023",
+        quote:
+          "They drew our house the way you would a portrait of someone you had known for fifty years. Nothing was decorative, nothing was lazy. We have lived in it for three winters now and have not found a single thing we would change.",
+        name: "Margrét Sól",
+      },
+    },
+    {
+      type: "contact",
+      fields: {
+        eyebrow: "Bring us a site",
+        heading: "Bring us a site,\na story,\na single hour of light.",
+        email: "studio@norven.example",
+        phone: "+47 22 00 00 00",
+        studios: [
+          { city: "Oslo", address: "Akersgata 12, 0158" },
+          { city: "Lisbon", address: "Rua das Janelas Verdes 9" },
+          { city: "Kyoto", address: "Higashiyama, Sanjō 3-15" },
+        ],
       },
     },
   ],
