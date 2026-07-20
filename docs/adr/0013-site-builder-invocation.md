@@ -12,6 +12,6 @@
 ## Consequences
 
 - The `build:site` script is deliberately NOT named `build`, so `turbo run build` (verify, CI) never invokes astro — the builder only runs with a snapshot to build.
-- **Trade-off accepted: the production api image cannot run builds yet.** It ships only the tsup bundle; `pnpm --filter` needs the workspace source and the builder's node_modules. The go-live branch closes this by adding the pruned site-builder workspace to the api image (or extracting the builder per the deferred option). Until then the pipeline is exercised in `pnpm dev` and the local-prod stack's publish path reports a failed build honestly.
+- **Trade-off accepted: the production api image cannot run builds yet.** It ships only the tsup bundle; `pnpm --filter` needs the workspace source and the builder's node_modules. Closing this means adding the pruned site-builder workspace to the api image (or extracting the builder per the deferred option). Until then the pipeline is exercised in `pnpm dev` and the local-prod stack's publish path reports a failed build honestly.
 - The builder renders with React only (`@astrojs/react`); no client scripts are emitted for the stub sections. When the Norven port introduces styles, fonts, and motion, they enter through this package's astro config without touching the pipeline.
 - Each build gets a fresh temp workdir keyed by version id; the OS owns cleanup of `tmpdir()`, and failed builds leave their workdir behind for inspection.

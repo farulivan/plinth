@@ -8,7 +8,7 @@ import {
 } from "@plinth/schema/content";
 
 /**
- * The Norven template manifest v2 (M6 content port): the six sections of the
+ * The Norven template manifest v2: the six sections of the
  * real landing page, replacing the four foundation stubs. Field notes:
  * headings that break across lines carry "\n" (longText renders a textarea;
  * components split on it), and multi-part captions ("Residence · 2023 ·

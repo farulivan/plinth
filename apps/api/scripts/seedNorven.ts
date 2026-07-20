@@ -1,5 +1,5 @@
 /**
- * Layer the full Norven landing page onto the seeded workspace (M6): ingest
+ * Layer the full Norven landing page onto the seeded workspace: ingest
  * the real photography through the SAME media pipeline user uploads take
  * (sniff, dedupe, Sharp variants, R2), then replace the draft with the
  * six-section document referencing those media rows. Idempotent — media
