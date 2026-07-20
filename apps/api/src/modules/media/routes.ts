@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
 import type { AppBindings } from "../../context";
+import { RATE_LIMITS } from "../../lib/rateLimits";
 import { rateLimit } from "../../middleware/rateLimit";
 import { getMediaFile, listWorkspaceMedia, uploadMedia } from "./service";
 
@@ -30,52 +31,55 @@ export const mediaRoutes = new Hono<AppBindings>()
     }
     return c.json(ok(await listWorkspaceMedia(c.get("db"), workspaceId)));
   })
-  // ADR-0006: 100 uploads/hour/workspace, same posture as the publish cap.
-  .post("/upload", rateLimit("upload", 100, 60 * 60), async (c) => {
-    const workspaceId = requireWorkspace(c);
-    if (!workspaceId) {
-      return c.json(err("unauthorized", "An active workspace is required."), {
-        status: ERROR_STATUS.unauthorized,
-      });
-    }
+  .post(
+    "/upload",
+    rateLimit("upload", RATE_LIMITS.upload.limit, RATE_LIMITS.upload.windowSeconds),
+    async (c) => {
+      const workspaceId = requireWorkspace(c);
+      if (!workspaceId) {
+        return c.json(err("unauthorized", "An active workspace is required."), {
+          status: ERROR_STATUS.unauthorized,
+        });
+      }
 
-    // Raw bytes, not multipart (ADR-0014): the dashboard's forwarder already
-    // unwrapped the file, and the HMAC middleware hashed these exact bytes.
-    const bytes = Buffer.from(await c.req.arrayBuffer());
-    if (bytes.byteLength === 0) {
-      return c.json(err("validation_failed", "Expected the image bytes as the request body."), {
-        status: ERROR_STATUS.validation_failed,
-      });
-    }
-
-    const result = await uploadMedia(c.get("db"), { workspaceId, bytes });
-    switch (result.outcome) {
-      case "created":
-      case "reused":
-        return c.json(ok({ outcome: result.outcome, item: result.item }));
-      case "unsupported-type":
-        return c.json(
-          err("validation_failed", "Only JPEG, PNG, WebP, or AVIF images are supported."),
-          { status: ERROR_STATUS.validation_failed },
-        );
-      case "unreadable-image":
-        return c.json(err("validation_failed", "That file could not be decoded as an image."), {
+      // Raw bytes, not multipart (ADR-0014): the dashboard's forwarder already
+      // unwrapped the file, and the HMAC middleware hashed these exact bytes.
+      const bytes = Buffer.from(await c.req.arrayBuffer());
+      if (bytes.byteLength === 0) {
+        return c.json(err("validation_failed", "Expected the image bytes as the request body."), {
           status: ERROR_STATUS.validation_failed,
         });
-      case "too-large":
-        return c.json(err("payload_too_large", "Images are capped at 20 MB."), {
-          status: ERROR_STATUS.payload_too_large,
-        });
-      case "storage-cap":
-        return c.json(
-          err(
-            "payload_too_large",
-            "This workspace's 5 GB media storage is full — remove unused images first.",
-          ),
-          { status: ERROR_STATUS.payload_too_large },
-        );
-    }
-  })
+      }
+
+      const result = await uploadMedia(c.get("db"), { workspaceId, bytes });
+      switch (result.outcome) {
+        case "created":
+        case "reused":
+          return c.json(ok({ outcome: result.outcome, item: result.item }));
+        case "unsupported-type":
+          return c.json(
+            err("validation_failed", "Only JPEG, PNG, WebP, or AVIF images are supported."),
+            { status: ERROR_STATUS.validation_failed },
+          );
+        case "unreadable-image":
+          return c.json(err("validation_failed", "That file could not be decoded as an image."), {
+            status: ERROR_STATUS.validation_failed,
+          });
+        case "too-large":
+          return c.json(err("payload_too_large", "Images are capped at 20 MB."), {
+            status: ERROR_STATUS.payload_too_large,
+          });
+        case "storage-cap":
+          return c.json(
+            err(
+              "payload_too_large",
+              "This workspace's 5 GB media storage is full — remove unused images first.",
+            ),
+            { status: ERROR_STATUS.payload_too_large },
+          );
+      }
+    },
+  )
   .get("/file/:contentHash/:variant", async (c) => {
     const workspaceId = requireWorkspace(c);
     if (!workspaceId) {
