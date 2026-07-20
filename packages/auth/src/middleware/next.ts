@@ -27,12 +27,23 @@ export function createAuthGate(options: AuthGateOptions = {}) {
     sessionCookie = DEFAULT_SESSION_COOKIE,
   } = options;
 
-  return function authGate(request: NextRequest): NextResponse {
+  /**
+   * `forwardHeaders`, when given, is threaded into every pass-through
+   * response as `NextResponse.next({ request: { headers } })` — the one way
+   * a proxy can hand a per-request value (e.g. a CSP nonce) to the Server
+   * Components that render this same request. Redirects don't render
+   * anything, so they don't need it.
+   */
+  return function authGate(request: NextRequest, forwardHeaders?: Headers): NextResponse {
     const { pathname } = request.nextUrl;
     const isProtected = protectedPaths.some(
       (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
     );
-    if (!isProtected) return NextResponse.next();
+    const next = () =>
+      forwardHeaders
+        ? NextResponse.next({ request: { headers: forwardHeaders } })
+        : NextResponse.next();
+    if (!isProtected) return next();
 
     if (!request.cookies.has(sessionCookie)) {
       const url = request.nextUrl.clone();
@@ -40,6 +51,6 @@ export function createAuthGate(options: AuthGateOptions = {}) {
       url.searchParams.set("next", pathname);
       return NextResponse.redirect(url);
     }
-    return NextResponse.next();
+    return next();
   };
 }
