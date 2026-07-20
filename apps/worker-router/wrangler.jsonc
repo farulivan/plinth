@@ -15,8 +15,8 @@
   "kv_namespaces": [
     {
       "binding": "TENANT_HOSTS",
-      // Placeholder — the real namespace id lands with go-live (the local
-      // simulator ignores the value).
+      // Placeholder — replaced once the real Cloudflare KV namespace exists
+      // (the local simulator ignores the value).
       "id": "00000000000000000000000000000000",
     },
   ],

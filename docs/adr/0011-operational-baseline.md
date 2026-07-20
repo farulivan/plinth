@@ -66,6 +66,12 @@ Content-Security-Policy:
 - **CSP report-only initially** — rejected as default. Report-only ships a policy that does nothing if the browser violates it — the wrong shape for a brand-new policy that has not been tested against real templates yet. We ship enforcement with a narrow allowlist, then expand the allowlist as templates add legitimate dependencies. The narrowness of the initial policy is the audit signal; loosening it requires a PR and ADR-grade reasoning.
 - **Tighter tenant-side CSP per template** — accepted as a future direction. Once the first three templates ship, the union of their inline-style needs forms a clearer picture and the tenant policy can narrow on a per-template basis (set via the template manifest, applied at the Cloudflare Worker). For now, the permissive baseline is the floor.
 
+**Amendment:** in development only, `script-src` adds `'unsafe-eval'` — Turbopack/React use `eval()` for HMR and dev-mode stack reconstruction, never in production. Gated on `NODE_ENV === "development"` in `apps/dashboard/proxy.ts`, so the built/prod policy never carries it.
+
+**Amendment:** the dashboard's `frame-ancestors` ships as `'self'`, not the `'none'` drafted above. `/preview/[draftId]` (ADR-0007) is framed by the editor itself — same origin, session-scoped — so `'none'` would block the dashboard from embedding its own preview. `'self'` still refuses every other embedder, which is the property this directive exists for. Implemented in `apps/dashboard/proxy.ts`, with the nonce generated per request and forwarded to Server Components via an `x-nonce` request header (`packages/auth/src/middleware/next.ts`'s `createAuthGate` takes an optional header-forwarding hook so the redirect logic and the nonce plumbing don't duplicate each other).
+
+**Amendment:** ADR-0003's 20-publishes/day and ADR-0006's 100-uploads/hour caps are implemented as a fixed-window counter against the Upstash Redis REST endpoint already provisioned for local dev (SRH proxy) and production. `apps/api/src/middleware/rateLimit.ts` mounts per-route (`POST /publish`, `POST /media/upload` only — reads are uncapped), returns `429` with `Retry-After` via the existing `rate_limited` error code.
+
 ## Consequences
 
 - **Schema, pooling, backups, and CSP each have one chosen tool and one stated reason.** No room for "we should probably also add X" outside this document; adding a sidecar (PgBouncer, wal-g, helmet for CSP, etc.) requires updating this ADR with a rejected-alternative entry first.

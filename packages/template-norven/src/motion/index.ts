@@ -1,5 +1,5 @@
 /**
- * The Norven motion runtime, ported from the norven repo (M6). One entry: the
+ * The Norven motion runtime, ported from the norven repo. One entry: the
  * published site's page loads this module and calls boot(). The preview
  * iframe never imports it — content is visible without the runtime because
  * every hidden initial state in styles.css is gated on `html.js`, which only

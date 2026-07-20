@@ -44,6 +44,10 @@ const envSchema = z.object({
   CLOUDFLARE_API_TOKEN: optionalEnv,
   CLOUDFLARE_ACCOUNT_ID: optionalEnv,
   CLOUDFLARE_KV_NAMESPACE_ID: optionalEnv,
+  // Upstash Redis REST (rate limiting, ADR-0003/0006). Local: the SRH proxy in
+  // docker-compose.dev.yml. Production: the real Upstash REST endpoint.
+  UPSTASH_REDIS_REST_URL: z.url(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
   // SENTRY_DSN_API is read raw in instrument.ts (preloads before this contract).
 });
 

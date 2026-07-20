@@ -41,6 +41,12 @@ R2_ACCESS_KEY_ID=plinth
 R2_SECRET_ACCESS_KEY=plinth-local-dev
 R2_BUCKET_SITES=plinth-sites
 R2_BUCKET_MEDIA=plinth-media
+# Rate limiting (ADR-0003/0006/0011): the local-prod stack has no SRH proxy
+# yet, so these point nowhere reachable — the rate-limit middleware fails
+# open on a Redis error, so publish/upload still work here, just uncapped.
+# Use \`pnpm dev\` to exercise the real cap.
+UPSTASH_REDIS_REST_URL=http://localhost:8079
+UPSTASH_REDIS_REST_TOKEN=local-prod-dummy-token
 EOF
   echo "created .env.local-prod with generated secrets"
 else

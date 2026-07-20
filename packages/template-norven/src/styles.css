@@ -1,6 +1,6 @@
 /*
- * The Norven design system, ported verbatim from the norven repo's global.css
- * (M6 content port). Consumers import this ONE file — the dashboard's preview
+ * The Norven design system, ported verbatim from the norven repo's global.css.
+ * Consumers import this ONE file — the dashboard's preview
  * page and the site-builder's page — and their Tailwind v4 build picks up the
  * template's utility classes via the @source below (relative to this file, so
  * it works from inside node_modules).

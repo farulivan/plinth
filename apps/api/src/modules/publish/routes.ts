@@ -3,6 +3,8 @@ import { err, ERROR_STATUS, ok } from "@plinth/schema/api";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppBindings } from "../../context";
+import { RATE_LIMITS } from "../../lib/rateLimits";
+import { rateLimit } from "../../middleware/rateLimit";
 import {
   getPublishStatus,
   getVersionHistory,
@@ -23,44 +25,48 @@ const retryBody = z.object({ versionId: z.uuid() });
 const rollbackBody = z.object({ versionId: z.uuid() });
 
 export const publishRoutes = new Hono<AppBindings>()
-  .post("/", async (c) => {
-    const workspaceId = c.get("workspaceId");
-    const session = c.get("session");
-    if (!workspaceId || !session) {
-      return c.json(err("unauthorized", "An active workspace is required."), {
-        status: ERROR_STATUS.unauthorized,
-      });
-    }
-
-    const result = await requestPublish(c.get("db"), { workspaceId, userId: session.user.id });
-    switch (result.outcome) {
-      case "created":
-      case "reused":
-        return c.json(ok({ outcome: result.outcome, version: result.version }));
-      case "no-draft":
-        return c.json(err("not_found", "Nothing to publish — this workspace has no draft yet."), {
-          status: ERROR_STATUS.not_found,
+  .post(
+    "/",
+    rateLimit("publish", RATE_LIMITS.publish.limit, RATE_LIMITS.publish.windowSeconds),
+    async (c) => {
+      const workspaceId = c.get("workspaceId");
+      const session = c.get("session");
+      if (!workspaceId || !session) {
+        return c.json(err("unauthorized", "An active workspace is required."), {
+          status: ERROR_STATUS.unauthorized,
         });
-      case "unknown-template":
-        return c.json(
-          err("internal", `Template "${result.templateId}" is not registered on the api.`),
-          { status: ERROR_STATUS.internal },
-        );
-      case "invalid-draft": {
-        // Name the offenders in the message itself — the bar shows one line,
-        // and "something is invalid" without a pointer is undebuggable.
-        const fields = Object.keys(result.fieldErrors).slice(0, 5).join(", ");
-        return c.json(
-          err(
-            "validation_failed",
-            `Not ready to publish — fix in the editor: ${fields}. (A section you can't finish yet can be toggled off.)`,
-            result.fieldErrors,
-          ),
-          { status: ERROR_STATUS.validation_failed },
-        );
       }
-    }
-  })
+
+      const result = await requestPublish(c.get("db"), { workspaceId, userId: session.user.id });
+      switch (result.outcome) {
+        case "created":
+        case "reused":
+          return c.json(ok({ outcome: result.outcome, version: result.version }));
+        case "no-draft":
+          return c.json(err("not_found", "Nothing to publish — this workspace has no draft yet."), {
+            status: ERROR_STATUS.not_found,
+          });
+        case "unknown-template":
+          return c.json(
+            err("internal", `Template "${result.templateId}" is not registered on the api.`),
+            { status: ERROR_STATUS.internal },
+          );
+        case "invalid-draft": {
+          // Name the offenders in the message itself — the bar shows one line,
+          // and "something is invalid" without a pointer is undebuggable.
+          const fields = Object.keys(result.fieldErrors).slice(0, 5).join(", ");
+          return c.json(
+            err(
+              "validation_failed",
+              `Not ready to publish — fix in the editor: ${fields}. (A section you can't finish yet can be toggled off.)`,
+              result.fieldErrors,
+            ),
+            { status: ERROR_STATUS.validation_failed },
+          );
+        }
+      }
+    },
+  )
   .get("/status", async (c) => {
     const workspaceId = c.get("workspaceId");
     if (!workspaceId) {
