@@ -2,77 +2,122 @@ import { z } from "zod";
 import {
   defineContentDocument,
   defineSection,
-  link,
   longText,
   mediaRef,
   shortText,
 } from "@plinth/schema/content";
 
 /**
- * Norven template manifest — the field vocabulary for tenant #0 (an
- * architecture studio site). Each section composes @plinth/schema field
- * primitives; the editor renders these as form controls and a publish must
- * satisfy this schema (ADR-0001). Sections are unique per document and offer
- * toggle + reorder only — no free placement, no rich text.
+ * The Norven template manifest v2 (M6 content port): the six sections of the
+ * real landing page, replacing the four foundation stubs. Field notes:
+ * headings that break across lines carry "\n" (longText renders a textarea;
+ * components split on it), and multi-part captions ("Residence · 2023 ·
+ * Built") are single editable strings — the CMS edits copy, not taxonomy.
  */
 
-export const heroSection = defineSection(
-  "hero",
+export const photoHeroSection = defineSection(
+  "photoHero",
   z.object({
-    title: shortText,
-    tagline: shortText.optional(),
+    eyebrow: shortText.optional(),
+    title: longText,
+    subtitle: longText.optional(),
     photo: mediaRef,
   }),
 );
 
-export const introSection = defineSection(
-  "intro",
+export const statementSection = defineSection(
+  "statement",
   z.object({
-    heading: shortText,
+    eyebrow: shortText,
     body: longText,
   }),
 );
 
-export const projectsSection = defineSection(
-  "projects",
+export const featuredProjectsSection = defineSection(
+  "featuredProjects",
   z.object({
     heading: shortText,
     items: z
       .array(
         z.object({
           title: shortText,
-          summary: longText,
+          /** e.g. "Residence · 2023 · Built" */
+          meta: shortText,
+          /** e.g. "Tjøme, Norway · 280 m²" */
+          location: shortText,
+          brief: longText,
           image: mediaRef,
         }),
       )
       .min(1)
-      .max(12),
+      .max(8),
   }),
 );
 
-export const frameSection = defineSection(
-  "frame",
+export const statsSection = defineSection(
+  "stats",
   z.object({
-    heading: shortText,
-    body: longText,
-    cta: link,
+    items: z
+      .array(
+        z.object({
+          /** Numeric strings animate as counters; anything else renders as-is. */
+          value: shortText,
+          label: shortText,
+        }),
+      )
+      .min(2)
+      .max(4),
   }),
 );
 
-/** Discriminated union of every Norven section, keyed on `type`. */
+export const testimonialSection = defineSection(
+  "testimonial",
+  z.object({
+    /** e.g. "Client, Salt House" */
+    attribution: shortText,
+    /** e.g. "Tjøme · 2023" */
+    context: shortText,
+    quote: longText,
+    /** e.g. "Margrét Sól" — rendered with the leading dash. */
+    name: shortText,
+  }),
+);
+
+export const contactSection = defineSection(
+  "contact",
+  z.object({
+    eyebrow: shortText,
+    heading: longText,
+    email: shortText,
+    phone: shortText.optional(),
+    studios: z
+      .array(
+        z.object({
+          city: shortText,
+          address: shortText,
+        }),
+      )
+      .min(1)
+      .max(5)
+      .optional(),
+  }),
+);
+
 export const norvenSection = z.discriminatedUnion("type", [
-  heroSection,
-  introSection,
-  projectsSection,
-  frameSection,
+  photoHeroSection,
+  statementSection,
+  featuredProjectsSection,
+  statsSection,
+  testimonialSection,
+  contactSection,
 ]);
 
-/** The Norven content document — what the editor edits and a publish renders. */
 export const norvenDocument = defineContentDocument(norvenSection);
 export type NorvenDocument = z.infer<typeof norvenDocument>;
 
-/** Per-section field types, consumed by the section components (8.5). */
-export type HeroFields = z.infer<typeof heroSection>["fields"];
-export type IntroFields = z.infer<typeof introSection>["fields"];
-export type ProjectsFields = z.infer<typeof projectsSection>["fields"];
-export type FrameFields = z.infer<typeof frameSection>["fields"];
+export type PhotoHeroFields = z.infer<typeof photoHeroSection>["fields"];
+export type StatementFields = z.infer<typeof statementSection>["fields"];
+export type FeaturedProjectsFields = z.infer<typeof featuredProjectsSection>["fields"];
+export type StatsFields = z.infer<typeof statsSection>["fields"];
+export type TestimonialFields = z.infer<typeof testimonialSection>["fields"];
+export type ContactFields = z.infer<typeof contactSection>["fields"];

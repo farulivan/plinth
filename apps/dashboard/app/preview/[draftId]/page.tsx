@@ -1,6 +1,9 @@
 import { getSession, listUserWorkspaces } from "@plinth/auth";
 import { contentHash } from "@plinth/db";
 import { Document } from "@plinth/renderer";
+// The template's design system — same stylesheet the published site builds
+// with (M6). Route-scoped: only the preview segment loads it.
+import "@plinth/template-norven/styles.css";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";

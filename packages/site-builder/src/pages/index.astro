@@ -10,6 +10,7 @@ import { readFileSync } from "node:fs";
 import { Document, type ComponentMap } from "@plinth/renderer";
 import { looseContentDocument } from "@plinth/schema";
 import { norvenComponents } from "@plinth/template-norven";
+import "@plinth/template-norven/styles.css";
 
 const templates: Record<string, ComponentMap> = {
   "template-norven": norvenComponents,
@@ -34,5 +35,9 @@ const document = looseContentDocument.parse(JSON.parse(readFileSync(snapshotPath
   </head>
   <body>
     <Document document={document} components={components} />
+    <script>
+      import { boot } from "@plinth/template-norven/motion";
+      boot();
+    </script>
   </body>
 </html>

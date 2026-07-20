@@ -1,0 +1,91 @@
+/*
+ * The Norven design system, ported verbatim from the norven repo's global.css
+ * (M6 content port). Consumers import this ONE file — the dashboard's preview
+ * page and the site-builder's page — and their Tailwind v4 build picks up the
+ * template's utility classes via the @source below (relative to this file, so
+ * it works from inside node_modules).
+ */
+@import "tailwindcss";
+@import "@fontsource-variable/cormorant-garamond";
+@import "@fontsource-variable/space-grotesk";
+@import "@fontsource-variable/jetbrains-mono";
+
+@source "./";
+
+@theme {
+  --color-bone: #f4f1ea;
+  --color-bone-2: #e9e4d7;
+  --color-bone-3: #d8d2c2;
+  --color-ink: #111110;
+  --color-ink-2: #2a2823;
+  --color-ink-3: #5c5849;
+  --color-muted: #8e897a;
+  --color-brass: #b58a50;
+  --color-brass-2: #8a6738;
+  --color-brass-3: #6b4f2c;
+  --color-line: rgb(17 17 16 / 0.16);
+  --color-line-2: rgb(17 17 16 / 0.08);
+
+  --font-display: "Cormorant Garamond Variable", ui-serif, Georgia, serif;
+  --font-sans: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --text-display-1: clamp(3.5rem, 9vw, 9.25rem);
+  --text-display-2: clamp(2.75rem, 6vw, 6rem);
+  --text-display-3: clamp(2rem, 4vw, 3.5rem);
+  --text-eyebrow: 0.6875rem;
+
+  --radius-px: 2px;
+  --ease-arch: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@layer base {
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+  body {
+    @apply bg-bone text-ink font-sans antialiased;
+    font-feature-settings: "ss01", "ss02";
+  }
+  ::selection {
+    background: var(--color-brass);
+    color: var(--color-bone);
+  }
+  .eyebrow {
+    @apply text-ink-3 font-mono tracking-[0.16em] uppercase;
+    font-size: var(--text-eyebrow);
+  }
+  .hairline {
+    @apply border-line border-t;
+  }
+  /* Motion-hidden initial states apply only once the runtime marks html.js —
+   * the preview iframe never loads the runtime, so content stays visible. */
+  @media (prefers-reduced-motion: no-preference) {
+    html.js [data-reveal]:not(.is-in) {
+      opacity: 0;
+      transform: translateY(40px);
+      will-change: opacity, transform;
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html.js [data-reveal-lift] {
+      overflow: hidden;
+    }
+    html.js [data-reveal-lift]:not(.is-in) {
+      opacity: 0;
+    }
+    .reveal-lift__inner {
+      display: inline-block;
+      will-change: transform;
+    }
+    html.js img.image-fade:not(.is-loaded) {
+      opacity: 0;
+    }
+    img.image-fade.is-loaded {
+      opacity: 1;
+      transition: opacity 0.4s ease;
+    }
+  }
+}
