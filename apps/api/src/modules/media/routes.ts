@@ -36,7 +36,8 @@ export const mediaRoutes = new Hono<AppBindings>()
     rateLimit("upload", RATE_LIMITS.upload.limit, RATE_LIMITS.upload.windowSeconds),
     async (c) => {
       const workspaceId = requireWorkspace(c);
-      if (!workspaceId) {
+      const session = c.get("session");
+      if (!workspaceId || !session) {
         return c.json(err("unauthorized", "An active workspace is required."), {
           status: ERROR_STATUS.unauthorized,
         });
@@ -51,7 +52,11 @@ export const mediaRoutes = new Hono<AppBindings>()
         });
       }
 
-      const result = await uploadMedia(c.get("db"), { workspaceId, bytes });
+      const result = await uploadMedia(c.get("db"), {
+        workspaceId,
+        bytes,
+        actorUserId: session.user.id,
+      });
       switch (result.outcome) {
         case "created":
         case "reused":

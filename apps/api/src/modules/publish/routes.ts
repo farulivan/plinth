@@ -96,7 +96,8 @@ export const publishRoutes = new Hono<AppBindings>()
     }),
     async (c) => {
       const workspaceId = c.get("workspaceId");
-      if (!workspaceId) {
+      const session = c.get("session");
+      if (!workspaceId || !session) {
         return c.json(err("unauthorized", "An active workspace is required."), {
           status: ERROR_STATUS.unauthorized,
         });
@@ -105,6 +106,7 @@ export const publishRoutes = new Hono<AppBindings>()
       const result = await rollbackToVersion(c.get("db"), {
         workspaceId,
         versionId: c.req.valid("json").versionId,
+        userId: session.user.id,
       });
       switch (result.outcome) {
         case "rolled-back":

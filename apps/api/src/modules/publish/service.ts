@@ -6,6 +6,7 @@ import { sectionTypeOf } from "@plinth/schema/content";
 // never renders, so the components (.tsx, React) stay out of its graph.
 import { norvenSection } from "@plinth/template-norven/manifest";
 import type { z } from "zod";
+import { writeAuditLog } from "../../lib/auditLog";
 import { emitPromoted, enqueuePublish, runSiteBuild, uploadSiteDir } from "./adapter";
 import {
   createVersion,
@@ -118,7 +119,15 @@ export async function requestPublish(
   // equals the preview's hash for the same content.
   const hash = contentHash(draft);
   const existing = await findVersionByIdempotencyKey(db, input.workspaceId, hash);
-  if (existing) return { outcome: "reused", version: toSummary(existing) };
+  if (existing) {
+    await writeAuditLog(db, {
+      workspaceId: input.workspaceId,
+      actorUserId: input.userId,
+      action: "publish.requested",
+      payload: { versionId: existing.id, versionNumber: existing.versionNumber, outcome: "reused" },
+    });
+    return { outcome: "reused", version: toSummary(existing) };
+  }
 
   const version = await createVersion(db, input.workspaceId, {
     snapshot: draft,
@@ -139,6 +148,13 @@ export async function requestPublish(
     await setVersionStatus(db, input.workspaceId, version.id, "failed");
     throw error;
   }
+
+  await writeAuditLog(db, {
+    workspaceId: input.workspaceId,
+    actorUserId: input.userId,
+    action: "publish.requested",
+    payload: { versionId: version.id, versionNumber: version.versionNumber, outcome: "created" },
+  });
 
   return { outcome: "created", version: toSummary(version) };
 }
@@ -181,7 +197,7 @@ export type RollbackResult =
  * artifacts exist by construction. */
 export async function rollbackToVersion(
   db: Db,
-  input: { workspaceId: string; versionId: string },
+  input: { workspaceId: string; versionId: string; userId: string },
 ): Promise<RollbackResult> {
   const version = await getVersion(db, input.workspaceId, input.versionId);
   if (!version) return { outcome: "not-found" };
@@ -192,6 +208,12 @@ export async function rollbackToVersion(
     workspaceId: input.workspaceId,
     versionId: version.id,
     versionNumber: version.versionNumber,
+  });
+  await writeAuditLog(db, {
+    workspaceId: input.workspaceId,
+    actorUserId: input.userId,
+    action: "publish.rolled_back",
+    payload: { versionId: version.id, versionNumber: version.versionNumber },
   });
   return { outcome: "rolled-back", version: toSummary(version) };
 }
