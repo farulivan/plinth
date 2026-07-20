@@ -16,9 +16,16 @@ const authGate = createAuthGate({ loginPath: "/login", protectedPaths: ["/"] });
  * `'self'` still blocks every other embedder.
  */
 function cspHeader(nonce: string): string {
+  // Turbopack/React use eval() for dev-mode HMR and stack reconstruction
+  // (never in production builds) — 'unsafe-eval' is scoped to dev only so
+  // the production policy stays at the ADR-0011 baseline.
+  const scriptSrc =
+    process.env.NODE_ENV === "development"
+      ? `script-src 'self' 'nonce-${nonce}' 'unsafe-eval' https://browser.sentry-cdn.com`
+      : `script-src 'self' 'nonce-${nonce}' https://browser.sentry-cdn.com`;
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' https://browser.sentry-cdn.com`,
+    scriptSrc,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https://*.r2.cloudflarestorage.com https://*.cloudflareimages.com",
     "connect-src 'self' https://*.ingest.sentry.io",
