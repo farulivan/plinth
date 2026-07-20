@@ -3,6 +3,7 @@ import { err, ERROR_STATUS, ok } from "@plinth/schema/api";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppBindings } from "../../context";
+import { rateLimit } from "../../middleware/rateLimit";
 import {
   getPublishStatus,
   getVersionHistory,
@@ -22,8 +23,12 @@ import {
 const retryBody = z.object({ versionId: z.uuid() });
 const rollbackBody = z.object({ versionId: z.uuid() });
 
+// ADR-0003: 20 publishes/day/workspace.
+const PUBLISH_LIMIT = 20;
+const PUBLISH_WINDOW_SECONDS = 24 * 60 * 60;
+
 export const publishRoutes = new Hono<AppBindings>()
-  .post("/", async (c) => {
+  .post("/", rateLimit("publish", PUBLISH_LIMIT, PUBLISH_WINDOW_SECONDS), async (c) => {
     const workspaceId = c.get("workspaceId");
     const session = c.get("session");
     if (!workspaceId || !session) {

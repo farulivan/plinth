@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
 import type { AppBindings } from "../../context";
+import { rateLimit } from "../../middleware/rateLimit";
 import { getMediaFile, listWorkspaceMedia, uploadMedia } from "./service";
 
 /**
@@ -29,7 +30,8 @@ export const mediaRoutes = new Hono<AppBindings>()
     }
     return c.json(ok(await listWorkspaceMedia(c.get("db"), workspaceId)));
   })
-  .post("/upload", async (c) => {
+  // ADR-0006: 100 uploads/hour/workspace, same posture as the publish cap.
+  .post("/upload", rateLimit("upload", 100, 60 * 60), async (c) => {
     const workspaceId = requireWorkspace(c);
     if (!workspaceId) {
       return c.json(err("unauthorized", "An active workspace is required."), {

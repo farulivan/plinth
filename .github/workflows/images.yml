@@ -63,6 +63,8 @@ jobs:
             -e R2_SECRET_ACCESS_KEY=ci-dummy-secret-ci-dummy-secret-ci \
             -e R2_BUCKET_SITES=ci-dummy-bucket \
             -e R2_BUCKET_MEDIA=ci-dummy-bucket \
+            -e UPSTASH_REDIS_REST_URL=http://localhost:8079 \
+            -e UPSTASH_REDIS_REST_TOKEN=ci-dummy-token \
             plinth-${{ matrix.app }}:pr
           for i in $(seq 1 30); do
             if curl -fsS "http://localhost:${{ matrix.port }}${{ matrix.health }}"; then
