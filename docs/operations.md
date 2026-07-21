@@ -53,3 +53,5 @@ Run the above against a scratch project quarterly — a backup nobody has restor
 ### `pg_dump` version note
 
 The api's Docker image installs `postgresql-client-17` (from the PGDG apt repo, not Debian's default v15 package) to match Neon's Postgres 17 — `pg_dump` refuses to dump from a server newer than itself, so this pin matters. If the database ever moves to a new Postgres major version, bump the client package in `apps/api/Dockerfile` alongside it.
+
+**Testing the backup job via `pnpm dev`:** the api runs on the host in dev mode, so it shells out to whatever `pg_dump` is on *your* `PATH`, not the one baked into the Docker image. macOS's Homebrew `postgresql` formula tracks an older major version by default, which fails against the v17 dev Postgres with `server version mismatch`. Install a matching client — `brew install postgresql@17` — and put it on `PATH` before running `pnpm dev` (the formula prints the exact line for your shell profile). This only affects local testing of this one job; the deployed image is unaffected.
