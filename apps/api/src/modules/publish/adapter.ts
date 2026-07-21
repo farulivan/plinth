@@ -56,8 +56,9 @@ export async function runSiteBuild(input: {
   await writeFile(snapshotPath, JSON.stringify(input.snapshot), "utf8");
 
   // pnpm resolves the workspace from any cwd inside the repo, so this works
-  // from apps/api in dev. The production api image cannot run this yet — it
-  // ships only the tsup bundle (ADR-0013 records the gap and the plan).
+  // from apps/api in dev and from the production image's WORKDIR alike — the
+  // Dockerfile carries the whole pruned monorepo tree forward specifically
+  // so this call has a workspace to resolve (ADR-0013).
   await execFileAsync("pnpm", ["--filter", "@plinth/site-builder", "run", "build:site"], {
     env: {
       ...process.env,
