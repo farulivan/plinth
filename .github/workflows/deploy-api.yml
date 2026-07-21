@@ -1,16 +1,13 @@
 name: Deploy api
 
-# Built but disabled. Skeletons aren't worth deploying, and this needs a Fly
-# deploy token configured first. Runnable via "Run workflow" to prove it's wired;
-# flip on by uncommenting the push trigger once the product is demo-ready.
 on:
   workflow_dispatch:
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - "apps/api/**"
-  #     - "packages/**"
-  #     - ".github/workflows/deploy-api.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/api/**"
+      - "packages/**"
+      - ".github/workflows/deploy-api.yml"
 
 concurrency:
   group: deploy-api
@@ -20,8 +17,30 @@ permissions:
   contents: read
 
 jobs:
+  migrate:
+    name: migrate
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # Only @plinth/db's own deps (drizzle-kit + the driver) are needed to run
+      # migrations — no reason to install the whole monorepo for this step.
+      - run: pnpm install --frozen-lockfile
+      # ADR-0011: migrations land before the new image takes traffic. This
+      # step gates the deploy job below — a failed migration never reaches
+      # `flyctl deploy`, so the old version keeps serving.
+      - run: pnpm --filter @plinth/db db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
   deploy:
     name: deploy
+    needs: migrate
     runs-on: ubuntu-latest
     environment: production
     steps:
