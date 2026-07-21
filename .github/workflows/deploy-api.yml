@@ -28,9 +28,10 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
-      # Only @plinth/db's own deps (drizzle-kit + the driver) are needed to run
-      # migrations — no reason to install the whole monorepo for this step.
-      - run: pnpm install --frozen-lockfile
+      # --ignore-scripts: migrations run drizzle-kit + node-postgres, both pure
+      # JS — no reason to pay for Sharp's/workerd's native postinstall builds
+      # just to apply a migration.
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       # ADR-0011: migrations land before the new image takes traffic. This
       # step gates the deploy job below — a failed migration never reaches
       # `flyctl deploy`, so the old version keeps serving.
