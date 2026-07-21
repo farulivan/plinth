@@ -155,7 +155,7 @@ The dashboard and api deploy as separate Fly.io apps with auto-stop at idle; ten
 ├── docs/
 │   ├── adr/               # 11 ADRs for every load-bearing decision
 │   ├── deployment.md      # operations runbook (TBD)
-│   └── operations.md      # reapers + KV sync + DLQ playbook (TBD)
+│   └── operations.md      # reapers, backups, and the restore runbook
 ├── .github/
 │   └── workflows/         # ci, deploy-dashboard, deploy-api, codeql, lighthouse, e2e
 └── turbo.json             # Turborepo pipeline config

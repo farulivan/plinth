@@ -36,6 +36,9 @@ const envSchema = z.object({
   R2_SECRET_ACCESS_KEY: z.string().min(1),
   R2_BUCKET_SITES: z.string().min(1),
   R2_BUCKET_MEDIA: z.string().min(1),
+  // Weekly Postgres dump target (ADR-0011). A separate bucket from sites/media
+  // so a bucket-level policy mistake can't touch backups and vice versa.
+  R2_BUCKET_BACKUPS: z.string().min(1),
   // Tenant hostname suffix appended to the workspace slug (ADR-0004):
   // ".farulivan.com" in production, ".localhost" against wrangler dev.
   TENANT_HOST_SUFFIX: z.string().min(1).default(".localhost"),
