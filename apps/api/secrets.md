@@ -13,7 +13,7 @@ parses `process.env` at startup and **fails fast** if any required var is missin
 | `INTERNAL_API_HMAC_SECRET` | yes      | shared HMAC secret for dashboard→api calls (ADR-0008)        |
 | `SENTRY_DSN_API`           | no       | Sentry DSN for errors + perf; unset = telemetry disabled      |
 
-`INTERNAL_API_HMAC_SECRET` **must match** the dashboard's value (Branch 10), or every
+`INTERNAL_API_HMAC_SECRET` **must match** the dashboard's value, or every
 internal call is rejected with `401`.
 
 ## Set them
@@ -32,3 +32,16 @@ fly secrets set \
 
 Omit `SENTRY_DSN_API` to run without telemetry. Setting secrets triggers a rolling
 restart so the new values are picked up.
+
+## GitHub Actions secret: `DATABASE_URL`
+
+Separate from the Fly secret above — `.github/workflows/deploy-api.yml`'s `migrate`
+job runs `drizzle-kit migrate` from the GitHub Actions runner (not inside the
+deployed container) before the deploy job starts, so it needs its own path to
+the database. Same connection string as the Fly secret, set as a repository
+secret scoped to the `production` environment (Settings → Environments →
+production → Secrets):
+
+```sh
+gh secret set DATABASE_URL --env production --body "postgres://…?sslmode=require"
+```

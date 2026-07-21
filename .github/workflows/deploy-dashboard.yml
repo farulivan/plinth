@@ -1,16 +1,13 @@
 name: Deploy dashboard
 
-# Built but disabled. Skeletons aren't worth deploying, and this needs a Fly
-# deploy token configured first. Runnable via "Run workflow" to prove it's wired;
-# flip on by uncommenting the push trigger once the product is demo-ready.
 on:
   workflow_dispatch:
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - "apps/dashboard/**"
-  #     - "packages/**"
-  #     - ".github/workflows/deploy-dashboard.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/dashboard/**"
+      - "packages/**"
+      - ".github/workflows/deploy-dashboard.yml"
 
 concurrency:
   group: deploy-dashboard

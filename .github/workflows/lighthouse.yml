@@ -1,10 +1,16 @@
 name: Lighthouse
 
-# Built but disabled. Performance + a11y budgets on the dashboard (the public
-# /login for now; more routes as the editor lands). Dispatch-only until the
-# product is demo-ready. Budgets live in .lighthouserc.json.
+# Performance + a11y budgets on the dashboard (the public /login for now; more
+# routes as the editor lands). Budgets live in .lighthouserc.json.
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "apps/dashboard/**"
+      - "packages/ui/**"
+      - "packages/renderer/**"
+      - ".lighthouserc.json"
+      - ".github/workflows/lighthouse.yml"
 
 concurrency:
   group: lighthouse-${{ github.ref }}

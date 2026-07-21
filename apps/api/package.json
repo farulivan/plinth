@@ -32,7 +32,8 @@
     "pg": "^8.21.0",
     "resend": "^6.14.0",
     "sharp": "^0.35.3",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "@plinth/site-builder": "workspace:*"
   },
   "devDependencies": {
     "@plinth/auth": "workspace:*",
