@@ -5,6 +5,7 @@ import {
   MEDIA_STORAGE_CAP_BYTES,
   type MediaItem,
 } from "@plinth/schema/api";
+import { writeAuditLog } from "../../lib/auditLog";
 import { getMediaObject, processImage, uploadMediaVariants } from "./adapter";
 import { findMediaByHash, insertMedia, listMediaRows, storageUsedBytes, type MediaRow } from "./db";
 import { sniffImageType } from "./sniff";
@@ -41,7 +42,7 @@ export async function listWorkspaceMedia(db: Db, workspaceId: string): Promise<M
 
 export async function uploadMedia(
   db: Db,
-  input: { workspaceId: string; bytes: Buffer },
+  input: { workspaceId: string; bytes: Buffer; actorUserId: string },
 ): Promise<UploadResult> {
   if (input.bytes.byteLength > MEDIA_MAX_UPLOAD_BYTES) return { outcome: "too-large" };
 
@@ -50,7 +51,15 @@ export async function uploadMedia(
 
   const contentHash = hashBody(input.bytes);
   const existing = await findMediaByHash(db, input.workspaceId, contentHash);
-  if (existing) return { outcome: "reused", item: toItem(existing) };
+  if (existing) {
+    await writeAuditLog(db, {
+      workspaceId: input.workspaceId,
+      actorUserId: input.actorUserId,
+      action: "media.uploaded",
+      payload: { mediaId: existing.id, contentHash, outcome: "reused" },
+    });
+    return { outcome: "reused", item: toItem(existing) };
+  }
 
   const usedBytes = await storageUsedBytes(db, input.workspaceId);
   if (usedBytes + input.bytes.byteLength > MEDIA_STORAGE_CAP_BYTES) {
@@ -76,6 +85,12 @@ export async function uploadMedia(
       height: processed.height,
       fileSize: input.bytes.byteLength,
       contentType,
+    });
+    await writeAuditLog(db, {
+      workspaceId: input.workspaceId,
+      actorUserId: input.actorUserId,
+      action: "media.uploaded",
+      payload: { mediaId: row.id, contentHash, outcome: "created" },
     });
     return { outcome: "created", item: toItem(row) };
   } catch (error) {

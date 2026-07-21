@@ -1,6 +1,7 @@
 import { contentHash, type Db } from "@plinth/db";
 import type { LooseContentDocument } from "@plinth/schema";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as auditLog from "../../lib/auditLog";
 import * as adapter from "./adapter";
 import * as dbFns from "./db";
 import { requestPublish, retryPublish, rollbackToVersion } from "./service";
@@ -25,6 +26,9 @@ vi.mock("./db", () => ({
   setVersionStatus: vi.fn(),
   promoteWorkspaceVersion: vi.fn(),
 }));
+// writeAuditLog opens its own withWorkspace transaction against the real
+// pool — stub it the same way as adapter/db so tests never touch Postgres.
+vi.mock("../../lib/auditLog", () => ({ writeAuditLog: vi.fn() }));
 
 const db = {} as Db;
 const WORKSPACE = "00000000-0000-0000-0000-000000000001";
@@ -141,6 +145,14 @@ describe("requestPublish", () => {
       versionId: VERSION,
       versionNumber: 4,
     });
+    expect(auditLog.writeAuditLog).toHaveBeenCalledWith(
+      db,
+      expect.objectContaining({
+        workspaceId: WORKSPACE,
+        actorUserId: USER,
+        action: "publish.requested",
+      }),
+    );
   });
 
   it("marks the version failed when the enqueue dies, instead of leaving it queued", async () => {
@@ -153,6 +165,7 @@ describe("requestPublish", () => {
       "inngest unreachable",
     );
     expect(dbFns.setVersionStatus).toHaveBeenCalledWith(db, WORKSPACE, VERSION, "failed");
+    expect(auditLog.writeAuditLog).not.toHaveBeenCalled();
   });
 });
 
@@ -160,7 +173,11 @@ describe("rollbackToVersion", () => {
   it("refuses versions that never built — their artifacts don't exist", async () => {
     vi.mocked(dbFns.getVersion).mockResolvedValue(versionRow("failed"));
 
-    const result = await rollbackToVersion(db, { workspaceId: WORKSPACE, versionId: VERSION });
+    const result = await rollbackToVersion(db, {
+      workspaceId: WORKSPACE,
+      versionId: VERSION,
+      userId: USER,
+    });
 
     expect(result).toEqual({ outcome: "not-built", status: "failed" });
     expect(dbFns.promoteWorkspaceVersion).not.toHaveBeenCalled();
@@ -169,7 +186,11 @@ describe("rollbackToVersion", () => {
   it("repoints the live version and announces it for KV sync", async () => {
     vi.mocked(dbFns.getVersion).mockResolvedValue(versionRow("built"));
 
-    const result = await rollbackToVersion(db, { workspaceId: WORKSPACE, versionId: VERSION });
+    const result = await rollbackToVersion(db, {
+      workspaceId: WORKSPACE,
+      versionId: VERSION,
+      userId: USER,
+    });
 
     expect(result.outcome).toBe("rolled-back");
     expect(dbFns.promoteWorkspaceVersion).toHaveBeenCalledWith(db, WORKSPACE, VERSION);
@@ -178,6 +199,14 @@ describe("rollbackToVersion", () => {
       versionId: VERSION,
       versionNumber: 4,
     });
+    expect(auditLog.writeAuditLog).toHaveBeenCalledWith(
+      db,
+      expect.objectContaining({
+        workspaceId: WORKSPACE,
+        actorUserId: USER,
+        action: "publish.rolled_back",
+      }),
+    );
   });
 });
 
