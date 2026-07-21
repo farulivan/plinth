@@ -11,8 +11,21 @@
 
 # --- base: Node 22 + libvips on Debian slim (alpine + Sharp is a known headache) ---
 FROM node:22-bookworm-slim AS base
+# libvips: Sharp's native dependency (ADR-0006). postgresql-client-17: the
+# pg_dump binary the weekly backup reaper shells out to (ADR-0011) — pinned to
+# match Neon's Postgres 17 (pg_dump can't dump from a server newer than
+# itself), pulled from the PGDG apt repo since bookworm's default package is
+# v15.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends libvips42 \
+  && apt-get install -y --no-install-recommends libvips42 ca-certificates curl gnupg \
+  && install -d /usr/share/postgresql-common/pgdg \
+  && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+       -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+  && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+       > /etc/apt/sources.list.d/pgdg.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends postgresql-client-17 \
+  && apt-get purge -y curl gnupg \
   && rm -rf /var/lib/apt/lists/*
 ENV PNPM_HOME="/pnpm" PATH="/pnpm:$PATH"
 RUN corepack enable
