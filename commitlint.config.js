@@ -33,6 +33,7 @@ export default {
         "config",
         "infra",
         "ci",
+        "e2e",
         "docs",
         "adr",
         "deps",
