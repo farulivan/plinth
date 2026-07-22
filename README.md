@@ -8,12 +8,11 @@ I built Plinth as a typed, multi-tenant CMS for editorial marketing sites. It is
 
 [![CI](https://github.com/farulivan/plinth/actions/workflows/ci.yml/badge.svg)](https://github.com/farulivan/plinth/actions/workflows/ci.yml)
 
-<!--
-More badges as their workflows run regularly / the Renovate app is installed:
-
 [![CodeQL](https://github.com/farulivan/plinth/actions/workflows/codeql.yml/badge.svg)](https://github.com/farulivan/plinth/actions/workflows/codeql.yml)
 [![Lighthouse](https://github.com/farulivan/plinth/actions/workflows/lighthouse.yml/badge.svg)](https://github.com/farulivan/plinth/actions/workflows/lighthouse.yml)
 [![E2E](https://github.com/farulivan/plinth/actions/workflows/e2e.yml/badge.svg)](https://github.com/farulivan/plinth/actions/workflows/e2e.yml)
+
+<!-- Renovate badge once the app is installed:
 [![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen?logo=renovatebot)](https://renovatebot.com)
 -->
 
@@ -129,7 +128,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for full setup, Conventional Commits ex
 
 ## Deployment
 
-The dashboard and api deploy as separate Fly.io apps with auto-stop at idle; tenant sites are written directly to Cloudflare R2 from the publish worker and served through Cloudflare's edge — static files stay up even while both apps sleep. GitHub Actions authenticates to Fly.io via OIDC; Cloudflare access uses scoped API tokens stored as repository secrets — no long-lived cloud credentials anywhere. Operational details, security model, cost analysis, and runbook live in [docs/deployment.md](./docs/deployment.md) (when it lands). Security headers follow [ADR-0011](./docs/adr/0011-operational-baseline.md): CSP per surface, the rest as Cloudflare Transform Rules mirroring Norven's posture.
+The dashboard and api deploy as separate Fly.io apps with auto-stop at idle; tenant sites are written directly to Cloudflare R2 from the publish worker and served through Cloudflare's edge — static files stay up even while both apps sleep. GitHub Actions authenticates to Fly.io with least-privilege, app-scoped deploy tokens stored as repository secrets; Cloudflare access uses scoped API tokens the same way — no account-level credentials anywhere. The full go-live runbook — provisioning order, per-provider steps, and post-deploy verification — is in [docs/deployment.md](./docs/deployment.md). Security headers follow [ADR-0011](./docs/adr/0011-operational-baseline.md): CSP per surface, the rest as Cloudflare Transform Rules mirroring Norven's posture.
 
 ## Project structure
 
@@ -154,7 +153,7 @@ The dashboard and api deploy as separate Fly.io apps with auto-stop at idle; ten
 │   └── ui/                # shadcn primitives for the dashboard
 ├── docs/
 │   ├── adr/               # 11 ADRs for every load-bearing decision
-│   ├── deployment.md      # operations runbook (TBD)
+│   ├── deployment.md      # go-live runbook (provisioning + first deploy)
 │   └── operations.md      # reapers, backups, and the restore runbook
 ├── .github/
 │   └── workflows/         # ci, deploy-dashboard, deploy-api, codeql, lighthouse, e2e
