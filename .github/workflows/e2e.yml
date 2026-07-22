@@ -1,12 +1,17 @@
 name: E2E + a11y
 
-# Built but disabled. Playwright E2E + axe a11y against the dashboard. The
-# Playwright setup (deps, config, the `test:e2e` script, and specs under
-# tests/e2e/) lands with the editor slice — until then this is dispatch-only and
-# a manual run fails at the missing script. Flip on by uncommenting pull_request.
+# Playwright E2E + axe a11y against the real dashboard + api, backed by the
+# compose dev services. The apps themselves are started by Playwright's
+# webServer; this job only provisions the services + env they read.
 on:
   workflow_dispatch:
-  # pull_request:
+  pull_request:
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "tests/e2e/**"
+      - "playwright.config.ts"
+      - ".github/workflows/e2e.yml"
 
 concurrency:
   group: e2e-${{ github.ref }}
@@ -27,5 +32,32 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+
+      # Backing services (postgres, redis + upstash proxy, inngest, minio),
+      # same set `pnpm dev` boots locally. minio-init runs separately — it's a
+      # one-shot bucket creator, not a long-lived service.
+      - name: start dev services
+        run: |
+          docker compose -f docker-compose.dev.yml up -d --wait
+          docker compose -f docker-compose.dev.yml run --rm minio-init
+
+      # The env the apps read, same shape scripts/dev-setup.sh writes locally:
+      # the example file plus two throwaway CI secrets (>=32 chars for the HMAC
+      # contract). RESEND stays empty, so magic links print to stdout and the
+      # verification token is readable from the database (see the auth helper).
+      - name: write .env
+        run: |
+          cp .env.example .env
+          sed -i 's|^BETTER_AUTH_SECRET=.*|BETTER_AUTH_SECRET=ci-e2e-better-auth-secret-0000000000|' .env
+          sed -i 's|^INTERNAL_API_HMAC_SECRET=.*|INTERNAL_API_HMAC_SECRET=ci-e2e-internal-hmac-secret-000000000|' .env
+          ln -sf ../../.env apps/dashboard/.env
+
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
