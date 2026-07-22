@@ -1,8 +1,13 @@
 name: CodeQL
 
-# Static security analysis. Too slow for the per-PR fast lane, so it runs weekly
-# on main plus on demand — findings land in the repo's Security tab.
+# Static security analysis (findings land in the repo's Security tab). Extract
+# is source-based — no build — so it's cheap enough to gate PRs: it runs on
+# every PR and push to main, with a weekly scheduled sweep as the backstop for
+# rules that only ship in newer CodeQL releases.
 on:
+  push:
+    branches: [main]
+  pull_request:
   schedule:
     - cron: "0 6 * * 1" # Mondays 06:00 UTC
   workflow_dispatch:
