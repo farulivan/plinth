@@ -15,9 +15,9 @@
   "kv_namespaces": [
     {
       "binding": "TENANT_HOSTS",
-      // Placeholder — replaced once the real Cloudflare KV namespace exists
-      // (the local simulator ignores the value).
-      "id": "00000000000000000000000000000000",
+      // Production namespace (`wrangler kv namespace create TENANT_HOSTS`); the
+      // local simulator ignores the value and uses .wrangler/state instead.
+      "id": "46689664ccf64928a8962d9c088d8cdd",
     },
   ],
   "r2_buckets": [
