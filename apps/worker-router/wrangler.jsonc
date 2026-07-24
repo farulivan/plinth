@@ -12,6 +12,9 @@
     "enabled": true,
   },
   "upload_source_maps": true,
+  // No per-version preview URLs: this worker only ever answers real tenant
+  // hostnames via a route, so the extra workers.dev surface is just noise.
+  "preview_urls": false,
   "kv_namespaces": [
     {
       "binding": "TENANT_HOSTS",
