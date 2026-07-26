@@ -7,7 +7,7 @@
 # Secrets are NOT in this file — set them with `fly secrets set` (see secrets.md).
 # [env] below holds only non-sensitive config.
 
-app = "plinth-api"          # must be globally unique on Fly; rename per account
+app = "plinth-farulivan-api"          # must be globally unique on Fly; rename per account
 primary_region = "sin"      # Singapore — nearest region to the author/users
 
 [build]

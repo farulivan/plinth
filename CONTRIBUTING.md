@@ -106,7 +106,7 @@ These are the manual steps a fresh clone can't automate. I keep them here so the
 - **Branch protection on `main`**: require the fast `CI / Verify` check (which includes the RLS probe) before merge. When the product is demo-ready, flip the heavy workflows (E2E, Lighthouse, CodeQL) from `workflow_dispatch` to PR triggers and add them as required checks.
 - **Cloudflare Transform Rules**: apply the dashboard response-header rules and the per-tenant rules from `docs/security-headers.md` (when added) via the Cloudflare dashboard. Verify with `curl -sI https://plinth.farulivan.com/` and `curl -sI https://norven.farulivan.com/`.
 - **Cloudflare for SaaS**: configure the fallback origin and the Custom Hostnames API token, scoped to the Plinth zone only.
-- **Fly.io**: create two apps (`plinth-dashboard`, `plinth-api`); register the GitHub Actions OIDC issuer for deploy tokens.
+- **Fly.io**: create two apps (`plinth-farulivan-dashboard`, `plinth-farulivan-api`); register the GitHub Actions OIDC issuer for deploy tokens.
 - **Neon**: create the production project. (Branch-per-PR previews are deferred until there's a UI worth previewing — CI uses testcontainers for now.)
 - **Inngest**: configure the production app and the signing key; mirror a staging environment for PR previews.
 - **Stripe**: register the webhook receiver URL (`api.plinth.farulivan.com/webhooks/stripe`) and rotate the signing secret into Fly.io secrets.

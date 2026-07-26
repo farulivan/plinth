@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      # App-scoped deploy token (`fly tokens create deploy -a plinth-dashboard`),
+      # App-scoped deploy token (`fly tokens create deploy -a plinth-farulivan-dashboard`),
       # stored as a repo secret. Remote build on Fly; server secrets live in
       # `fly secrets`. The client Sentry DSN is a public build arg (inlined at
       # build) — pass it as a repo variable so it ships to the browser bundle.
