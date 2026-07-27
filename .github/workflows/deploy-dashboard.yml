@@ -32,4 +32,4 @@ jobs:
           flyctl deploy --config apps/dashboard/fly.toml --remote-only
           --build-arg NEXT_PUBLIC_SENTRY_DSN_DASHBOARD=${{ vars.NEXT_PUBLIC_SENTRY_DSN_DASHBOARD }}
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN_DASHBOARD }}
+          FLY_API_TOKEN: ${{ secrets.FLY_TOKEN_DASHBOARD }}
