@@ -47,10 +47,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      # App-scoped deploy token (`fly tokens create deploy -a plinth-api`), stored
+      # App-scoped deploy token (`fly tokens create deploy -a plinth-farulivan-api`), stored
       # as a repo secret — least privilege, not an account token. Builds on Fly's
       # remote builders, so the runner needs no Docker and the whole monorepo is
       # the context the Dockerfile's `turbo prune` expects.
       - run: flyctl deploy --config apps/api/fly.toml --remote-only
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN_API }}
+          FLY_API_TOKEN: ${{ secrets.FLY_TOKEN_API }}

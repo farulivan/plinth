@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
 
 export default withSentryConfig(nextConfig, {
   org: "farul-ivan",
-  project: "javascript-nextjs",
+  project: "plinth-dashboard",
   // Source-map upload runs only when SENTRY_AUTH_TOKEN is present (CI/prod);
   // absent locally, so dev builds skip it.
 });

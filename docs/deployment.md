@@ -6,8 +6,8 @@ The go-live runbook: what to provision, in what order, and how the pieces connec
 
 | Piece | Runs on | Notes |
 | --- | --- | --- |
-| Dashboard (`@plinth/dashboard`) | Fly.io app `plinth-dashboard` | Next.js, auto-stops at idle |
-| API (`@plinth/api`) | Fly.io app `plinth-api` | Hono; owns uploads, SSE, Inngest, migrations |
+| Dashboard (`@plinth/dashboard`) | Fly.io app `plinth-farulivan-dashboard` | Next.js, auto-stops at idle |
+| API (`@plinth/api`) | Fly.io app `plinth-farulivan-api` | Hono; owns uploads, SSE, Inngest, migrations |
 | Worker router (`@plinth/worker-router`) | Cloudflare Worker | Host → KV → R2; serves published tenant sites |
 | Database | Neon Postgres | pooled connection string, PITR on the paid tier |
 | Rate limiting | Upstash Redis | REST endpoint |
@@ -93,16 +93,16 @@ Set each app's secrets from its own checklist — `apps/api/secrets.md` and `app
 The deploy workflows run on push to `main` (`deploy-api.yml`, `deploy-dashboard.yml`). They authenticate with **least-privilege Fly deploy tokens**, not OIDC:
 
 ```sh
-fly tokens create deploy -a plinth-api        # → repo secret FLY_DEPLOY_TOKEN_API
-fly tokens create deploy -a plinth-dashboard  # → repo secret FLY_DEPLOY_TOKEN_DASHBOARD
+fly tokens create deploy -a plinth-farulivan-api        # → repo secret FLY_TOKEN_API
+fly tokens create deploy -a plinth-farulivan-dashboard  # → repo secret FLY_TOKEN_DASHBOARD
 ```
 
 The api deploy runs migrations from the runner before cutting traffic, so it needs its own database path:
 
 ```sh
 gh secret set DATABASE_URL --env production --body "postgres://…?sslmode=require"
-gh secret set FLY_DEPLOY_TOKEN_API --body "…"
-gh secret set FLY_DEPLOY_TOKEN_DASHBOARD --body "…"
+gh secret set FLY_TOKEN_API --body "…"
+gh secret set FLY_TOKEN_DASHBOARD --body "…"
 gh variable set NEXT_PUBLIC_SENTRY_DSN_DASHBOARD --body "https://…ingest.sentry.io/…"
 ```
 
