@@ -28,7 +28,10 @@ function cspHeader(nonce: string): string {
     scriptSrc,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https://*.r2.cloudflarestorage.com https://*.cloudflareimages.com",
-    "connect-src 'self' https://*.ingest.sentry.io",
+    // *.sentry.io, not *.ingest.sentry.io: regional accounts ingest at
+    // hosts like o123.ingest.de.sentry.io, which the narrower pattern
+    // doesn't match — so the browser would silently block every event.
+    "connect-src 'self' https://*.sentry.io",
     "frame-ancestors 'self'",
     "base-uri 'self'",
     "form-action 'self'",
