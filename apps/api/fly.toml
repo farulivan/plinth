@@ -11,7 +11,10 @@ app = "plinth-farulivan-api"          # must be globally unique on Fly; rename p
 primary_region = "sin"      # Singapore — nearest region to the author/users
 
 [build]
-  dockerfile = "apps/api/Dockerfile" # relative to the repo-root build context
+  # Path is relative to THIS fly.toml's dir (apps/api/), not the build context.
+  # The context is set to the repo root by deploying with `fly deploy .` (the
+  # Dockerfile's `turbo prune` needs the whole workspace).
+  dockerfile = "Dockerfile"
 
 [env]
   NODE_ENV = "production"
