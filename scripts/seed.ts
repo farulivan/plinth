@@ -17,7 +17,13 @@ import { eq } from "drizzle-orm";
 const connectionString =
   process.env.DATABASE_URL ?? "postgres://plinth:plinth@localhost:5433/plinth";
 
-const SEED_USER = { email: "dev@plinth.local", name: "Dev User" };
+// The owner account. SEED_USER_EMAIL overrides the dev default so a production
+// seed can make the real operator the owner — magic-link login then matches
+// this pre-seeded user (and its workspace membership) by email.
+const SEED_USER = {
+  email: process.env.SEED_USER_EMAIL ?? "dev@plinth.local",
+  name: process.env.SEED_USER_NAME ?? "Dev User",
+};
 const SEED_WORKSPACE = { slug: "norven", name: "Norven", templateId: "template-norven" };
 
 /** Media-free sections only — photoHero and featuredProjects need media
