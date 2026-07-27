@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 /** Better Auth's default session cookie. Override if `advanced.cookiePrefix`
- * is set in the auth config. */
+ * is set in the auth config. Over HTTPS, Better Auth prefixes the cookie with
+ * `__Secure-`, so the gate must accept either name (see hasSessionCookie). */
 const DEFAULT_SESSION_COOKIE = "better-auth.session_token";
 
 export interface AuthGateOptions {
@@ -45,7 +46,7 @@ export function createAuthGate(options: AuthGateOptions = {}) {
         : NextResponse.next();
     if (!isProtected) return next();
 
-    if (!request.cookies.has(sessionCookie)) {
+    if (!hasSessionCookie(request, sessionCookie)) {
       const url = request.nextUrl.clone();
       url.pathname = loginPath;
       url.searchParams.set("next", pathname);
@@ -53,4 +54,12 @@ export function createAuthGate(options: AuthGateOptions = {}) {
     }
     return next();
   };
+}
+
+/** True if either the plain cookie or its production `__Secure-`-prefixed
+ * variant is present. Better Auth adds the prefix whenever it issues Secure
+ * cookies (any HTTPS origin), so a gate hard-coded to the bare name would
+ * bounce every authenticated request in production. */
+function hasSessionCookie(request: NextRequest, name: string): boolean {
+  return request.cookies.has(name) || request.cookies.has(`__Secure-${name}`);
 }
