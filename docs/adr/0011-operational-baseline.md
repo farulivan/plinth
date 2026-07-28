@@ -42,7 +42,7 @@ Content-Security-Policy:
   script-src 'self' 'nonce-{nonce}' https://browser.sentry-cdn.com;
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: https://*.r2.cloudflarestorage.com https://*.cloudflareimages.com;
-  connect-src 'self' https://*.ingest.sentry.io;
+  connect-src 'self' https://*.sentry.io;
   frame-ancestors 'none';
   base-uri 'self';
   form-action 'self';
