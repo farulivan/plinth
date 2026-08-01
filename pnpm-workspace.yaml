@@ -34,3 +34,13 @@ allowBuilds:
 # majors (ESLint 10, TS 6, …) get held back and pnpm churns an auto-exclude list.
 # Reintroduce a non-zero age once the dependency set stabilizes post-MVP.
 minimumReleaseAge: 0
+
+# Astro carries sharp as an optional dependency and still resolves the 0.34
+# line, which inherits four libvips CVEs (33327, 33328, 35590, 35591). Nothing
+# in the templates uses astro:assets, so that copy never decodes an image —
+# media is processed at upload by the api's own sharp (ADR-0006) — but the
+# package still ships inside the api runtime image, and a clean audit is worth
+# more than an unused-code argument. Astro's own range is
+# "^0.34.0 || ^0.35.0", so pinning the 0.35 line stays inside what it supports.
+overrides:
+  astro>sharp: "^0.35.3"

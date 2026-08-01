@@ -17,12 +17,12 @@
   "dependencies": {
     "@plinth/db": "workspace:*",
     "@plinth/schema": "workspace:*",
-    "better-auth": "^1.6.17",
+    "better-auth": "^1.6.25",
     "resend": "^6.14.0"
   },
   "peerDependencies": {
-    "hono": "^4.12.26",
-    "next": "^16.2.9"
+    "hono": "^4.12.33",
+    "next": "^16.2.12"
   },
   "peerDependenciesMeta": {
     "hono": {
@@ -38,8 +38,8 @@
     "@testcontainers/postgresql": "^12.0.1",
     "drizzle-orm": "^0.45.2",
     "eslint": "^9.39.1",
-    "hono": "^4.12.26",
-    "next": "^16.2.9",
+    "hono": "^4.12.33",
+    "next": "^16.2.12",
     "pg": "^8.21.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
