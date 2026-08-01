@@ -5,7 +5,13 @@ import { type NextResponse, type NextRequest } from "next/server";
 // convention (the renamed middleware). Cookie-presence only — real session
 // validation happens in Server Components through getSession, since the proxy
 // can't reach Postgres. Not a security boundary; RLS is.
-const authGate = createAuthGate({ loginPath: "/login", protectedPaths: ["/"] });
+const authGate = createAuthGate({
+  loginPath: "/login",
+  protectedPaths: ["/"],
+  // Inside the matcher (so they carry the CSP), outside the redirect (so they
+  // don't bounce to themselves).
+  publicPaths: ["/login", "/callback"],
+});
 
 /**
  * Dashboard CSP (ADR-0011): default-deny, per-request nonce for first-party
@@ -49,7 +55,11 @@ export default function proxy(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  // Run on app routes only — skip Better Auth's API, Next internals, and the
-  // unauthenticated auth pages (avoids a redirect loop).
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|login|callback).*)"],
+  // Run on app routes only — skip Better Auth's API and Next internals. The
+  // auth pages stay in: they used to be excluded to avoid a redirect loop, but
+  // that also stripped their CSP, leaving the sign-in page as the one surface
+  // here shipping no policy at all. The loop is handled by `publicPaths` above
+  // instead, which is the gate's concern rather than the matcher's. The
+  // non-CSP headers cover what this pattern skips — see next.config.ts.
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
