@@ -9,8 +9,11 @@ const authGate = createAuthGate({
   loginPath: "/login",
   protectedPaths: ["/"],
   // Inside the matcher (so they carry the CSP), outside the redirect (so they
-  // don't bounce to themselves).
-  publicPaths: ["/login", "/callback"],
+  // don't bounce to themselves). `/robots.txt` and `/.well-known` are here for
+  // a different reason: they are unauthenticated by definition, and with every
+  // path protected they would otherwise answer a crawler or a verification
+  // probe with the sign-in page instead of the file it asked for.
+  publicPaths: ["/login", "/callback", "/robots.txt", "/.well-known"],
 });
 
 /**
@@ -25,10 +28,17 @@ function cspHeader(nonce: string): string {
   // Turbopack/React use eval() for dev-mode HMR and stack reconstruction
   // (never in production builds) — 'unsafe-eval' is scoped to dev only so
   // the production policy stays at the ADR-0011 baseline.
+  //
+  // No https://browser.sentry-cdn.com: Sentry ships through @sentry/nextjs and
+  // is bundled at build time, so the loader CDN is never fetched — the host
+  // appeared in no source file and no built chunk, only in this policy. A host
+  // allowlist in script-src is the one weakness a nonce-based policy otherwise
+  // does not have, so an entry nothing loads is pure attack surface. Lazily
+  // loaded Sentry extras (Replay, the feedback widget) would need it back.
   const scriptSrc =
     process.env.NODE_ENV === "development"
-      ? `script-src 'self' 'nonce-${nonce}' 'unsafe-eval' https://browser.sentry-cdn.com`
-      : `script-src 'self' 'nonce-${nonce}' https://browser.sentry-cdn.com`;
+      ? `script-src 'self' 'nonce-${nonce}' 'unsafe-eval'`
+      : `script-src 'self' 'nonce-${nonce}'`;
   return [
     "default-src 'self'",
     scriptSrc,

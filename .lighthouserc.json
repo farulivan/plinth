@@ -14,6 +14,8 @@
         "categories:accessibility": ["error", { "minScore": 1 }],
         "categories:best-practices": ["warn", { "minScore": 0.9 }],
         "categories:seo": "off",
+        "is-crawlable": "off",
+        "bf-cache": "warn",
         "unused-javascript": "off",
         "legacy-javascript": "off",
         "legacy-javascript-insight": "off",
