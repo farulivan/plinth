@@ -21,7 +21,7 @@
     "@plinth/template-norven": "workspace:*",
     "@plinth/ui": "workspace:*",
     "@sentry/nextjs": "^10.60.0",
-    "better-auth": "^1.6.17",
+    "better-auth": "^1.6.25",
     "hono": "^4.12.26",
     "next": "16.2.9",
     "react": "^19.2.0",

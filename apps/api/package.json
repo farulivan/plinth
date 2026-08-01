@@ -25,7 +25,7 @@
     "@upstash/redis": "^1.36.0",
     "@sentry/hono": "^10.59.0",
     "@sentry/node": "^10.59.0",
-    "better-auth": "^1.6.17",
+    "better-auth": "^1.6.25",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.26",
     "inngest": "^3.44.0",
