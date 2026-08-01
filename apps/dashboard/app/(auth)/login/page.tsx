@@ -1,78 +1,25 @@
-"use client";
+import { RETURN_PATH_PARAM, safeReturnPath } from "@plinth/auth/middleware/next";
+import { LoginForm } from "@/components/auth/login-form";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { type LoginRequest, loginRequest } from "@plinth/schema/auth";
-import { Button } from "@plinth/ui/components/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@plinth/ui/components/form";
-import { Input } from "@plinth/ui/components/input";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { authClient } from "@/lib/auth-client";
+/**
+ * Sign-in route. Rendered per request rather than prerendered so the proxy's
+ * per-request CSP nonce reaches the document (ADR-0011): the page is otherwise
+ * built once at compile time, and its inline bootstrap scripts would ship
+ * without a nonce the default-deny policy could accept — which on a page whose
+ * form is entirely client-side means no sign-in at all.
+ *
+ * The gate records the path an unauthenticated visitor was reaching for; this
+ * reads it back as the post-sign-in destination, through `safeReturnPath`
+ * because the value arrives from the query string (ADR-0005).
+ */
+export const dynamic = "force-dynamic";
 
-export default function LoginPage() {
-  const [sentTo, setSentTo] = useState<string | null>(null);
-  const form = useForm<LoginRequest>({
-    resolver: zodResolver(loginRequest),
-    defaultValues: { email: "" },
-  });
-
-  async function onSubmit({ email }: LoginRequest) {
-    const { error } = await authClient.signIn.magicLink({
-      email,
-      callbackURL: "/",
-      errorCallbackURL: "/callback",
-    });
-    if (error) {
-      form.setError("email", { message: error.message ?? "Could not send the link." });
-      return;
-    }
-    setSentTo(email);
-  }
-
-  if (sentTo) {
-    return (
-      <main className="flex min-h-svh flex-col items-center justify-center gap-2">
-        <h1 className="text-xl font-semibold">Check your email</h1>
-        <p className="text-muted-foreground text-sm">A sign-in link is on its way to {sentTo}.</p>
-      </main>
-    );
-  }
-
-  return (
-    <main className="flex min-h-svh flex-col items-center justify-center">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="w-full max-w-sm space-y-4">
-          <h1 className="text-2xl font-semibold">Sign in to Plinth</h1>
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input
-                    type="email"
-                    autoComplete="email"
-                    placeholder="you@example.com"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Sending…" : "Send magic link"}
-          </Button>
-        </form>
-      </Form>
-    </main>
-  );
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const raw = params[RETURN_PATH_PARAM];
+  return <LoginForm callbackURL={safeReturnPath(Array.isArray(raw) ? raw[0] : raw)} />;
 }

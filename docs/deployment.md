@@ -65,7 +65,7 @@ Bind the SITES/MEDIA R2 buckets and the TENANT_HOSTS KV in `wrangler.jsonc`, and
 
 **DNS** on `farulivan.com`: a wildcard `*` record (tenant subdomains) and an explicit `norven` record, both proxied through Cloudflare. Point `plinth` (dashboard) and `api` at their Fly apps.
 
-**Transform Rules / headers**: HSTS and the non-CSP security headers per ADR-0011, applied at the edge (the CSP itself ships from each app/worker).
+**Headers**: nothing to configure at the edge for the dashboard — HSTS and the other non-CSP headers ship from `apps/dashboard/next.config.ts` and the CSP from its proxy, per ADR-0011. Tenant sites get theirs from the worker-router. Verify after a deploy with `curl -sI https://plinth.farulivan.com/login`, which should carry `strict-transport-security`, `x-content-type-options`, `referrer-policy`, `permissions-policy`, both `cross-origin-*` headers, and a `content-security-policy` whose nonce matches the inline scripts in the body.
 
 Set `TENANT_HOST_SUFFIX=.farulivan.com` on the api (it defaults to `.localhost`).
 
