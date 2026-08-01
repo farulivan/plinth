@@ -4,7 +4,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as auditLog from "../../lib/auditLog";
 import * as adapter from "./adapter";
 import * as dbFns from "./db";
-import { requestPublish, retryPublish, rollbackToVersion } from "./service";
+import {
+  buildAndUploadVersion,
+  requestPublish,
+  retryPublish,
+  rollbackToVersion,
+  UnbuildableVersionError,
+} from "./service";
 
 // Factory mocks (not automock) so the real modules never evaluate — adapter
 // constructs an S3 client from the env contract at import time.
@@ -13,6 +19,7 @@ vi.mock("./adapter", () => ({
   emitPromoted: vi.fn(),
   runSiteBuild: vi.fn(),
   uploadSiteDir: vi.fn(),
+  removeBuildDir: vi.fn(),
 }));
 vi.mock("./db", () => ({
   getWorkspaceMeta: vi.fn(),
@@ -232,5 +239,75 @@ describe("retryPublish", () => {
       versionId: VERSION,
       versionNumber: 4,
     });
+  });
+});
+
+describe("buildAndUploadVersion", () => {
+  const built = { outDir: "/tmp/plinth-build-x/dist", workDir: "/tmp/plinth-build-x" };
+
+  beforeEach(() => {
+    vi.mocked(dbFns.getWorkspaceMeta).mockResolvedValue({
+      templateId: "template-norven",
+      currentVersionId: null,
+    });
+    vi.mocked(dbFns.getVersionSnapshot).mockResolvedValue(validDraft as never);
+    vi.mocked(adapter.runSiteBuild).mockResolvedValue(built);
+    vi.mocked(adapter.uploadSiteDir).mockResolvedValue({ files: 12 });
+  });
+
+  it("uploads the directory the build produced and reports its file count", async () => {
+    const result = await buildAndUploadVersion(db, {
+      workspaceId: WORKSPACE,
+      versionId: VERSION,
+      versionNumber: 7,
+    });
+
+    expect(result).toEqual({ files: 12 });
+    expect(adapter.uploadSiteDir).toHaveBeenCalledWith({
+      workspaceId: WORKSPACE,
+      versionNumber: 7,
+      dir: built.outDir,
+    });
+  });
+
+  it("removes the build tree after a successful upload", async () => {
+    await buildAndUploadVersion(db, {
+      workspaceId: WORKSPACE,
+      versionId: VERSION,
+      versionNumber: 7,
+    });
+
+    expect(adapter.removeBuildDir).toHaveBeenCalledWith(built.workDir);
+  });
+
+  // The retry path is where a leak compounds: without cleanup here every
+  // failed attempt would strand another dist/ on the machine.
+  it("removes the build tree even when the upload throws", async () => {
+    vi.mocked(adapter.uploadSiteDir).mockRejectedValue(new Error("R2 unreachable"));
+
+    await expect(
+      buildAndUploadVersion(db, {
+        workspaceId: WORKSPACE,
+        versionId: VERSION,
+        versionNumber: 7,
+      }),
+    ).rejects.toThrow("R2 unreachable");
+
+    expect(adapter.removeBuildDir).toHaveBeenCalledWith(built.workDir);
+  });
+
+  it("refuses to build a version whose snapshot is gone, without touching disk", async () => {
+    vi.mocked(dbFns.getVersionSnapshot).mockResolvedValue(null as never);
+
+    await expect(
+      buildAndUploadVersion(db, {
+        workspaceId: WORKSPACE,
+        versionId: VERSION,
+        versionNumber: 7,
+      }),
+    ).rejects.toBeInstanceOf(UnbuildableVersionError);
+
+    expect(adapter.runSiteBuild).not.toHaveBeenCalled();
+    expect(adapter.uploadSiteDir).not.toHaveBeenCalled();
   });
 });

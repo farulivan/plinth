@@ -7,7 +7,13 @@ import { sectionTypeOf } from "@plinth/schema/content";
 import { norvenSection } from "@plinth/template-norven/manifest";
 import type { z } from "zod";
 import { writeAuditLog } from "../../lib/auditLog";
-import { emitPromoted, enqueuePublish, runSiteBuild, uploadSiteDir } from "./adapter";
+import {
+  emitPromoted,
+  enqueuePublish,
+  removeBuildDir,
+  runSiteBuild,
+  uploadSiteDir,
+} from "./adapter";
 import {
   createVersion,
   findVersionByIdempotencyKey,
@@ -254,12 +260,37 @@ export async function markVersionFailed(db: Db, workspaceId: string, versionId: 
   await setVersionStatus(db, workspaceId, versionId, "failed");
 }
 
-/** Snapshot → static site on disk. Throwing here (bad snapshot, astro
- * failure, timeout) is the retryable path — Inngest re-runs the step. */
-export async function buildVersion(
+/**
+ * Snapshot → static site on disk → R2, as one unit. Throwing here (bad
+ * snapshot, astro failure, timeout, upload error) is the retryable path —
+ * Inngest re-runs the step.
+ *
+ * Building and uploading are deliberately *not* separate steps. Every
+ * `step.run` is its own HTTP invocation of the job: the step's return value is
+ * persisted as JSON and replayed on the next one. A filesystem path survives
+ * that round trip as a string but not as a directory — it only still resolves
+ * if the following invocation happens to reach the same machine with the same
+ * tmpdir intact. With `min_machines_running = 0` and `auto_stop_machines =
+ * "suspend"` (apps/api/fly.toml) that is not a property this service has: a
+ * machine may suspend between steps, and a second may pick up the next one.
+ *
+ * Retrying could not have rescued it either, which is the part that made the
+ * split worth undoing. Inngest replays *successful* steps from their stored
+ * result rather than re-running them, so a retry would have re-fed the same
+ * dead path to the upload: `readdir` raises ENOENT, all three attempts fail
+ * identically, and the publish lands in `failed` with a build that actually
+ * worked. The tenant's only recovery is to press Retry and start a fresh run.
+ * In the narrower case where the directory survives but its contents do not,
+ * `readdir` returns zero entries instead of throwing and the job promotes an
+ * empty R2 prefix with every step green — rarer, and worse.
+ *
+ * The price is retry granularity: a failed upload now re-runs the build too.
+ * A wasted `astro build` is cheaper than either outcome.
+ */
+export async function buildAndUploadVersion(
   db: Db,
-  input: { workspaceId: string; versionId: string },
-): Promise<{ outDir: string }> {
+  input: { workspaceId: string; versionId: string; versionNumber: number },
+): Promise<{ files: number }> {
   const [meta, snapshot] = await Promise.all([
     getWorkspaceMeta(db, input.workspaceId),
     getVersionSnapshot(db, input.workspaceId, input.versionId),
@@ -270,19 +301,23 @@ export async function buildVersion(
       `Version ${input.versionId} has no snapshot in this workspace.`,
     );
   }
-  return runSiteBuild({ versionId: input.versionId, templateId: meta.templateId, snapshot });
-}
 
-export async function uploadVersion(input: {
-  workspaceId: string;
-  versionNumber: number;
-  outDir: string;
-}): Promise<{ files: number }> {
-  return uploadSiteDir({
-    workspaceId: input.workspaceId,
-    versionNumber: input.versionNumber,
-    dir: input.outDir,
+  const { outDir, workDir } = await runSiteBuild({
+    versionId: input.versionId,
+    templateId: meta.templateId,
+    snapshot,
   });
+  try {
+    return await uploadSiteDir({
+      workspaceId: input.workspaceId,
+      versionNumber: input.versionNumber,
+      dir: outDir,
+    });
+  } finally {
+    // Runs on the retry path too, where it matters most: without it every
+    // failed attempt would leave another dist/ behind.
+    await removeBuildDir(workDir);
+  }
 }
 
 /** Success epilogue: mark built, then swap the live pointer. */
