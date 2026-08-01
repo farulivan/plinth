@@ -39,7 +39,7 @@ Dashboard policy (sent as response headers from Next.js middleware):
 ```
 Content-Security-Policy:
   default-src 'self';
-  script-src 'self' 'nonce-{nonce}' https://browser.sentry-cdn.com;
+  script-src 'self' 'nonce-{nonce}';
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: https://*.r2.cloudflarestorage.com https://*.cloudflareimages.com;
   connect-src 'self' https://*.sentry.io;
@@ -75,6 +75,12 @@ Content-Security-Policy:
 **Amendment:** every route the proxy matches is rendered per request. The nonce above is generated per request, so a prerendered document — built once at compile time, before any request exists — cannot carry one, and its inline bootstrap scripts ship bare against a policy with no `'unsafe-inline'` to fall back on. That is invisible on a page which does not need to hydrate and fatal on one which does: the sign-in route is entirely client-side. `/login` and the 404 therefore set `dynamic = "force-dynamic"` (the sign-in form moved into `apps/dashboard/components/auth/login-form.tsx` so the route itself can be a Server Component that sets it). The rule this leaves behind: a new route under the matcher either renders dynamically or ships no scripts. `/icon.svg` is the only prerendered route and qualifies on the second count.
 
 **Amendment:** the unauthenticated auth pages are inside the proxy's matcher. They were previously excluded to avoid a redirect loop against `protectedPaths: ["/"]`, which also excluded them from the CSP and left the sign-in page serving no policy at all. The loop is now handled by `publicPaths` on `createAuthGate` — a gate concern rather than a matcher one, so path policy and header policy stop being decided by the same regex.
+
+**Amendment:** `script-src` no longer allowlists `https://browser.sentry-cdn.com`. Sentry ships through `@sentry/nextjs` and is bundled at build time, so the loader CDN was never fetched — the host appeared in no source file and no built chunk, only in this policy. A host allowlist is the one weakness a nonce-based `script-src` otherwise does not have, and Lighthouse's `csp-xss` audit flags it as high severity, so an entry nothing loads is pure attack surface. Adding a lazily loaded Sentry extra (Replay, the feedback widget) would need it back.
+
+**Amendment:** the dashboard sets Zod's `jitless` on the client (`apps/dashboard/instrumentation-client.ts`). Zod 4 compiles validators with `new Function`, which this policy blocks; Zod catches the failure and falls back to the interpreted path, so validation was correct but every page load raised a CSP `kEvalViolation` and then took the slow path anyway. `jitless` skips the attempt. Client-only — the api validates far more per request and runs under no CSP.
+
+**Amendment:** Lighthouse's `bf-cache` audit is asserted as a warning rather than an error. The audited route is the sign-in page, which is rendered per request and therefore `Cache-Control: no-store`, and `no-store` disqualifies a page from the back/forward cache by definition. That is the correct posture for a credential-entry page, so the audit is recording a deliberate trade rather than a defect; it stays visible as a warning instead of being switched off.
 
 **Amendment:** ADR-0003's 20-publishes/day and ADR-0006's 100-uploads/hour caps are implemented as a fixed-window counter against the Upstash Redis REST endpoint already provisioned for local dev (SRH proxy) and production. `apps/api/src/middleware/rateLimit.ts` mounts per-route (`POST /publish`, `POST /media/upload` only — reads are uncapped), returns `429` with `Retry-After` via the existing `rate_limited` error code.
 
