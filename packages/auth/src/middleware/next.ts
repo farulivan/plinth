@@ -10,6 +10,15 @@ export interface AuthGateOptions {
   loginPath?: string;
   /** Path prefixes that require a session; others pass through. */
   protectedPaths?: string[];
+  /**
+   * Path prefixes that must never be redirected, checked before
+   * `protectedPaths`. This exists so the unauthenticated auth pages can stay
+   * *inside* the proxy's matcher — the alternative, excluding them from the
+   * matcher to dodge a redirect loop, also excludes them from every response
+   * header the proxy sets, which left the sign-in page as the only surface on
+   * the dashboard shipping no CSP at all.
+   */
+  publicPaths?: string[];
   sessionCookie?: string;
 }
 
@@ -25,8 +34,21 @@ export function createAuthGate(options: AuthGateOptions = {}) {
   const {
     loginPath = "/login",
     protectedPaths = ["/"],
+    publicPaths = [],
     sessionCookie = DEFAULT_SESSION_COOKIE,
   } = options;
+
+  /**
+   * Prefix match on path segments, so `/media` matches the prefix `/media` but
+   * `/media-library` does not. `"/"` is special-cased to match everything:
+   * naive `startsWith(prefix + "/")` turns it into `startsWith("//")`, which is
+   * false for every real path, so the dashboard's `protectedPaths: ["/"]` was
+   * gating the root and nothing below it.
+   */
+  const matches = (pathname: string, prefixes: string[]) =>
+    prefixes.some((prefix) =>
+      prefix === "/" ? true : pathname === prefix || pathname.startsWith(`${prefix}/`),
+    );
 
   /**
    * `forwardHeaders`, when given, is threaded into every pass-through
@@ -37,14 +59,15 @@ export function createAuthGate(options: AuthGateOptions = {}) {
    */
   return function authGate(request: NextRequest, forwardHeaders?: Headers): NextResponse {
     const { pathname } = request.nextUrl;
-    const isProtected = protectedPaths.some(
-      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-    );
     const next = () =>
       forwardHeaders
         ? NextResponse.next({ request: { headers: forwardHeaders } })
         : NextResponse.next();
-    if (!isProtected) return next();
+
+    // Public first: with `protectedPaths: ["/"]` every path is protected, so
+    // the sign-in page would otherwise redirect to itself forever.
+    if (matches(pathname, publicPaths)) return next();
+    if (!matches(pathname, protectedPaths)) return next();
 
     if (!hasSessionCookie(request, sessionCookie)) {
       const url = request.nextUrl.clone();
