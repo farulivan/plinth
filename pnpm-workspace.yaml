@@ -43,4 +43,15 @@ minimumReleaseAge: 0
 # more than an unused-code argument. Astro's own range is
 # "^0.34.0 || ^0.35.0", so pinning the 0.35 line stays inside what it supports.
 overrides:
+  # Both parents pull the 0.34 line, which inherits four libvips CVEs (33327,
+  # 33328, 35590, 35591). Astro declares "^0.34.0 || ^0.35.0", so pinning 0.35
+  # sits inside its range. Next declares "^0.34.5" and this deliberately steps
+  # past it: sharp is an optional dependency there, used only by the built-in
+  # image optimizer, and this app never imports next/image or configures
+  # `images` — so the package ships in the standalone output without a single
+  # call site. 0.35 is an API-compatible minor for that surface, and shipping a
+  # high-severity advisory in a runtime image to respect the caret on a
+  # dependency nothing calls is the worse trade. Revisit if next/image is ever
+  # adopted.
   astro>sharp: "^0.35.3"
+  next>sharp: "^0.35.3"
