@@ -5,6 +5,37 @@ import { type NextRequest, NextResponse } from "next/server";
  * `__Secure-`, so the gate must accept either name (see hasSessionCookie). */
 const DEFAULT_SESSION_COOKIE = "better-auth.session_token";
 
+/** Search param the gate records the attempted path in, so the sign-in page
+ * can send the visitor back there. Named once, next to both the code that
+ * writes it and the function that reads it, so the two cannot drift. */
+export const RETURN_PATH_PARAM = "next";
+
+/**
+ * Narrow a `?next=` value back to a path on this origin, falling back to `/`.
+ *
+ * The parameter is attacker-controllable — anyone can hand out a link to
+ * `/login?next=…` — and it ends up as Better Auth's `callbackURL`, i.e. where
+ * the browser lands *after* a successful sign-in. Passed through unchecked
+ * that is an open redirect with authentication attached: a victim follows a
+ * link, signs in for real, and is bounced somewhere hostile carrying the trust
+ * of having just logged in. So this is a whitelist, not a sanitiser — anything
+ * that isn't recognisably a local path becomes `/`.
+ */
+export function safeReturnPath(raw: string | null | undefined): string {
+  if (!raw) return "/";
+  // `//host` and `/\host` are protocol-relative: they look local but resolve
+  // off-origin. Reject before parsing rather than trusting a parser to agree.
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return "/";
+  try {
+    // Resolving against a base we control means any scheme or authority
+    // smuggled into the value cannot escape it — only the path survives.
+    const url = new URL(raw, "http://return-path.invalid");
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return "/";
+  }
+}
+
 export interface AuthGateOptions {
   /** Path to send unauthenticated requests to. */
   loginPath?: string;
@@ -72,7 +103,7 @@ export function createAuthGate(options: AuthGateOptions = {}) {
     if (!hasSessionCookie(request, sessionCookie)) {
       const url = request.nextUrl.clone();
       url.pathname = loginPath;
-      url.searchParams.set("next", pathname);
+      url.searchParams.set(RETURN_PATH_PARAM, pathname);
       return NextResponse.redirect(url);
     }
     return next();

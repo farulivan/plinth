@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
-import { createAuthGate } from "./next";
+import { createAuthGate, safeReturnPath } from "./next";
 
 const gate = createAuthGate({ protectedPaths: ["/"] });
 
@@ -86,5 +86,42 @@ describe("createAuthGate with publicPaths", () => {
     const forwarded = new Headers({ "x-nonce": "abc" });
     const res = publicGate(request("/login"), forwarded);
     expect(res.headers.get("x-middleware-override-headers")).toContain("x-nonce");
+  });
+});
+
+describe("safeReturnPath", () => {
+  it("keeps a local path, with its query and fragment", () => {
+    expect(safeReturnPath("/media")).toBe("/media");
+    expect(safeReturnPath("/preview/abc?tab=fields")).toBe("/preview/abc?tab=fields");
+    expect(safeReturnPath("/media#latest")).toBe("/media#latest");
+  });
+
+  it("falls back to the root when there is nothing to return to", () => {
+    expect(safeReturnPath(undefined)).toBe("/");
+    expect(safeReturnPath(null)).toBe("/");
+    expect(safeReturnPath("")).toBe("/");
+  });
+
+  // The value reaches Better Auth as callbackURL — where the browser lands
+  // after a real sign-in — so an off-origin value is an open redirect with
+  // authentication attached, not just a bad link.
+  it("refuses anything that would leave this origin", () => {
+    for (const hostile of [
+      "https://evil.example",
+      "//evil.example",
+      "//evil.example/media",
+      "/\\evil.example",
+      "http://evil.example/media",
+      "javascript:alert(1)",
+      "media",
+    ]) {
+      expect(safeReturnPath(hostile), hostile).toBe("/");
+    }
+  });
+
+  it("strips an authority smuggled past the leading slash", () => {
+    // Resolving against a base we control means these can only ever be paths.
+    expect(safeReturnPath("/@evil.example")).toBe("/@evil.example");
+    expect(safeReturnPath("/../etc")).toBe("/etc");
   });
 });

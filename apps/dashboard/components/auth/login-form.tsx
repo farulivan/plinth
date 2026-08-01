@@ -21,8 +21,14 @@ import { authClient } from "@/lib/auth-client";
  * Server Component and opt the route into dynamic rendering — a statically
  * prerendered page is built once, long before a request exists, so it cannot
  * carry the per-request CSP nonce its own scripts need (ADR-0011).
+ *
+ * `callbackURL` is where Better Auth sends the browser once the emailed link is
+ * consumed, so it has to be baked into the link at request time. The route
+ * resolves it from the gate's `?next=` through `safeReturnPath`; this component
+ * never reads the query string itself, which keeps the one place that decides
+ * where a signed-in user lands on the server side.
  */
-export function LoginForm() {
+export function LoginForm({ callbackURL }: { callbackURL: string }) {
   const [sentTo, setSentTo] = useState<string | null>(null);
   const form = useForm<LoginRequest>({
     resolver: zodResolver(loginRequest),
@@ -32,7 +38,7 @@ export function LoginForm() {
   async function onSubmit({ email }: LoginRequest) {
     const { error } = await authClient.signIn.magicLink({
       email,
-      callbackURL: "/",
+      callbackURL,
       errorCallbackURL: "/callback",
     });
     if (error) {
