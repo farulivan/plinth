@@ -77,6 +77,14 @@ jobs:
           done
           echo "container never became healthy"
           exit 1
+      # Only the dashboard serves HTML, and this is the one place in CI that
+      # renders a real page from the real image behind the real CSP. A unit
+      # test cannot see it, `next build` does not report it, and the failure is
+      # silent on any page that need not hydrate — so the check has to run
+      # against a booted container or not at all.
+      - name: assert the response-header contract
+        if: matrix.app == 'dashboard'
+        run: node scripts/assert-security-contract.mjs http://localhost:${{ matrix.port }}
       - name: container logs
         if: failure()
         run: docker logs app 2>&1 || true

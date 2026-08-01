@@ -43,4 +43,63 @@ minimumReleaseAge: 0
 # more than an unused-code argument. Astro's own range is
 # "^0.34.0 || ^0.35.0", so pinning the 0.35 line stays inside what it supports.
 overrides:
+  # Both parents pull the 0.34 line, which inherits four libvips CVEs (33327,
+  # 33328, 35590, 35591). Astro declares "^0.34.0 || ^0.35.0", so pinning 0.35
+  # sits inside its range. Next declares "^0.34.5" and this deliberately steps
+  # past it: sharp is an optional dependency there, used only by the built-in
+  # image optimizer, and this app never imports next/image or configures
+  # `images` — so the package ships in the standalone output without a single
+  # call site. 0.35 is an API-compatible minor for that surface, and shipping a
+  # high-severity advisory in a runtime image to respect the caret on a
+  # dependency nothing calls is the worse trade. Revisit if next/image is ever
+  # adopted.
   astro>sharp: "^0.35.3"
+  next>sharp: "^0.35.3"
+
+# `pnpm audit --prod` runs as a CI gate (.github/workflows/ci.yml). These are
+# the advisories standing at the time the gate landed, each accepted with a
+# reason rather than a blanket severity threshold — the point of the gate is
+# that anything NOT on this list fails the build, which is what a new advisory
+# on hono, better-auth, next, drizzle or zod would do.
+#
+# Every entry below is build- or test-toolchain. They are genuinely present in
+# the api image, which ships the pruned workspace so the publish job can shell
+# out to `astro build` (ADR-0013) — presence is not the question, reachability
+# is. None sits on a request path, and each needs attacker-controlled input to
+# a tool that only ever sees first-party code: templates and Astro config we
+# wrote, plus a content snapshot already validated by @plinth/schema. Tenants
+# author content, never CSS, YAML, globs or build config.
+#
+# Re-check an entry when the package moves onto a request path, not on a
+# schedule. Drop it when the upstream fix lands — Renovate raises those.
+auditConfig:
+  ignoreGhsas:
+    # postcss — via @tailwindcss/postcss and @tailwindcss/vite at build time.
+    # Source-map file read, path traversal, and XSS through an unescaped
+    # </style>; all need untrusted CSS, and the only CSS here is ours.
+    - GHSA-6g55-p6wh-862q
+    - GHSA-r28c-9q8g-f849
+    - GHSA-qx2v-qp2m-jg93
+    # esbuild — via vite, vitest and tsx. Both advisories are about esbuild's
+    # dev server accepting cross-origin requests; nothing runs `esbuild serve`,
+    # in CI or in either image.
+    - GHSA-g7r4-m6w7-qqqr
+    - GHSA-67mh-4wv8-2f99
+    # js-yaml — via @astrojs/internal-helpers and commitlint's config loader.
+    # Quadratic CPU on merge-key chains, reachable only by parsing untrusted
+    # YAML; both parse our own files.
+    - GHSA-52cp-r559-cp3m
+    # brace-expansion — via eslint's config-array and OpenTelemetry's
+    # auto-instrumentation. DoS on untrusted glob patterns; the patterns are
+    # literals in our config.
+    - GHSA-3jxr-9vmj-r5cp
+    - GHSA-mh99-v99m-4gvg
+    # fast-uri — via ajv, itself pulled by commitlint's config validator.
+    # Host confusion in URI parsing, which matters to a URI-based access
+    # decision; ajv here validates a JSON schema at lint time.
+    - GHSA-v2hh-gcrm-f6hx
+    - GHSA-4c8g-83qw-93j6
+    # protobufjs — via @grpc/proto-loader and dockerode, which testcontainers
+    # uses to run the RLS probe's Postgres (ADR-0002). Test-only, never built
+    # into an image.
+    - GHSA-j3f2-48v5-ccww

@@ -18,6 +18,26 @@ permissions:
   contents: read
 
 jobs:
+  audit:
+    name: audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # --ignore-scripts: reading the lockfile's advisory surface needs no
+      # native builds, so don't pay for Sharp's or workerd's postinstall.
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      # Fails on any advisory in the production graph that isn't an explicit,
+      # justified entry under `auditConfig.ignoreGhsas` in pnpm-workspace.yaml
+      # — a severity threshold would have let a new high on hono or better-auth
+      # through beside the standing build-toolchain noise. Adding an entry is a
+      # reviewable diff with a reason attached, which is the point.
+      - run: pnpm audit --prod
+
   secret-scan:
     name: secret scan
     runs-on: ubuntu-latest
