@@ -1,0 +1,38 @@
+name: Dependency review
+
+# The complement to ci.yml's audit job. That one asks "is the dependency graph
+# clean right now", against a baseline of accepted advisories; this one asks
+# "does this PR make it worse", by diffing the manifests against the base
+# branch. The difference matters: a newly introduced vulnerable package fails
+# here on the PR that adds it, with the offending dependency named, rather than
+# waiting for someone to widen the ignore list.
+#
+# It also checks the licence of anything new — this repo is MIT, and a
+# copyleft dependency arriving unnoticed is a licensing problem, not just a
+# legal footnote.
+on:
+  pull_request:
+
+concurrency:
+  group: dependency-review-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    name: review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          # Matches the audit job's posture: block on high and above, let
+          # moderate report. The standing moderates are all build tooling
+          # (see auditConfig.ignoreGhsas in pnpm-workspace.yaml).
+          fail-on-severity: high
+          # GPL/AGPL/SSPL in a dependency of an MIT codebase is a decision
+          # someone has to make deliberately, not one that lands in a lockfile.
+          deny-licenses: AGPL-3.0, AGPL-3.0-only, AGPL-3.0-or-later, GPL-3.0, GPL-3.0-only, GPL-3.0-or-later, SSPL-1.0
+          comment-summary-in-pr: never # needs pull-requests:write; the job status is the gate
