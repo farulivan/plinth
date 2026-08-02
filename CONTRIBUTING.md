@@ -102,8 +102,16 @@ The freelance workflow is separate from the open-source repository. Tenant onboa
 
 These are the manual steps a fresh clone can't automate. I keep them here so they're not lost.
 
-- **Renovate**: install the [Renovate GitHub App](https://github.com/apps/renovate) on `farulivan/plinth`. Merge the onboarding PR. The committed `renovate.json` does the rest.
-- **Branch protection on `main`**: require the fast `CI / Verify` check (which includes the RLS probe) before merge. When the product is demo-ready, flip the heavy workflows (E2E, Lighthouse, CodeQL) from `workflow_dispatch` to PR triggers and add them as required checks.
+- **Renovate**: installed. Because `renovate.json` is already committed there is no onboarding PR — the first run opens a **Dependency Dashboard** issue instead, which is the place to watch for updates being held back. Note the configured schedule (`before 9am on monday`, Asia/Jakarta) gates when it may open or refresh pull requests, so a quiet weekday is the config working rather than a broken install. Its pull requests run the same gates as any other, so a bump onto a package with a new advisory fails `audit`, and one that drags in a vulnerable transitive fails `review`. Expect an early pull request pinning every GitHub Action to a digest — `config:best-practices` includes `helpers:pinGitHubActionDigests`, and a tag is mutable where a digest is not.
+- **Merge gating on `main`**: staged, per the amendment in [ADR-0008](./docs/adr/0008-repo-and-runtime-topology.md), which explains why the order matters. Current position is step 1.
+
+  1. **Done** — a classic branch-protection rule requiring `verify` and `secret scan`, with `strict` (branch must be current) on and admin bypass enabled.
+  2. **Next, safe today** — add `audit`, `review` and `CodeQL` to the required set. All three come from workflows with no path filter, so they report on every pull request.
+  3. **Then** — create a ruleset mirroring the classic rule, plus a code-scanning rule requiring alerts below a severity threshold, in **evaluate** enforcement. Evaluate mode records what would have been blocked without blocking, so the required-check set can be dry-run against a real pull request first.
+  4. **Then** — restructure `e2e`, `lighthouse` and `images` so filtering happens in the jobs rather than in `on.pull_request.paths`: the workflow always starts, a cheap job decides what changed, the expensive jobs are gated on its output. This is what makes `playwright + axe`, `lhci`, `api` and `dashboard` requireable — a job GitHub starts and skips satisfies a required check, while a workflow that never triggers reports nothing at all and leaves the pull request waiting forever. Requiring them before this step makes a docs-only change unmergeable.
+  5. **Finally** — add those four, flip the ruleset from evaluate to active, and delete the classic rule.
+
+  Check names are the job names as they appear on a pull request: `verify`, `secret scan`, `audit`, `review`, `CodeQL`, `analyze`, `api`, `dashboard`, `playwright + axe`, `lhci`.
 - **Cloudflare Transform Rules**: none needed for the dashboard — its headers ship from the app itself (ADR-0011). Still worth a post-deploy check that nothing at the edge strips them: `curl -sI https://plinth.farulivan.com/login` and `curl -sI https://norven.farulivan.com/`.
 - **Cloudflare for SaaS**: configure the fallback origin and the Custom Hostnames API token, scoped to the Plinth zone only.
 - **Fly.io**: create two apps (`plinth-farulivan-dashboard`, `plinth-farulivan-api`); register the GitHub Actions OIDC issuer for deploy tokens.
