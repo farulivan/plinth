@@ -16,25 +16,27 @@ I built Plinth as a typed, multi-tenant CMS for editorial marketing sites. It is
 [![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen?logo=renovatebot)](https://renovatebot.com)
 -->
 
-> **Status**: foundation scaffold complete. Both runtimes boot and containerize; the cross-tenant Postgres RLS probe and the fast CI gate (`pnpm verify` + secret scan) pass on every PR; magic-link auth is wired; and the dashboard↔api contract is proven end-to-end — the typed Hono RPC client infers the api's response shape through `hc<AppType>`, so renaming a shared Zod field fails the dashboard's typecheck. Heavy CI lanes (CodeQL, Lighthouse, E2E, Fly deploys) are built and dispatch-only until the product is demo-ready.
+> **Status**: the vertical slice is live — magic-link sign-in, a field editor autosaving through RLS-scoped Server Actions, SSE-driven live preview rendered by the same module the build uses, and Publish running an Astro build against an immutable snapshot into R2 with an atomic pointer swap and edge KV sync. Both runtimes deploy to Fly from `main`. Tenant sites resolve through the Cloudflare Worker at `{slug}.farulivan.com`; Norven is workspace #0.
 >
-> **Next**: the vertical slice — login → edit fields → live preview → publish → static tenant site. Deferred behind it: the publish pipeline (Inngest + Astro), the real Norven content port, custom domains, the editor UI, and Stripe billing. The ADRs in `docs/adr/` cover the decision surface.
+> Every CI lane runs on pull requests: `pnpm verify`, a gitleaks secret scan, `pnpm audit` against an explicit allowlist, dependency review, CodeQL, Playwright + axe, Lighthouse budgets, and a production-image build that boots both containers and asserts the dashboard's response-header contract. The cross-tenant RLS probe runs inside `verify` against a real Postgres and ship-blocks a regression. `verify` and the secret scan are the two required to merge; the rest report while the product settles.
+>
+> **Next**: customer-supplied custom domains — subdomain routing and the edge KV map are in place, so what remains is the Cloudflare for SaaS hostname flow on top ([ADR-0004](./docs/adr/0004-custom-domains.md)). Then Stripe billing, which is unstarted. The ADRs in `docs/adr/` cover the decision surface.
 
 ## Why this exists
 
-Plinth is open-source code under MIT and a closed-source operations layer that runs the hosted service. The codebase is meant to be read end-to-end — eleven ADRs in `docs/adr/` cover every load-bearing decision and the architecture overview fits on one screen.
+Plinth is open-source code under MIT and a closed-source operations layer that runs the hosted service. The codebase is meant to be read end-to-end — fourteen ADRs in `docs/adr/` cover every load-bearing decision and the architecture overview fits on one screen.
 
 It serves two readings:
 
-- **Portfolio piece** for senior frontend / fullstack hiring filters. Production-grade CMS with multi-tenant Postgres, RLS, Inngest-orchestrated builds, Cloudflare Workers, scoped-token deploys, axe a11y on every PR, Lighthouse budgets, and eleven ADRs of decision documentation.
+- **Portfolio piece** for senior frontend / fullstack hiring filters. Production-grade CMS with multi-tenant Postgres, RLS, Inngest-orchestrated builds, Cloudflare Workers, scoped-token deploys, axe a11y on every PR, Lighthouse budgets, and fourteen ADRs of decision documentation.
 - **Foundation of a small freelance practice** deploying Plinth-class sites for studios who want a designed site managed through a typed dashboard. Hosted Plinth at plinth.farulivan.com; pricing on request.
 
 This codebase demonstrates how I think about:
 
 - **Architecture** — monorepo with two runtimes, schema-as-product through Zod packages, Postgres RLS for tenant isolation, content-addressed publishing with atomic pointer swap.
-- **Quality gates** — `pnpm verify` runs format, lint, typecheck, tests, and build on every PR; CI adds dependency review, CodeQL, axe a11y, Lighthouse budgets, and a cross-tenant RLS probe test.
-- **Operations** — Fly.io for the dashboard and api (auto-stop at idle), Cloudflare R2 for static tenant sites and media, Cloudflare for SaaS for multi-tenant TLS and edge routing, Sentry for errors, app-scoped Fly deploy tokens, secret scanning at pre-commit and CI.
-- **Documentation discipline** — eleven ADRs for load-bearing decisions, an architecture overview that fits on one screen, `CONTEXT.md` fixing domain vocabulary, a deployment runbook, security policy.
+- **Quality gates** — `pnpm verify` runs format, lint, typecheck, tests, and build on every PR; CI adds an allowlisted `pnpm audit`, dependency review, CodeQL, axe a11y, Lighthouse budgets, a cross-tenant RLS probe against a real Postgres, and a response-header contract asserted against the production image.
+- **Operations** — Fly.io for the dashboard and api (machines suspend at idle, resume sub-second), Cloudflare R2 for static tenant sites and media, Cloudflare for SaaS for multi-tenant TLS and edge routing, Sentry for errors, app-scoped Fly deploy tokens, secret scanning at pre-commit and CI.
+- **Documentation discipline** — fourteen ADRs for load-bearing decisions, an architecture overview that fits on one screen, `CONTEXT.md` fixing domain vocabulary, a deployment runbook, security policy.
 
 ## Stack
 
@@ -47,13 +49,13 @@ This codebase demonstrates how I think about:
 | [Tailwind](https://tailwindcss.com) | ≥4 | CSS-first tokens, no JS config | `apps/dashboard/`, `packages/template-norven/` |
 | [Drizzle ORM](https://orm.drizzle.team) | latest | Typed migrations; the typed query builder is the only interface to Postgres | `packages/db/` |
 | [Better Auth](https://www.better-auth.com) | ≥1.6 | Session model is explicit and database-shaped; magic-link + OAuth via plugins; small enough to audit end-to-end | `packages/auth/` |
-| [Inngest](https://www.inngest.com) | ≥4 | Durable queue + DLQ for publish, reaper, and KV sync jobs | `apps/api/inngest/` |
+| [Inngest](https://www.inngest.com) | ≥3 | Durable queue + DLQ for publish, reaper, and KV sync jobs | `apps/api/inngest/` |
 | [Sharp](https://sharp.pixelplumbing.com) | ≥0.34 | AVIF + WebP at upload time | `apps/api/modules/media/` |
 | [Zod](https://zod.dev) | ≥4 | Schema is the product — shared by editor form generation, API validation, DB inference, renderer typing | `packages/schema/` |
 | [Vitest](https://vitest.dev) | ≥4 | Unit tests on every service | `**/*.test.ts` |
 | [Playwright](https://playwright.dev) + [axe-core](https://github.com/dequelabs/axe-core) | latest | E2E + WCAG AA gates | `tests/e2e/` |
 | [Lighthouse CI](https://github.com/GoogleChrome/lighthouse-ci) | ≥0.15 | Per-route budgets on the dashboard preview | `.lighthouserc.json` |
-| [Postgres](https://www.postgresql.org) on [Neon](https://neon.tech) | ≥16 | Branch-per-PR for preview environments | shared |
+| [Postgres](https://www.postgresql.org) on [Neon](https://neon.tech) | ≥16 | Managed Postgres with PITR; CI gets a real Postgres per run through testcontainers, so the RLS probe tests policies rather than mocks | shared |
 | [Cloudflare for SaaS](https://www.cloudflare.com/products/cloudflare-for-platforms/) | — | Multi-tenant TLS, edge routing, KV for hostname lookup | per-tenant routing |
 | [Fly.io](https://fly.io) | — | Container deploys for both apps; OIDC-issued tokens | both apps |
 | GitHub Actions + OIDC | — | Deploy on push to `main` with no long-lived credentials | `.github/workflows/` |
@@ -62,7 +64,7 @@ Node `>=22.12.0` (development tracks the current LTS via `.nvmrc`), package mana
 
 ## Key decisions
 
-Eleven ADRs cover every load-bearing decision. They are short, self-contained, and each documents the rejected alternatives:
+Fourteen ADRs cover every load-bearing decision. They are short, self-contained, and each documents the rejected alternatives:
 
 - [ADR-0001 · Editor model](./docs/adr/0001-editor-model.md) — field-based editor against a shared Zod schema; visual canvas rejected.
 - [ADR-0002 · Tenant isolation](./docs/adr/0002-tenant-isolation.md) — `workspace_id` on every row + Postgres RLS enforced by a session-level GUC.
@@ -75,6 +77,9 @@ Eleven ADRs cover every load-bearing decision. They are short, self-contained, a
 - [ADR-0009 · Backend architecture](./docs/adr/0009-backend-architecture.md) — module-per-domain with three-rule layering and no DI ceremony.
 - [ADR-0010 · Product strategy](./docs/adr/0010-product-strategy.md) — MIT code, ARR brand, hosted service as the commercial surface.
 - [ADR-0011 · Operational baseline](./docs/adr/0011-operational-baseline.md) — forward-only migrations, Neon pooler, PITR + weekly R2 dumps, per-surface CSP.
+- [ADR-0012 · Preview event transport](./docs/adr/0012-preview-event-transport.md) — SSE over a polling loop or a socket, and where the channel lives.
+- [ADR-0013 · Site-builder invocation](./docs/adr/0013-site-builder-invocation.md) — the publish job shells out to `astro build` rather than importing it, and what that costs the runtime image.
+- [ADR-0014 · Media delivery and upload signing](./docs/adr/0014-media-delivery-and-upload-signing.md) — one `/_media/{hash}/w{width}.{format}` path shape resolved by the worker in production and by the dashboard in preview.
 
 ## Architecture
 

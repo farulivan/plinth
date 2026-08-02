@@ -44,6 +44,8 @@ The deploy boundary for tenant sites is `r2://plinth-sites/tenants/{workspace_id
 
 Two apps plus seven shared packages, arranged in strict layers. The rule is one sentence: **imports point down, never up, never sideways within a layer** — enforced at lint time by `no-restricted-imports` per [ADR-0009](./docs/adr/0009-backend-architecture.md).
 
+This is an import graph, so three workspaces sit outside it rather than being omitted by oversight. `apps/worker-router` imports nothing from the workspace — it is a standalone edge worker whose only contract is the R2 layout and the KV map. `packages/site-builder` is invoked as a subprocess, not imported ([ADR-0013](./docs/adr/0013-site-builder-invocation.md)). `packages/eslint-config` and `packages/typescript-config` are build configuration that every workspace extends and no runtime code reaches.
+
 ```mermaid
 flowchart TD
     subgraph L4["runtimes — apps/"]
@@ -152,11 +154,14 @@ sequenceDiagram
     participant P as Postgres
     participant API as apps/api<br/>(SSE channel)
 
+    Iframe->>D: EventSource GET /preview/{draft_id}/events
+    D->>API: GET /draft-events/{draft_id} (HMAC + session)
     T->>D: Edit field
     D->>D: Debounce 500 ms
     D->>P: Server Action: UPDATE content_drafts
-    D->>API: POST /sse/notify {draft_id, hash}
-    API-->>Iframe: SSE event {draft-updated, hash}
+    D->>API: POST /draft-events/{draft_id} {hash}
+    API-->>D: SSE event {draft-updated, hash}
+    D-->>Iframe: proxied SSE event
     Iframe->>Iframe: window.location.reload()
     Iframe->>D: GET /preview/{draft_id}
     D->>P: SELECT content_drafts (RLS-scoped)
@@ -165,17 +170,21 @@ sequenceDiagram
 
 Per [ADR-0007](./docs/adr/0007-preview-architecture.md), the same renderer module produces preview and production output; drift is structurally impossible because both paths share `packages/renderer`. Reload-on-update beats DOM patching because patching forces the renderer to expose patch boundaries it does not need.
 
+The iframe never talks to the api directly. Its `EventSource` opens against the dashboard, which proxies the api's stream — per [ADR-0012](./docs/adr/0012-preview-event-transport.md), which also covers why SSE rather than polling or a socket. That hop is not incidental: the dashboard's CSP allows `connect-src 'self'` and nothing else, so a cross-origin `EventSource` would be blocked, and the proxy is where the session cookie and the HMAC envelope are attached.
+
 ## Image pipeline
 
-Image processing happens at upload, not at publish ([ADR-0006](./docs/adr/0006-media-pipeline.md)). The dashboard POSTs to the api; the api validates, computes a SHA-256, deduplicates against `(workspace_id, content_hash)`, and on miss runs Sharp to emit AVIF + WebP + JPEG variants at `[400, 800, 1200, 1600]` widths. Variants land in `r2://plinth-media/tenants/{workspace_id}/{content_hash}/w{width}.{format}` and a `media` row is inserted. The publish-time Astro build references the already-processed CDN URLs; Sharp does not run again.
+Image processing happens at upload, not at publish ([ADR-0006](./docs/adr/0006-media-pipeline.md)). The dashboard POSTs to the api; the api validates, computes a SHA-256, deduplicates against `(workspace_id, content_hash)`, and on miss runs Sharp to emit AVIF + WebP + JPEG variants at `[400, 800, 1200, 1600]` widths. Variants land in `r2://plinth-media/tenants/{workspace_id}/{content_hash}/w{width}.{format}` and a `media` row is inserted. The publish-time Astro build references the already-processed variants; Sharp does not run again.
 
-Cloudflare CDN serves variants directly from R2 — same account, no egress fees. The same URL works in preview and production — the `resolveImageUrl()` helper is a kept seam for future signed-URL gating but currently resolves identically in both modes.
+The renderer emits one path shape everywhere — `/_media/{content_hash}/w{width}.{format}` — and who resolves it depends on where the page is rendered: the worker-router reads it out of the media bucket for a published site, and the dashboard proxies it for preview, editor thumbnails, and the media library. Per [ADR-0014](./docs/adr/0014-media-delivery-and-upload-signing.md) that keeps the preview and production DOM byte-identical, and makes cross-tenant reads impossible by construction, since the worker scopes the lookup to the hostname's workspace and the dashboard to the caller's active one.
 
 ## Build and deploy boundary
 
 `pnpm verify` is the local gate — format, lint, typecheck, test, build for every affected app. CI runs the same `pnpm verify` filtered through Turborepo's affected graph, plus dependency review, CodeQL, axe a11y, and Lighthouse budgets on the dashboard preview route. The cross-tenant RLS probe test is in the gate; a regression there ship-blocks.
 
-Deploy is two-stage. The dashboard and api each have a Dockerfile and a Fly.io app; CI authenticates via OIDC scoped deploy tokens and pushes container images to Fly's registry. Both apps run with `auto_stop_machines = "stop"` and `min_machines_running = 0` — machines scale to zero on idle and wake on the next request, which keeps the platform bill at ~$0–2/month at portfolio traffic. Tenant sites are independent — every publish writes to `r2://plinth-sites/tenants/{workspace_id}/v{N}/` directly from the build worker, bypassing the dashboard's deploy cycle entirely. A dashboard deploy never affects live tenant sites; a tenant publish never affects the dashboard — and because tenant sites are static files behind Cloudflare, they stay up even while both Fly.io apps are asleep.
+The publish build itself shells out to `astro build` in `packages/site-builder` rather than importing Astro ([ADR-0013](./docs/adr/0013-site-builder-invocation.md)), which is why the api's runtime image carries a pruned copy of the workspace and not just its own bundle.
+
+Deploy is two-stage. The dashboard and api each have a Dockerfile and a Fly.io app; CI authenticates via OIDC scoped deploy tokens and pushes container images to Fly's registry. Both apps run with `auto_stop_machines = "suspend"` and `min_machines_running = 0` — machines suspend to zero cost on idle and resume in well under a second on the next request, which keeps the platform bill at ~$0–2/month at portfolio traffic. Tenant sites are independent — every publish writes to `r2://plinth-sites/tenants/{workspace_id}/v{N}/` directly from the build worker, bypassing the dashboard's deploy cycle entirely. A dashboard deploy never affects live tenant sites; a tenant publish never affects the dashboard — and because tenant sites are static files behind Cloudflare, they stay up even while both Fly.io apps are asleep.
 
 Security headers are split per surface, per [ADR-0011](./docs/adr/0011-operational-baseline.md): the dashboard's CSP is set by the Next.js proxy (nonce-based, default-deny); the tenant sites' CSP is set by the worker-router (permissive baseline). The remaining headers (HSTS, Permissions-Policy, COOP, CORP) ship from `apps/dashboard/next.config.ts`, so they cover every response — including the static assets and API routes the proxy skips — and apply identically in dev, local-prod, CI, and production rather than only where the edge happens to be configured. Because the CSP carries a per-request nonce, every route under the proxy's matcher renders per request; a prerendered document could not carry one.
 
@@ -189,4 +198,4 @@ Security headers are split per surface, per [ADR-0011](./docs/adr/0011-operation
 - **No microservices per domain.** One api process owns every domain. Splitting comes when a single domain's workload demands it, not by default.
 - **No DDD aggregates, hexagonal ports, or DI containers.** Module-per-domain with three layering rules suffices per [ADR-0009](./docs/adr/0009-backend-architecture.md).
 
-This shape is the point. One repo to clone, two runtimes to deploy, eleven ADRs of reasoning. The discipline it lets me hold — one toolchain, one place to look — is the engineering bet behind Plinth.
+This shape is the point. One repo to clone, two runtimes to deploy, fourteen ADRs of reasoning. The discipline it lets me hold — one toolchain, one place to look — is the engineering bet behind Plinth.
