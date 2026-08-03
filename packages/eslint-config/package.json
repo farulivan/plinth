@@ -8,13 +8,16 @@
     "./base": "./base.js",
     "./next": "./next.js",
     "./react-internal": "./react-internal.js",
-    "./boundaries": "./boundaries.js"
+    "./boundaries": "./boundaries.js",
+    "./astro": "./astro.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@next/eslint-plugin-next": "^16.2.9",
+    "astro-eslint-parser": "^3.0.0",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-astro": "^3.1.0",
     "eslint-plugin-import-x": "^4.16.2",
     "eslint-plugin-only-warn": "^1.2.1",
     "eslint-plugin-react": "^7.37.5",
