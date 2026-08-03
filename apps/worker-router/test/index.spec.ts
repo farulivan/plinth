@@ -6,7 +6,9 @@ const BASE = `https://${HOST}`;
 const MEDIA_HASH = "b".repeat(64);
 const TENANT_CSP =
   "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; " +
-  "img-src 'self' data: https://*.r2.cloudflarestorage.com; connect-src 'self'; frame-ancestors 'self'";
+  "img-src 'self' data: https://*.r2.cloudflarestorage.com; font-src 'self' data:; " +
+  "connect-src 'self'; form-action 'self'; base-uri 'self'; object-src 'none'; " +
+  "frame-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests";
 
 // Each test gets isolated storage (vitest-pool-workers default), so the
 // mapped hostname and a small v3 site are seeded fresh every time.
@@ -20,6 +22,16 @@ beforeEach(async () => {
   });
   await env.SITES.put("tenants/ws-norven/v3/_astro/site.a1b2c3.css", "body{margin:0}", {
     httpMetadata: { contentType: "text/css; charset=utf-8" },
+  });
+  // Stable paths whose bytes change per publish — the cache-control cases below.
+  await env.SITES.put("tenants/ws-norven/v3/sitemap.xml", "<urlset/>", {
+    httpMetadata: { contentType: "application/xml" },
+  });
+  await env.SITES.put("tenants/ws-norven/v3/robots.txt", "User-agent: *", {
+    httpMetadata: { contentType: "text/plain; charset=utf-8" },
+  });
+  await env.SITES.put("tenants/ws-norven/v3/favicon.ico", "icon-bytes", {
+    httpMetadata: { contentType: "image/x-icon" },
   });
   await env.MEDIA.put(`tenants/ws-norven/${MEDIA_HASH}/w400.webp`, "not-really-webp", {
     httpMetadata: { contentType: "image/webp" },
@@ -64,6 +76,75 @@ describe("worker-router", () => {
     expect(html.headers.get("cache-control")).toBe("public, max-age=0, must-revalidate");
     await asset.text();
     await html.text();
+  });
+
+  // The regression this guards is silent and lasts a year: these live at stable
+  // paths but their bytes change on the next publish, so caching them by
+  // content type — they are not text/html — froze them at the edge.
+  it("revalidates non-HTML files that sit outside the digest-named prefixes", async () => {
+    const sitemap = await SELF.fetch(`${BASE}/sitemap.xml`);
+    const robots = await SELF.fetch(`${BASE}/robots.txt`);
+    const favicon = await SELF.fetch(`${BASE}/favicon.ico`);
+
+    for (const response of [sitemap, robots, favicon]) {
+      expect(response.status).toBe(200);
+      expect(response.headers.get("cache-control")).toBe("public, max-age=0, must-revalidate");
+      await response.text();
+    }
+  });
+
+  it("ships the full tenant header contract on every response", async () => {
+    const response = await SELF.fetch(`${BASE}/`);
+
+    expect(response.headers.get("content-security-policy")).toBe(TENANT_CSP);
+    expect(response.headers.get("x-frame-options")).toBe("DENY");
+    expect(response.headers.get("cross-origin-opener-policy")).toBe("same-origin");
+    expect(response.headers.get("cross-origin-resource-policy")).toBe("same-origin");
+    expect(response.headers.get("permissions-policy")).toContain("geolocation=()");
+    expect(response.headers.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
+    // Zone-level on Cloudflare; emitting it here too would duplicate it.
+    expect(response.headers.get("strict-transport-security")).toBeNull();
+    await response.text();
+  });
+
+  it("allows data: fonts, which astro inlines for small subsets", async () => {
+    const response = await SELF.fetch(`${BASE}/`);
+
+    expect(response.headers.get("content-security-policy")).toContain("font-src 'self' data:");
+    await response.text();
+  });
+
+  it("serves the tenant's own 404 page when the build produced one", async () => {
+    await env.SITES.put("tenants/ws-norven/v3/404.html", "<!doctype html><h1>tenant 404</h1>", {
+      httpMetadata: { contentType: "text/html; charset=utf-8" },
+    });
+
+    const response = await SELF.fetch(`${BASE}/no-such-page`);
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get("content-type")).toBe("text/html; charset=utf-8");
+    expect(response.headers.get("cache-control")).toBe("public, max-age=0, must-revalidate");
+    expect(await response.text()).toContain("tenant 404");
+  });
+
+  it("falls back to the generic 404 when the build has no 404 page", async () => {
+    const response = await SELF.fetch(`${BASE}/no-such-page`);
+
+    expect(response.status).toBe(404);
+    expect(await response.text()).toBe("Site not found");
+  });
+
+  // Fail-closed still governs: a tenant 404 page must never answer for a
+  // hostname that resolves to no tenant at all.
+  it("never reaches for a 404 page on an unmapped hostname", async () => {
+    await env.SITES.put("tenants/ws-norven/v3/404.html", "<!doctype html><h1>tenant 404</h1>", {
+      httpMetadata: { contentType: "text/html; charset=utf-8" },
+    });
+
+    const response = await SELF.fetch("https://unknown.localhost/");
+
+    expect(response.status).toBe(404);
+    expect(await response.text()).toBe("Site not found");
   });
 
   it("404s on a missing object within a mapped site", async () => {
