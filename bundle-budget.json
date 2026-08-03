@@ -1,0 +1,5 @@
+{
+  "_comment": "Bundle size budgets in bytes for the JS/CSS a tenant build references. Re-baseline with `pnpm check:bundle <dist> --write`.",
+  "js": 200000,
+  "css": 60000
+}

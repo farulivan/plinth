@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "sections": [
+    {
+      "type": "photoHero",
+      "enabled": true,
+      "fields": {
+        "eyebrow": "Norven · Est. 2009",
+        "title": "Architecture\nof consequence.",
+        "subtitle": "Norven is an architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
+        "photo": {
+          "mediaId": "00000000-0000-4000-8000-000000000001",
+          "alt": "Norven — architecture of consequence",
+          "contentHash": "202c450dbc46c002bd97a65ddcce029538cf9771e7ae237ec172d335e7f804f6",
+          "width": 6240,
+          "height": 3510
+        }
+      }
+    },
+    {
+      "type": "statement",
+      "enabled": true,
+      "fields": {
+        "eyebrow": "The practice",
+        "body": "Norven is an architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond."
+      }
+    },
+    {
+      "type": "featuredProjects",
+      "enabled": true,
+      "fields": {
+        "heading": "Selected work",
+        "items": [
+          {
+            "title": "Salt House",
+            "meta": "Residence · 2023 · Built",
+            "location": "Tjøme, Norway · 280 m²",
+            "brief": "A coastal residence cut into a granite shelf above the Skagerrak. Three volumes stepped down the slope, a single oak stair binding them.",
+            "image": {
+              "mediaId": "00000000-0000-4000-8000-000000000002",
+              "alt": "Salt House — coastal residence above the Skagerrak",
+              "contentHash": "24b8af6ff72f55506fcbdb3b211c789d52028791450057207e62057008cad571",
+              "width": 5301,
+              "height": 2982
+            }
+          },
+          {
+            "title": "Obsidian Pavilion",
+            "meta": "Cultural · 2024 · Built",
+            "location": "Þingvellir, Iceland · 640 m²",
+            "brief": "A reading room and lava-field interpretive structure at the seam between the North American and Eurasian plates. Vertical, narrow, deliberately weightless.",
+            "image": {
+              "mediaId": "00000000-0000-4000-8000-000000000003",
+              "alt": "Obsidian Pavilion — interpretive structure at Þingvellir",
+              "contentHash": "fb9bcbe80312f73aed6186363118cd99bd49d0b4c8579c4b0f611fb7b7a3e217",
+              "width": 6000,
+              "height": 3375
+            }
+          },
+          {
+            "title": "Terra Works",
+            "meta": "Commercial · 2025 · Built",
+            "location": "Marvila, Lisbon · 4,200 m²",
+            "brief": "Adaptive reuse of a 1937 ceramics warehouse into studio offices for nine creative tenants. Original shell retained; programme built as freestanding timber inserts.",
+            "image": {
+              "mediaId": "00000000-0000-4000-8000-000000000004",
+              "alt": "Terra Works — adaptive reuse of a ceramics warehouse",
+              "contentHash": "7841ed3978d19747476c17f903cbc1f267b535b2cfb92dff4b387a9db489fd10",
+              "width": 5406,
+              "height": 3041
+            }
+          },
+          {
+            "title": "Holm Chapel",
+            "meta": "Civic · 2022 · Built",
+            "location": "Higashiyama, Kyoto · 180 m²",
+            "brief": "A non-denominational chapel for a small university campus. One room, one bench, one light cut down through three storeys of rammed earth.",
+            "image": {
+              "mediaId": "00000000-0000-4000-8000-000000000005",
+              "alt": "Holm Chapel — rammed-earth chapel in Kyoto",
+              "contentHash": "9e808338414b805589c8d28c87f0d9cfc480e94170dcfd5cffda158608159a66",
+              "width": 5792,
+              "height": 3258
+            }
+          },
+          {
+            "title": "Nord-Strata Tower",
+            "meta": "Cultural · 2026 · In Studio",
+            "location": "Reykjavík · 6,800 m²",
+            "brief": "A vertical archive and exhibition tower for the Nordic Council. Sixteen plates stacked around a central daylight void, sequenced by epoch.",
+            "image": {
+              "mediaId": "00000000-0000-4000-8000-000000000006",
+              "alt": "Nord-Strata Tower — vertical archive for the Nordic Council",
+              "contentHash": "258a20b5dd06c1e7a56623ce875c163349458f9b538456e7c696813b80241445",
+              "width": 2833,
+              "height": 1594
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "stats",
+      "enabled": true,
+      "fields": {
+        "items": [
+          {
+            "value": "118",
+            "label": "Built"
+          },
+          {
+            "value": "26",
+            "label": "In studio"
+          },
+          {
+            "value": "42",
+            "label": "Awards & citations"
+          },
+          {
+            "value": "17",
+            "label": "Years continuous practice"
+          }
+        ]
+      }
+    },
+    {
+      "type": "testimonial",
+      "enabled": true,
+      "fields": {
+        "attribution": "Client, Salt House",
+        "context": "Tjøme · 2023",
+        "quote": "They drew our house the way you would a portrait of someone you had known for fifty years. Nothing was decorative, nothing was lazy. We have lived in it for three winters now and have not found a single thing we would change.",
+        "name": "Margrét Sól"
+      }
+    },
+    {
+      "type": "contact",
+      "enabled": true,
+      "fields": {
+        "eyebrow": "Bring us a site",
+        "heading": "Bring us a site,\na story,\na single hour of light.",
+        "email": "studio@norven.example",
+        "phone": "+47 22 00 00 00",
+        "studios": [
+          {
+            "city": "Oslo",
+            "address": "Akersgata 12, 0158"
+          },
+          {
+            "city": "Lisbon",
+            "address": "Rua das Janelas Verdes 9"
+          },
+          {
+            "city": "Kyoto",
+            "address": "Higashiyama, Sanjō 3-15"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -8,7 +8,10 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "build:site": "astro build"
+    "build:site": "astro build",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "astro check",
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@astrojs/react": "^6.0.1",
@@ -22,7 +25,12 @@
     "tailwindcss": "^4.3.0"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@plinth/eslint-config": "workspace:*",
     "@types/react": "^19",
-    "@types/react-dom": "^19"
+    "@types/react-dom": "^19",
+    "eslint": "^9.39.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
   }
 }

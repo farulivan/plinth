@@ -6,7 +6,11 @@
     "SENTRY_DSN_API",
     "NEXT_RUNTIME",
     "SKIP_ENV_VALIDATION",
-    "SENTRY_AUTH_TOKEN"
+    "SENTRY_AUTH_TOKEN",
+    "SNAPSHOT_PATH",
+    "TEMPLATE_ID",
+    "OUT_DIR",
+    "SITE_TITLE"
   ],
   "tasks": {
     "build": {
