@@ -63,3 +63,8 @@ drizzle/meta/_journal.json.bak
 
 # lefthook per-developer overrides (lefthook.yml is the committed config)
 lefthook-local.yml
+
+# tenant quality gates: built fixture site + lighthouse reports
+.tenant-fixture/
+.lhci-tenant/
+.lighthouseci/
