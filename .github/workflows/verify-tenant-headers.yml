@@ -1,0 +1,84 @@
+name: Verify tenant headers
+
+# Scheduled check that a live tenant site still ships the header contract the
+# worker sets in code. Code alone does not settle it: the response also passes
+# through Cloudflare, where a zone-level setting or a Transform Rule can add,
+# strip or duplicate a header — and HSTS is deliberately not emitted by the
+# worker precisely because the zone owns it. A regression here is silent until
+# someone curls by hand, so a failed run's notification is the alert.
+on:
+  schedule:
+    - cron: "30 7 * * 1"
+  workflow_dispatch:
+    inputs:
+      host:
+        description: "Tenant hostname to check"
+        required: false
+        default: "norven.farulivan.com"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-tenant-headers-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify tenant headers
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Curl a tenant site and assert its header contract
+        env:
+          HOST: ${{ inputs.host || 'norven.farulivan.com' }}
+        run: |
+          set -euo pipefail
+          # Cache-busting query so an intermediate cache cannot answer with a
+          # stale header set and mask a live regression.
+          RESPONSE=$(curl -sI "https://${HOST}/?$(date +%s)")
+          echo "$RESPONSE"
+          echo "---"
+
+          HEADERS=(
+            "Content-Security-Policy"
+            "X-Content-Type-Options"
+            "X-Frame-Options"
+            "Referrer-Policy"
+            "Permissions-Policy"
+            "Cross-Origin-Opener-Policy"
+            "Cross-Origin-Resource-Policy"
+          )
+
+          FAIL=0
+          for h in "${HEADERS[@]}"; do
+            if grep -qi "^${h}:" <<<"$RESPONSE"; then
+              echo "✓ $h"
+            else
+              echo "::error::Missing header: $h"
+              FAIL=1
+            fi
+          done
+
+          # Astro base64-inlines small font subsets, so a policy without
+          # `data:` in font-src blocks a font the page legitimately ships —
+          # which is exactly the regression this line exists to catch.
+          if grep -qi "^content-security-policy:.*font-src[^;]*data:" <<<"$RESPONSE"; then
+            echo "✓ font-src allows data:"
+          else
+            echo "::error::CSP font-src does not allow data: — inlined font subsets will be blocked"
+            FAIL=1
+          fi
+
+          # Counted rather than merely present: the worker does not emit HSTS
+          # because the zone does, so two lines mean both are firing and zero
+          # means neither is.
+          HSTS_COUNT=$(grep -ci "^strict-transport-security:" <<<"$RESPONSE" || true)
+          if [ "$HSTS_COUNT" -ne 1 ]; then
+            echo "::error::Expected exactly 1 Strict-Transport-Security header, found $HSTS_COUNT"
+            FAIL=1
+          else
+            echo "✓ Strict-Transport-Security (1 instance)"
+          fi
+
+          exit $FAIL
