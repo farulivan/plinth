@@ -58,8 +58,10 @@ Put the returned id into `apps/worker-router/wrangler.jsonc` (replacing the plac
 **Worker** — deploy and route it:
 
 ```sh
-pnpm --filter @plinth/worker-router deploy
+pnpm worker:deploy
 ```
+
+The root script exists because `deploy` is a pnpm builtin: `pnpm --filter @plinth/worker-router deploy` never reaches wrangler, it asks pnpm to deploy the workspace package into a target directory and fails on the missing argument. `pnpm --filter @plinth/worker-router run deploy` also works — `run` is what disambiguates.
 
 Bind the SITES/MEDIA R2 buckets and the TENANT_HOSTS KV in `wrangler.jsonc`, and add a route for `*.farulivan.com` so tenant hostnames hit the worker.
 
