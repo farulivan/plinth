@@ -157,11 +157,12 @@ The dashboard and api deploy as separate Fly.io apps with auto-stop at idle; ten
 │   ├── template-norven/   # first template (Norven editorial shape)
 │   └── ui/                # shadcn primitives for the dashboard
 ├── docs/
-│   ├── adr/               # 11 ADRs for every load-bearing decision
+│   ├── adr/               # 14 ADRs for every load-bearing decision
 │   ├── deployment.md      # go-live runbook (provisioning + first deploy)
+│   ├── migrations.md      # schema expand/contract + content schemaVersion playbook
 │   └── operations.md      # reapers, backups, and the restore runbook
 ├── .github/
-│   └── workflows/         # ci, deploy-dashboard, deploy-api, codeql, lighthouse, e2e
+│   └── workflows/         # ci, deploys, codeql, supply chain, e2e, lighthouse, tenant budgets
 └── turbo.json             # Turborepo pipeline config
 ```
 
