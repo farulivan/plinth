@@ -7,6 +7,12 @@ coverage/
 pnpm-lock.yaml
 *.tsbuildinfo
 
+# Tenant quality gates: a built site and its Lighthouse reports, both
+# generated. `.gitignore` keeps them out of git; Prettier needs telling too.
+.tenant-fixture/
+.lhci-tenant/
+.lighthouseci/
+
 # TOML has no Prettier parser without a plugin (fly.toml, etc.)
 *.toml
 
