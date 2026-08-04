@@ -1,6 +1,11 @@
 import type { ComponentMap } from "@plinth/renderer";
 import { describeSectionFields, sectionTypeOf, type FieldDescriptor } from "@plinth/schema/content";
-import { norvenComponents, norvenDocument, norvenSection } from "@plinth/template-norven";
+import {
+  norvenChrome,
+  norvenComponents,
+  norvenDocument,
+  norvenSection,
+} from "@plinth/template-norven";
 import type { z } from "zod";
 
 /**
@@ -27,6 +32,10 @@ export interface TemplateSpec {
   /** Section React components for SSR rendering — preview now, publish later
    * (ADR-0007: one renderer for both). */
   components: ComponentMap;
+  /** Nav and footer. The preview renders them too: chrome that appeared only
+   * in the published build would make the preview a different page from the
+   * one it claims to show (ADR-0015). */
+  chrome: typeof norvenChrome;
 }
 
 /** "photoHero" → "Photo hero". Manifest types are camelCase identifiers. */
@@ -52,6 +61,7 @@ export const templates: Record<string, TemplateSpec> = {
     document: norvenDocument,
     sections: norvenSection.options.map(toSectionSpec),
     components: norvenComponents,
+    chrome: norvenChrome,
   },
 };
 
