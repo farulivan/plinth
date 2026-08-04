@@ -2,4 +2,4 @@ export type { SectionComponentProps, SectionComponent, ComponentMap } from "./co
 export { resolveImageUrl } from "./resolveImageUrl";
 export { MediaRef } from "./components/MediaRef";
 export { Section } from "./components/Section";
-export { Document } from "./components/Document";
+export { Sections } from "./components/Sections";

@@ -1,4 +1,4 @@
-import type { LooseContentDocument } from "@plinth/schema";
+import type { StoredContentDocument } from "@plinth/schema";
 import { relations } from "drizzle-orm";
 import { jsonb, pgTable, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { workspaces } from "./workspaces";
@@ -17,7 +17,7 @@ export const contentDrafts = pgTable(
       .references(() => workspaces.id, { onDelete: "cascade" }),
     /** Template-agnostic envelope; the template's own schema validates at
      * publish time. Typed via @plinth/schema so consumers get the shape. */
-    document: jsonb("document").$type<LooseContentDocument>().notNull(),
+    document: jsonb("document").$type<StoredContentDocument>().notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
