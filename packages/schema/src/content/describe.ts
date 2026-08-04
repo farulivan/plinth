@@ -47,6 +47,21 @@ function describeField(name: string, schema: z.ZodType): FieldDescriptor {
       : { kind: "longText", name, optional, maxLength };
   }
 
+  // A union of string variants is still one text input. `link.href` is the
+  // case that forces this: as a standalone field the whole link is matched by
+  // shape below, but inside an array the element is destructured into its keys
+  // and `href` arrives here on its own — which never happened until site
+  // settings gave a template an array of links.
+  if (inner.def.type === "union") {
+    const options = (inner as z.ZodUnion<readonly z.ZodType[]>).options;
+    if (options.length > 0 && options.every((option) => option.def.type === "string")) {
+      const maxLength = Math.min(
+        ...options.map((option) => (option as z.ZodString).maxLength ?? LONG_TEXT_THRESHOLD),
+      );
+      return { kind: "shortText", name, optional, maxLength };
+    }
+  }
+
   if (inner.def.type === "object") {
     const keys = Object.keys((inner as z.ZodObject).shape);
     if (MEDIA_REF_KEYS.every((key) => keys.includes(key))) {

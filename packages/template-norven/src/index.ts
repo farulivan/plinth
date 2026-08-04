@@ -16,6 +16,8 @@ export {
   type ContactFields,
 } from "./manifest";
 
+export { norvenChrome, Nav, Footer, type NorvenChrome } from "./chrome";
+
 export { PhotoHero } from "./sections/PhotoHero";
 export { Statement } from "./sections/Statement";
 export { FeaturedProjects } from "./sections/FeaturedProjects";
