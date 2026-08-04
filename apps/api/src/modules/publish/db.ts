@@ -1,6 +1,6 @@
 import { withWorkspace, type Db } from "@plinth/db";
 import { contentDrafts, contentVersions, workspaces } from "@plinth/db/schema";
-import type { LooseContentDocument } from "@plinth/schema";
+import { parseContentDocument, type LooseContentDocumentV2 } from "@plinth/schema";
 import type { VersionStatus } from "@plinth/schema/api";
 import { desc, eq, sql } from "drizzle-orm";
 
@@ -41,17 +41,20 @@ export async function getWorkspaceMeta(
   return row ?? null;
 }
 
+/** Upgrades on read (ADR-0015). Every consumer sees the current shape, and —
+ * because the hash the publish gate stores must equal the one the preview
+ * channel emits — both sides have to hash the same side of the upgrade. */
 export async function getDraftDocument(
   db: Db,
   workspaceId: string,
-): Promise<LooseContentDocument | null> {
+): Promise<LooseContentDocumentV2 | null> {
   const [row] = await withWorkspace(db, workspaceId, (tx) =>
     tx
       .select({ document: contentDrafts.document })
       .from(contentDrafts)
       .where(eq(contentDrafts.workspaceId, workspaceId)),
   );
-  return row?.document ?? null;
+  return row ? parseContentDocument(row.document) : null;
 }
 
 export async function findVersionByIdempotencyKey(
@@ -79,18 +82,21 @@ export async function getVersion(
   return row ?? null;
 }
 
+/** Upgrades on read for the same reason: a rollback can select a snapshot
+ * written before the pages migration, and the builder must render it without
+ * a rebuild (docs/migrations.md). */
 export async function getVersionSnapshot(
   db: Db,
   workspaceId: string,
   versionId: string,
-): Promise<LooseContentDocument | null> {
+): Promise<LooseContentDocumentV2 | null> {
   const [row] = await withWorkspace(db, workspaceId, (tx) =>
     tx
       .select({ snapshot: contentVersions.snapshot })
       .from(contentVersions)
       .where(eq(contentVersions.id, versionId)),
   );
-  return row?.snapshot ?? null;
+  return row ? parseContentDocument(row.snapshot) : null;
 }
 
 export async function latestVersion(db: Db, workspaceId: string): Promise<VersionRow | null> {
@@ -124,7 +130,7 @@ export async function createVersion(
   db: Db,
   workspaceId: string,
   input: {
-    snapshot: LooseContentDocument;
+    snapshot: LooseContentDocumentV2;
     contentHash: string;
     idempotencyKey: string;
     createdBy: string;

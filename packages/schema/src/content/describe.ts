@@ -11,9 +11,18 @@ import type { z } from "zod";
 export type FieldDescriptor =
   | { kind: "shortText"; name: string; optional: boolean; maxLength: number }
   | { kind: "longText"; name: string; optional: boolean; maxLength: number }
+  | { kind: "prose"; name: string; optional: boolean; maxLength: number }
   | { kind: "link"; name: string; optional: boolean }
   | { kind: "media"; name: string; optional: boolean }
   | { kind: "array"; name: string; optional: boolean; item: FieldDescriptor[] };
+
+/** Keys `mediaRef` is recognised by. A subset check rather than an exact match:
+ * the shape gains fields over time (ADR-0014 keeps signed URLs as a seam), and
+ * under an exact match the first addition would fall through every branch and
+ * throw at module load — inside the dashboard's template registry, which builds
+ * every spec eagerly, so the whole editor would fail to render over a field
+ * nobody had used yet. */
+const MEDIA_REF_KEYS = ["alt", "contentHash", "height", "mediaId", "width"];
 
 /** Strings up to this render as a single-line input; longer as a textarea. */
 const LONG_TEXT_THRESHOLD = 500;
@@ -39,18 +48,26 @@ function describeField(name: string, schema: z.ZodType): FieldDescriptor {
   }
 
   if (inner.def.type === "object") {
-    const keys = Object.keys((inner as z.ZodObject).shape).sort();
-    if (keys.join(",") === "alt,contentHash,height,mediaId,width") {
+    const keys = Object.keys((inner as z.ZodObject).shape);
+    if (MEDIA_REF_KEYS.every((key) => keys.includes(key))) {
       return { kind: "media", name, optional };
     }
-    if (keys.join(",") === "href,label") return { kind: "link", name, optional };
+    if (keys.length === 2 && keys.includes("href") && keys.includes("label")) {
+      return { kind: "link", name, optional };
+    }
   }
 
   if (inner.def.type === "array") {
     const element = (inner as z.ZodArray<z.ZodType>).element;
+    // An array of strings is prose: paragraphs, one <p> each (ADR-0015).
+    if (element.def.type === "string") {
+      const maxLength = (element as z.ZodString).maxLength ?? Number.MAX_SAFE_INTEGER;
+      return { kind: "prose", name, optional, maxLength };
+    }
     if (element.def.type !== "object") {
       throw new Error(
-        `Array field "${name}" must hold objects — primitive arrays have no editor row shape.`,
+        `Array field "${name}" must hold objects or strings — no other element ` +
+          `type has an editor row shape.`,
       );
     }
     const item = Object.entries((element as z.ZodObject).shape).map(([itemName, itemSchema]) =>
@@ -76,8 +93,19 @@ export function describeSectionFields(section: z.ZodType): FieldDescriptor[] {
   if (!fields || fields.def.type !== "object") {
     throw new Error("describeSectionFields expects a defineSection() schema with object fields.");
   }
-  return Object.entries((fields as z.ZodObject).shape).map(([name, schema]) =>
-    describeField(name, schema as z.ZodType),
+  return describeObjectFields(fields as z.ZodObject);
+}
+
+/**
+ * Descriptors for any object schema. Sections reach this through their
+ * `fields` key above; page SEO and collection entries have no such wrapper and
+ * describe their whole shape. One derivation for all three means a new field
+ * primitive reaches every form at once, rather than the section editor and the
+ * entry editor drifting apart.
+ */
+export function describeObjectFields(schema: z.ZodObject): FieldDescriptor[] {
+  return Object.entries(schema.shape).map(([name, field]) =>
+    describeField(name, field as z.ZodType),
   );
 }
 

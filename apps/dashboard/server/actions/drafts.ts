@@ -2,7 +2,7 @@
 
 import { getSession } from "@plinth/auth";
 import { contentHash } from "@plinth/db";
-import { looseContentDocument } from "@plinth/schema";
+import { safeParseContentDocument } from "@plinth/schema";
 import { err, ok, type Envelope } from "@plinth/schema/api";
 import { headers } from "next/headers";
 import { z } from "zod";
@@ -35,7 +35,9 @@ export async function saveDraft(
 
     const id = z.uuid().safeParse(draftId);
     if (!id.success) return err("validation_failed", "Malformed draft id.");
-    const parsed = looseContentDocument.safeParse(document);
+    // Upgrades on the way in, so what gets stored — and what gets hashed — is
+    // always the current version, whatever the editor happened to post.
+    const parsed = safeParseContentDocument(document);
     if (!parsed.success) {
       return err("validation_failed", "The draft did not match the document envelope.");
     }

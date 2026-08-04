@@ -1,14 +1,17 @@
 ---
 /**
- * The one page of every tenant site (single-page templates for v1): render
- * the snapshot through the same Document/component pair the preview uses
- * (ADR-0003/0007 — one renderer, two surfaces). Throwing here fails the
- * astro build, which the publish job reports as a failed version — an
- * invalid snapshot must never publish silently.
+ * The home page of every tenant site: render its sections through the same
+ * renderer the preview uses (ADR-0003/0007 — one renderer, two surfaces).
+ * Throwing here fails the astro build, which the publish job reports as a
+ * failed version — an invalid snapshot must never publish silently.
+ *
+ * The snapshot is a v2 document (ADR-0015), so it carries many pages; this
+ * build still emits only the one at `/`. Route fan-out over the rest arrives
+ * with the head and chrome that make a second page worth serving.
  */
 import { readFileSync } from "node:fs";
-import { Document, type ComponentMap } from "@plinth/renderer";
-import { looseContentDocument } from "@plinth/schema";
+import { Sections, type ComponentMap } from "@plinth/renderer";
+import { HOME_PATH, parseContentDocument } from "@plinth/schema";
 import { norvenComponents } from "@plinth/template-norven";
 import "@plinth/template-norven/styles.css";
 
@@ -22,7 +25,11 @@ const templateId = process.env.TEMPLATE_ID ?? "template-norven";
 const components = templates[templateId];
 if (!components) throw new Error(`Template "${templateId}" is not registered in site-builder.`);
 
-const document = looseContentDocument.parse(JSON.parse(readFileSync(snapshotPath, "utf8")));
+// parseContentDocument upgrades a v1 snapshot on read, so a rollback to a
+// version published before the pages migration still builds (docs/migrations.md).
+const document = parseContentDocument(JSON.parse(readFileSync(snapshotPath, "utf8")));
+const home = document.pages.find((page) => page.path === HOME_PATH && page.enabled);
+if (!home) throw new Error(`Snapshot has no enabled page at ${HOME_PATH}.`);
 ---
 
 <!doctype html>
@@ -34,7 +41,7 @@ const document = looseContentDocument.parse(JSON.parse(readFileSync(snapshotPath
     <title>{process.env.SITE_TITLE ?? "Site"}</title>
   </head>
   <body>
-    <Document document={document} components={components} />
+    <Sections sections={home.sections} components={components} />
     <script>
       import { boot } from "@plinth/template-norven/motion";
       boot();

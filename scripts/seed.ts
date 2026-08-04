@@ -11,6 +11,7 @@
  */
 import { createDb, withWorkspace } from "@plinth/db";
 import { contentDrafts, users, workspaceMemberships, workspaces } from "@plinth/db/schema";
+import { parseContentDocument } from "@plinth/schema";
 import { norvenDocument } from "@plinth/template-norven";
 import { eq } from "drizzle-orm";
 
@@ -31,52 +32,67 @@ const SEED_WORKSPACE = { slug: "norven", name: "Norven", templateId: "template-n
  * pipeline); `pnpm seed:norven` layers the full landing page with photos on
  * top. Parsed through the template manifest so the seed can never produce a
  * draft the editor and publish path wouldn't accept. */
-const sampleDocument = norvenDocument.parse({
-  sections: [
-    {
-      type: "statement",
-      fields: {
-        eyebrow: "The practice",
-        body: "Norven is an architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
-      },
+const sampleDocument = parseContentDocument(
+  norvenDocument.parse({
+    site: {
+      name: "Norven",
+      description:
+        "An architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
     },
-    {
-      type: "stats",
-      fields: {
-        items: [
-          { value: "118", label: "Built" },
-          { value: "26", label: "In studio" },
-          { value: "42", label: "Awards & citations" },
-          { value: "17", label: "Years continuous practice" },
+    pages: [
+      {
+        id: "00000000-0000-4000-8000-000000000000",
+        path: "/",
+        navLabel: "Home",
+        sections: [
+          {
+            type: "statement",
+            fields: {
+              eyebrow: "The practice",
+              body: "Norven is an architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
+            },
+          },
+          {
+            type: "stats",
+            fields: {
+              items: [
+                { value: "118", label: "Built" },
+                { value: "26", label: "In studio" },
+                { value: "42", label: "Awards & citations" },
+                { value: "17", label: "Years continuous practice" },
+              ],
+            },
+          },
+          {
+            type: "testimonial",
+            fields: {
+              attribution: "Client, Salt House",
+              context: "Tjøme · 2023",
+              quote:
+                "They drew our house the way you would a portrait of someone you had known for fifty years. Nothing was decorative, nothing was lazy. We have lived in it for three winters now and have not found a single thing we would change.",
+              name: "Margrét Sól",
+            },
+          },
+          {
+            type: "contact",
+            fields: {
+              eyebrow: "Bring us a site",
+              heading: "Bring us a site,\na story,\na single hour of light.",
+              email: "studio@norven.example",
+              phone: "+47 22 00 00 00",
+              studios: [
+                { city: "Oslo", address: "Akersgata 12, 0158" },
+                { city: "Lisbon", address: "Rua das Janelas Verdes 9" },
+                { city: "Kyoto", address: "Higashiyama, Sanjō 3-15" },
+              ],
+            },
+          },
         ],
       },
-    },
-    {
-      type: "testimonial",
-      fields: {
-        attribution: "Client, Salt House",
-        context: "Tjøme · 2023",
-        quote:
-          "They drew our house the way you would a portrait of someone you had known for fifty years. Nothing was decorative, nothing was lazy. We have lived in it for three winters now and have not found a single thing we would change.",
-        name: "Margrét Sól",
-      },
-    },
-    {
-      type: "contact",
-      fields: {
-        eyebrow: "Bring us a site",
-        heading: "Bring us a site,\na story,\na single hour of light.",
-        email: "studio@norven.example",
-        phone: "+47 22 00 00 00",
-        studios: [
-          { city: "Oslo", address: "Akersgata 12, 0158" },
-          { city: "Lisbon", address: "Rua das Janelas Verdes 9" },
-          { city: "Kyoto", address: "Higashiyama, Sanjō 3-15" },
-        ],
-      },
-    },
-  ],
-});
+    ],
+    collections: {},
+  }),
+);
 
 async function main(): Promise<void> {
   const { db, pool } = createDb({ connectionString, max: 3 });

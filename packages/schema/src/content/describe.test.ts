@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { describe, expect, it } from "vitest";
 import { describeSectionFields, sectionTypeOf } from "./describe";
-import { link, longText, shortText } from "./fieldTypes";
+import { link, longText, prose, shortText } from "./fieldTypes";
 import { mediaRef } from "./mediaRef";
 import { defineSection } from "./section";
 
@@ -58,9 +58,29 @@ describe("describeSectionFields", () => {
     });
   });
 
-  it("refuses primitive arrays — rows must be objects", () => {
-    const rogue = defineSection("rogue", z.object({ tags: z.array(shortText) }));
-    expect(() => describeSectionFields(rogue)).toThrow(/must hold objects/);
+  it("describes a string array as prose — paragraphs, not rows", () => {
+    const body = defineSection("body", z.object({ paragraphs: prose }));
+    expect(describeSectionFields(body)).toEqual([
+      { kind: "prose", name: "paragraphs", optional: false, maxLength: 5000 },
+    ]);
+  });
+
+  it("still refuses an array of anything else — no editor row shape exists", () => {
+    const rogue = defineSection("rogue", z.object({ counts: z.array(z.number()) }));
+    expect(() => describeSectionFields(rogue)).toThrow(/must hold objects or strings/);
+  });
+
+  // The exact-key check this replaced would have thrown here, at module load
+  // inside the dashboard's eagerly-built template registry — taking the whole
+  // editor down over a field nobody had used yet.
+  it("recognises a mediaRef that has gained a field", () => {
+    const extended = defineSection(
+      "extended",
+      z.object({ photo: mediaRef.extend({ widths: z.array(z.number()).optional() }) }),
+    );
+    expect(describeSectionFields(extended)).toEqual([
+      { kind: "media", name: "photo", optional: false },
+    ]);
   });
 
   it("fails loudly on a primitive it does not know", () => {

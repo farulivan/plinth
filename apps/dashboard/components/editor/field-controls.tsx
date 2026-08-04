@@ -122,11 +122,87 @@ export function FieldControl({
           />
         </fieldset>
       );
+    case "prose":
+      return <ProseField control={control} descriptor={descriptor} name={name} />;
     case "media":
       return <MediaField control={control} name={name} label={labelFor(descriptor.name)} />;
     case "array":
       return <ArrayField control={control} descriptor={descriptor} name={name} />;
   }
+}
+
+/**
+ * Body copy as paragraphs (ADR-0015). One textarea per paragraph rather than
+ * one textarea split on blank lines: the stored shape is an array, and editing
+ * a joined string would make every keystroke a re-split, so a stray blank line
+ * would silently renumber every paragraph after it.
+ */
+function ProseField({
+  control,
+  descriptor,
+  name,
+}: {
+  control: Control<FieldValues>;
+  descriptor: Extract<FieldDescriptor, { kind: "prose" }>;
+  name: string;
+}) {
+  const { fields, append, remove, swap } = useFieldArray({ control, name });
+
+  return (
+    <fieldset className="space-y-3 rounded-md border p-3">
+      <legend className="px-1 text-sm font-medium">{labelFor(descriptor.name)}</legend>
+      {fields.map((row, index) => (
+        <div key={row.id} className="space-y-2">
+          <FormField
+            control={control}
+            name={`${name}.${index}`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-muted-foreground text-xs">
+                  Paragraph {index + 1}
+                </FormLabel>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    value={typeof field.value === "string" ? field.value : ""}
+                    rows={4}
+                    maxLength={descriptor.maxLength}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={index === 0}
+              onClick={() => swap(index, index - 1)}
+            >
+              Move up
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={index === fields.length - 1}
+              onClick={() => swap(index, index + 1)}
+            >
+              Move down
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>
+              Remove
+            </Button>
+          </div>
+        </div>
+      ))}
+      <Button type="button" variant="outline" size="sm" onClick={() => append("")}>
+        Add paragraph
+      </Button>
+    </fieldset>
+  );
 }
 
 /**

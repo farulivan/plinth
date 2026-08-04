@@ -1,4 +1,4 @@
-import type { LooseContentDocument } from "@plinth/schema";
+import type { StoredContentDocument } from "@plinth/schema";
 import { isNotNull, relations } from "drizzle-orm";
 import {
   integer,
@@ -37,7 +37,7 @@ export const contentVersions = pgTable(
       .references(() => workspaces.id, { onDelete: "cascade" }),
     /** Monotonic per workspace — the `v{N}` in the R2 site path. */
     versionNumber: integer("version_number").notNull(),
-    snapshot: jsonb("snapshot").$type<LooseContentDocument>().notNull(),
+    snapshot: jsonb("snapshot").$type<StoredContentDocument>().notNull(),
     /** SHA-256 of the canonical snapshot JSON — content addressing + the
      * preview hash check (ADR-0007). */
     contentHash: text("content_hash").notNull(),

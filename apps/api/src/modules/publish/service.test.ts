@@ -1,5 +1,5 @@
 import { contentHash, type Db } from "@plinth/db";
-import type { LooseContentDocument } from "@plinth/schema";
+import type { LooseContentDocumentV2, SectionInstance } from "@plinth/schema";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as auditLog from "../../lib/auditLog";
 import * as adapter from "./adapter";
@@ -42,16 +42,31 @@ const WORKSPACE = "00000000-0000-0000-0000-000000000001";
 const USER = "00000000-0000-0000-0000-000000000002";
 const VERSION = "00000000-0000-0000-0000-000000000003";
 
-const validDraft = {
-  schemaVersion: 1,
-  sections: [
-    {
-      type: "statement",
-      enabled: true,
-      fields: { eyebrow: "The practice", body: "A finished body." },
-    },
-  ],
-} as LooseContentDocument;
+/** A v2 document holding one home page. Sections vary per test; site settings
+ * are filled because the publish gate now asks for them (ADR-0015). */
+const docWith = (sections: unknown[], pageOverrides = {}): LooseContentDocumentV2 =>
+  ({
+    schemaVersion: 2,
+    site: { name: "Norven", description: "An architecture practice", nav: [], social: [] },
+    pages: [
+      {
+        id: "00000000-0000-4000-8000-000000000000",
+        path: "/",
+        enabled: true,
+        seo: { noindex: false },
+        sections: sections as SectionInstance[],
+        ...pageOverrides,
+      },
+    ],
+    collections: {},
+  }) as LooseContentDocumentV2;
+
+const validSection = {
+  type: "statement",
+  enabled: true,
+  fields: { eyebrow: "The practice", body: "A finished body." },
+};
+const validDraft = docWith([validSection]);
 
 const versionRow = (status: "queued" | "building" | "built" | "failed") => ({
   id: VERSION,
@@ -73,27 +88,25 @@ beforeEach(() => {
 
 describe("requestPublish", () => {
   it("rejects an enabled section that fails the strict schema, keyed by type.field", async () => {
-    vi.mocked(dbFns.getDraftDocument).mockResolvedValue({
-      schemaVersion: 1,
-      sections: [{ type: "statement", enabled: true, fields: { eyebrow: "", body: "x" } }],
-    } as LooseContentDocument);
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(
+      docWith([{ type: "statement", enabled: true, fields: { eyebrow: "", body: "x" } }]),
+    );
 
     const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
 
     expect(result.outcome).toBe("invalid-draft");
     if (result.outcome !== "invalid-draft") return;
-    expect(Object.keys(result.fieldErrors)).toContain("statement.eyebrow");
+    expect(Object.keys(result.fieldErrors)).toContain("/.statement.eyebrow");
     expect(dbFns.createVersion).not.toHaveBeenCalled();
   });
 
   it("ignores disabled sections — a half-finished hidden section cannot block publish", async () => {
-    vi.mocked(dbFns.getDraftDocument).mockResolvedValue({
-      schemaVersion: 1,
-      sections: [
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(
+      docWith([
         { type: "photoHero", enabled: false, fields: { title: "" } }, // no photo yet
-        ...validDraft.sections,
-      ],
-    } as LooseContentDocument);
+        validSection,
+      ]),
+    );
     vi.mocked(dbFns.findVersionByIdempotencyKey).mockResolvedValue(null);
     vi.mocked(dbFns.createVersion).mockResolvedValue(versionRow("queued"));
 
@@ -103,17 +116,86 @@ describe("requestPublish", () => {
   });
 
   it("refuses a document with no enabled sections", async () => {
-    vi.mocked(dbFns.getDraftDocument).mockResolvedValue({
-      schemaVersion: 1,
-      sections: [{ type: "statement", enabled: false, fields: { eyebrow: "x", body: "y" } }],
-    } as LooseContentDocument);
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(
+      docWith([{ type: "statement", enabled: false, fields: { eyebrow: "x", body: "y" } }]),
+    );
 
     const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
 
     expect(result.outcome).toBe("invalid-draft");
     if (result.outcome !== "invalid-draft") return;
-    expect(result.fieldErrors["document"]).toEqual([
-      "Enable at least one section before publishing.",
+    expect(result.fieldErrors["/"]).toEqual(["Enable at least one section on this page."]);
+  });
+
+  // Without `enabled` on a page, one unfinished page would refuse to publish
+  // every finished one alongside it (ADR-0015).
+  it("ignores a disabled page, so an unfinished one cannot block the site", async () => {
+    const draft = docWith([validSection]);
+    draft.pages.push({
+      id: "00000000-0000-4000-8000-000000000001",
+      path: "/studio/",
+      enabled: false,
+      seo: { noindex: false },
+      sections: [{ type: "statement", enabled: true, fields: { eyebrow: "", body: "" } }],
+    } as (typeof draft.pages)[number]);
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
+    vi.mocked(dbFns.findVersionByIdempotencyKey).mockResolvedValue(null);
+    vi.mocked(dbFns.createVersion).mockResolvedValue(versionRow("queued"));
+
+    expect((await requestPublish(db, { workspaceId: WORKSPACE, userId: USER })).outcome).toBe(
+      "created",
+    );
+  });
+
+  it("keys errors by page path, so the same section type on two pages is distinguishable", async () => {
+    const draft = docWith([
+      { type: "statement", enabled: true, fields: { eyebrow: "", body: "x" } },
+    ]);
+    draft.pages.push({
+      id: "00000000-0000-4000-8000-000000000001",
+      path: "/studio/",
+      enabled: true,
+      seo: { noindex: false },
+      sections: [{ type: "statement", enabled: true, fields: { eyebrow: "", body: "y" } }],
+    } as (typeof draft.pages)[number]);
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
+
+    const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
+
+    expect(result.outcome).toBe("invalid-draft");
+    if (result.outcome !== "invalid-draft") return;
+    expect(Object.keys(result.fieldErrors)).toEqual(
+      expect.arrayContaining(["/.statement.eyebrow", "/studio/.statement.eyebrow"]),
+    );
+  });
+
+  // The v1 upgrade seeds these blank rather than inventing them, so a migrated
+  // workspace is asked once instead of publishing a title nobody chose.
+  it("asks for site settings the v1 upgrade could not supply", async () => {
+    const draft = docWith([validSection]);
+    draft.site = { name: "", description: "", nav: [], social: [] };
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
+
+    const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
+
+    expect(result.outcome).toBe("invalid-draft");
+    if (result.outcome !== "invalid-draft") return;
+    expect(result.fieldErrors["site"]).toEqual([
+      "Set the site name and description before publishing.",
+    ]);
+  });
+
+  it("refuses a collection the template does not declare", async () => {
+    const draft = docWith([validSection]);
+    draft.collections = { projects: { pathTemplate: "/projects/{slug}/", entries: [] } };
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
+
+    const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
+
+    expect(result.outcome).toBe("invalid-draft");
+    if (result.outcome !== "invalid-draft") return;
+    expect(result.fieldErrors["projects"]).toEqual([
+      "This collection is not part of the template.",
     ]);
   });
 

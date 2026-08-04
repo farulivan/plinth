@@ -24,7 +24,7 @@ I built Plinth as a typed, multi-tenant CMS for editorial marketing sites. It is
 
 ## Why this exists
 
-Plinth is open-source code under MIT and a closed-source operations layer that runs the hosted service. The codebase is meant to be read end-to-end — fourteen ADRs in `docs/adr/` cover every load-bearing decision and the architecture overview fits on one screen.
+Plinth is open-source code under MIT and a closed-source operations layer that runs the hosted service. The codebase is meant to be read end-to-end — fifteen ADRs in `docs/adr/` cover every load-bearing decision and the architecture overview fits on one screen.
 
 It serves two readings:
 
@@ -80,6 +80,7 @@ Fourteen ADRs cover every load-bearing decision. They are short, self-contained,
 - [ADR-0012 · Preview event transport](./docs/adr/0012-preview-event-transport.md) — SSE over a polling loop or a socket, and where the channel lives.
 - [ADR-0013 · Site-builder invocation](./docs/adr/0013-site-builder-invocation.md) — the publish job shells out to `astro build` rather than importing it, and what that costs the runtime image.
 - [ADR-0014 · Media delivery and upload signing](./docs/adr/0014-media-delivery-and-upload-signing.md) — one `/_media/{hash}/w{width}.{format}` path shape resolved by the worker in production and by the dashboard in preview.
+- [ADR-0015 · Content document v2](./docs/adr/0015-content-document-v2.md) — pages, collections and prose paragraphs; v1 documents upgrade on read and stay readable for rollback.
 
 ## Architecture
 
@@ -157,7 +158,7 @@ The dashboard and api deploy as separate Fly.io apps with auto-stop at idle; ten
 │   ├── template-norven/   # first template (Norven editorial shape)
 │   └── ui/                # shadcn primitives for the dashboard
 ├── docs/
-│   ├── adr/               # 14 ADRs for every load-bearing decision
+│   ├── adr/               # 15 ADRs for every load-bearing decision
 │   ├── deployment.md      # go-live runbook (provisioning + first deploy)
 │   ├── migrations.md      # schema expand/contract + content schemaVersion playbook
 │   └── operations.md      # reapers, backups, and the restore runbook

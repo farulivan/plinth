@@ -1,6 +1,6 @@
 "use client";
 
-import type { LooseContentDocument } from "@plinth/schema";
+import { HOME_PATH, type LooseContentDocumentV2, type SectionInstance } from "@plinth/schema";
 import { Button } from "@plinth/ui/components/button";
 import {
   DropdownMenu,
@@ -32,13 +32,20 @@ export function Editor({
 }: {
   draftId: string;
   templateId: string;
-  initialDocument: LooseContentDocument;
+  initialDocument: LooseContentDocumentV2;
   /** Fires with the saved document's content hash — the publish bar's
    * "unpublished changes" comparison rides on it. */
   onSaved?: (contentHash: string) => void;
 }) {
   const template = templateFor(templateId);
   const [document, setDocument] = useState(initialDocument);
+  // One page is edited at a time. Multi-page documents exist in the schema
+  // before the editor offers a switcher (ADR-0015), so this resolves to the
+  // home page and the mutators below are already page-scoped — a mutator that
+  // matched on section type alone would edit the same-named section on every
+  // page at once the moment a second one appears.
+  const activePage = document.pages.find((page) => page.path === HOME_PATH) ?? document.pages[0]!;
+  const activePageId = activePage.id;
   const [save, setSave] = useState<SaveState>({ status: "idle" });
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveSeq = useRef(0);
@@ -81,46 +88,62 @@ export function Editor({
     };
   }, [document, draftId]);
 
-  const updateFields = useCallback((type: string, fields: Record<string, unknown>) => {
-    setDocument((doc) => ({
-      ...doc,
-      sections: doc.sections.map((section) =>
-        section.type === type ? { ...section, fields } : section,
-      ),
-    }));
-  }, []);
-
-  const toggleSection = useCallback((type: string, enabled: boolean) => {
-    setDocument((doc) => ({
-      ...doc,
-      sections: doc.sections.map((section) =>
-        section.type === type ? { ...section, enabled } : section,
-      ),
-    }));
-  }, []);
-
-  const moveSection = useCallback((type: string, direction: -1 | 1) => {
-    setDocument((doc) => {
-      const index = doc.sections.findIndex((section) => section.type === type);
-      const target = index + direction;
-      if (index < 0 || target < 0 || target >= doc.sections.length) return doc;
-      const sections = [...doc.sections];
-      const [moved] = sections.splice(index, 1);
-      sections.splice(target, 0, moved!);
-      return { ...doc, sections };
-    });
-  }, []);
-
-  const addSection = useCallback(
-    (type: string) => {
-      const spec = template?.sections.find((candidate) => candidate.type === type);
-      if (!spec) return;
+  /** Every structural edit rewrites exactly one page's sections. */
+  const editPage = useCallback(
+    (pageId: string, edit: (sections: SectionInstance[]) => SectionInstance[]) => {
       setDocument((doc) => ({
         ...doc,
-        sections: [...doc.sections, { type, enabled: true, fields: emptyFieldsFor(spec) }],
+        pages: doc.pages.map((page) =>
+          page.id === pageId ? { ...page, sections: edit(page.sections) } : page,
+        ),
       }));
     },
-    [template],
+    [],
+  );
+
+  const updateFields = useCallback(
+    (pageId: string, type: string, fields: Record<string, unknown>) => {
+      editPage(pageId, (sections) =>
+        sections.map((section) => (section.type === type ? { ...section, fields } : section)),
+      );
+    },
+    [editPage],
+  );
+
+  const toggleSection = useCallback(
+    (pageId: string, type: string, enabled: boolean) => {
+      editPage(pageId, (sections) =>
+        sections.map((section) => (section.type === type ? { ...section, enabled } : section)),
+      );
+    },
+    [editPage],
+  );
+
+  const moveSection = useCallback(
+    (pageId: string, type: string, direction: -1 | 1) => {
+      editPage(pageId, (sections) => {
+        const index = sections.findIndex((section) => section.type === type);
+        const target = index + direction;
+        if (index < 0 || target < 0 || target >= sections.length) return sections;
+        const next = [...sections];
+        const [moved] = next.splice(index, 1);
+        next.splice(target, 0, moved!);
+        return next;
+      });
+    },
+    [editPage],
+  );
+
+  const addSection = useCallback(
+    (pageId: string, type: string) => {
+      const spec = template?.sections.find((candidate) => candidate.type === type);
+      if (!spec) return;
+      editPage(pageId, (sections) => [
+        ...sections,
+        { type, enabled: true, fields: emptyFieldsFor(spec) },
+      ]);
+    },
+    [template, editPage],
   );
 
   if (!template) {
@@ -131,7 +154,7 @@ export function Editor({
     );
   }
 
-  const presentTypes = new Set(document.sections.map((section) => section.type));
+  const presentTypes = new Set(activePage.sections.map((section) => section.type));
   const addableSections = template.sections.filter((spec) => !presentTypes.has(spec.type));
 
   return (
@@ -146,12 +169,12 @@ export function Editor({
         <SaveStatus save={save} />
       </header>
 
-      {document.sections.map((section, index) => {
+      {activePage.sections.map((section, index) => {
         const spec = template.sections.find((candidate) => candidate.type === section.type);
         if (!spec) {
           return (
             <div
-              key={section.type}
+              key={`${activePageId}:${section.type}`}
               className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm"
             >
               “{section.type}” is not part of this template anymore; it will be ignored at publish.
@@ -160,15 +183,19 @@ export function Editor({
         }
         return (
           <SectionCard
-            key={section.type}
+            // Keyed by page as well as type: SectionCard seeds react-hook-form
+            // from `fields` at mount and is uncontrolled after, so swapping
+            // pages without remounting would show the previous page's values
+            // and immediately stream them upward over the new page's.
+            key={`${activePageId}:${section.type}`}
             spec={spec}
             fields={(section.fields ?? {}) as Record<string, unknown>}
             enabled={section.enabled}
             canMoveUp={index > 0}
-            canMoveDown={index < document.sections.length - 1}
-            onFieldsChange={(fields) => updateFields(section.type, fields)}
-            onToggle={(enabled) => toggleSection(section.type, enabled)}
-            onMove={(direction) => moveSection(section.type, direction)}
+            canMoveDown={index < activePage.sections.length - 1}
+            onFieldsChange={(fields) => updateFields(activePageId, section.type, fields)}
+            onToggle={(enabled) => toggleSection(activePageId, section.type, enabled)}
+            onMove={(direction) => moveSection(activePageId, section.type, direction)}
           />
         );
       })}
@@ -180,7 +207,10 @@ export function Editor({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             {addableSections.map((spec) => (
-              <DropdownMenuItem key={spec.type} onSelect={() => addSection(spec.type)}>
+              <DropdownMenuItem
+                key={spec.type}
+                onSelect={() => addSection(activePageId, spec.type)}
+              >
                 {spec.label}
               </DropdownMenuItem>
             ))}

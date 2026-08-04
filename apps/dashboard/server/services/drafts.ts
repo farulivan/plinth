@@ -1,7 +1,7 @@
 import "server-only";
 import { withWorkspace, type Db } from "@plinth/db";
 import { contentDrafts, workspaces } from "@plinth/db/schema";
-import { looseContentDocument, type LooseContentDocument } from "@plinth/schema";
+import { HOME_PATH, parseContentDocument, type LooseContentDocumentV2 } from "@plinth/schema";
 import { eq } from "drizzle-orm";
 
 /**
@@ -23,23 +23,33 @@ export class DraftNotFoundError extends Error {
 
 export interface EditorData {
   draftId: string;
-  document: LooseContentDocument;
+  document: LooseContentDocumentV2;
   templateId: string;
 }
 
 /** Norven-first onboarding default: one filled statement section so the
  * editor opens non-empty and the document satisfies the envelope's min(1).
  * Becomes template-aware when a second template lands. */
-const DEFAULT_DOCUMENT: LooseContentDocument = looseContentDocument.parse({
-  sections: [
+const DEFAULT_DOCUMENT: LooseContentDocumentV2 = parseContentDocument({
+  schemaVersion: 2,
+  site: { name: "", description: "" },
+  pages: [
     {
-      type: "statement",
-      fields: {
-        eyebrow: "The practice",
-        body: "This draft was created when you first opened the editor. Replace this text with your own — every save is automatic.",
-      },
+      id: "00000000-0000-4000-8000-000000000000",
+      path: HOME_PATH,
+      navLabel: "Home",
+      sections: [
+        {
+          type: "statement",
+          fields: {
+            eyebrow: "The practice",
+            body: "This draft was created when you first opened the editor. Replace this text with your own — every save is automatic.",
+          },
+        },
+      ],
     },
   ],
+  collections: {},
 });
 
 /** The workspace's draft (created on first open) plus its template. */
@@ -60,7 +70,11 @@ export async function getEditorData(db: Db, workspaceId: string): Promise<Editor
     if (existing) {
       return {
         draftId: existing.id,
-        document: existing.document,
+        // Upgraded here rather than downstream: the preview route hashes what
+        // it renders and the save action hashes what it stored, so both sides
+        // must see the same side of the upgrade or every save emits a hash
+        // that never matches and the iframe reload-loops (docs/migrations.md).
+        document: parseContentDocument(existing.document),
         templateId: workspace.templateId,
       };
     }
@@ -68,12 +82,16 @@ export async function getEditorData(db: Db, workspaceId: string): Promise<Editor
       .insert(contentDrafts)
       .values({ workspaceId, document: DEFAULT_DOCUMENT })
       .returning({ id: contentDrafts.id, document: contentDrafts.document });
-    return { draftId: created!.id, document: created!.document, templateId: workspace.templateId };
+    return {
+      draftId: created!.id,
+      document: parseContentDocument(created!.document),
+      templateId: workspace.templateId,
+    };
   });
 }
 
 export interface PreviewData {
-  document: LooseContentDocument;
+  document: LooseContentDocumentV2;
   templateId: string;
 }
 
@@ -97,7 +115,7 @@ export async function getDraftForPreview(
       .where(eq(contentDrafts.id, draftId)),
   );
   if (!draft) return null;
-  return { document: draft.document, templateId: workspace.templateId };
+  return { document: parseContentDocument(draft.document), templateId: workspace.templateId };
 }
 
 /** Persist a full draft document (the editor autosaves whole documents —
@@ -107,7 +125,7 @@ export async function saveDraftDocument(
   db: Db,
   workspaceId: string,
   draftId: string,
-  document: LooseContentDocument,
+  document: LooseContentDocumentV2,
 ): Promise<{ savedAt: Date }> {
   return withWorkspace(db, workspaceId, async (tx) => {
     const [updated] = await tx

@@ -34,6 +34,9 @@ importers:
       '@plinth/db':
         specifier: workspace:*
         version: link:packages/db
+      '@plinth/schema':
+        specifier: workspace:*
+        version: link:packages/schema
       '@plinth/template-norven':
         specifier: workspace:*
         version: link:packages/template-norven

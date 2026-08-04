@@ -82,136 +82,156 @@ async function main(): Promise<void> {
   // The landing page verbatim, matching what `seed:norven` writes to a real
   // draft — the gates audit the page the first tenant actually publishes.
   const document = norvenDocument.parse({
-    sections: [
+    site: {
+      name: "Norven",
+      description:
+        "An architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
+      nav: [],
+      social: [],
+    },
+    pages: [
       {
-        type: "photoHero",
-        fields: {
-          eyebrow: "Norven · Est. 2009",
-          title: "Architecture\nof consequence.",
-          subtitle:
-            "Norven is an architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
-          photo: ref(
-            hero,
-            "00000000-0000-4000-8000-000000000001",
-            "Norven — architecture of consequence",
-          ),
+        id: "00000000-0000-4000-8000-000000000000",
+        path: "/",
+        navLabel: "Home",
+        seo: {
+          title: "Norven — Architecture of consequence",
+          description:
+            "An architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
         },
-      },
-      {
-        type: "statement",
-        fields: {
-          eyebrow: "The practice",
-          body: "Norven is an architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
-        },
-      },
-      {
-        type: "featuredProjects",
-        fields: {
-          heading: "Selected work",
-          items: [
-            {
-              title: "Salt House",
-              meta: "Residence · 2023 · Built",
-              location: "Tjøme, Norway · 280 m²",
-              brief:
-                "A coastal residence cut into a granite shelf above the Skagerrak. Three volumes stepped down the slope, a single oak stair binding them.",
-              image: ref(
-                saltHouse,
-                "00000000-0000-4000-8000-000000000002",
-                "Salt House — coastal residence above the Skagerrak",
+        sections: [
+          {
+            type: "photoHero",
+            fields: {
+              eyebrow: "Norven · Est. 2009",
+              title: "Architecture\nof consequence.",
+              subtitle:
+                "Norven is an architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
+              photo: ref(
+                hero,
+                "00000000-0000-4000-8000-000000000001",
+                "Norven — architecture of consequence",
               ),
             },
-            {
-              title: "Obsidian Pavilion",
-              meta: "Cultural · 2024 · Built",
-              location: "Þingvellir, Iceland · 640 m²",
-              brief:
-                "A reading room and lava-field interpretive structure at the seam between the North American and Eurasian plates. Vertical, narrow, deliberately weightless.",
-              image: ref(
-                obsidian,
-                "00000000-0000-4000-8000-000000000003",
-                "Obsidian Pavilion — interpretive structure at Þingvellir",
-              ),
+          },
+          {
+            type: "statement",
+            fields: {
+              eyebrow: "The practice",
+              body: "Norven is an architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
             },
-            {
-              title: "Terra Works",
-              meta: "Commercial · 2025 · Built",
-              location: "Marvila, Lisbon · 4,200 m²",
-              brief:
-                "Adaptive reuse of a 1937 ceramics warehouse into studio offices for nine creative tenants. Original shell retained; programme built as freestanding timber inserts.",
-              image: ref(
-                terraWorks,
-                "00000000-0000-4000-8000-000000000004",
-                "Terra Works — adaptive reuse of a ceramics warehouse",
-              ),
+          },
+          {
+            type: "featuredProjects",
+            fields: {
+              heading: "Selected work",
+              items: [
+                {
+                  title: "Salt House",
+                  meta: "Residence · 2023 · Built",
+                  location: "Tjøme, Norway · 280 m²",
+                  brief:
+                    "A coastal residence cut into a granite shelf above the Skagerrak. Three volumes stepped down the slope, a single oak stair binding them.",
+                  image: ref(
+                    saltHouse,
+                    "00000000-0000-4000-8000-000000000002",
+                    "Salt House — coastal residence above the Skagerrak",
+                  ),
+                },
+                {
+                  title: "Obsidian Pavilion",
+                  meta: "Cultural · 2024 · Built",
+                  location: "Þingvellir, Iceland · 640 m²",
+                  brief:
+                    "A reading room and lava-field interpretive structure at the seam between the North American and Eurasian plates. Vertical, narrow, deliberately weightless.",
+                  image: ref(
+                    obsidian,
+                    "00000000-0000-4000-8000-000000000003",
+                    "Obsidian Pavilion — interpretive structure at Þingvellir",
+                  ),
+                },
+                {
+                  title: "Terra Works",
+                  meta: "Commercial · 2025 · Built",
+                  location: "Marvila, Lisbon · 4,200 m²",
+                  brief:
+                    "Adaptive reuse of a 1937 ceramics warehouse into studio offices for nine creative tenants. Original shell retained; programme built as freestanding timber inserts.",
+                  image: ref(
+                    terraWorks,
+                    "00000000-0000-4000-8000-000000000004",
+                    "Terra Works — adaptive reuse of a ceramics warehouse",
+                  ),
+                },
+                {
+                  title: "Holm Chapel",
+                  meta: "Civic · 2022 · Built",
+                  location: "Higashiyama, Kyoto · 180 m²",
+                  brief:
+                    "A non-denominational chapel for a small university campus. One room, one bench, one light cut down through three storeys of rammed earth.",
+                  image: ref(
+                    holmChapel,
+                    "00000000-0000-4000-8000-000000000005",
+                    "Holm Chapel — rammed-earth chapel in Kyoto",
+                  ),
+                },
+                {
+                  title: "Nord-Strata Tower",
+                  meta: "Cultural · 2026 · In Studio",
+                  location: "Reykjavík · 6,800 m²",
+                  brief:
+                    "A vertical archive and exhibition tower for the Nordic Council. Sixteen plates stacked around a central daylight void, sequenced by epoch.",
+                  image: ref(
+                    nordStrata,
+                    "00000000-0000-4000-8000-000000000006",
+                    "Nord-Strata Tower — vertical archive for the Nordic Council",
+                  ),
+                },
+              ],
             },
-            {
-              title: "Holm Chapel",
-              meta: "Civic · 2022 · Built",
-              location: "Higashiyama, Kyoto · 180 m²",
-              brief:
-                "A non-denominational chapel for a small university campus. One room, one bench, one light cut down through three storeys of rammed earth.",
-              image: ref(
-                holmChapel,
-                "00000000-0000-4000-8000-000000000005",
-                "Holm Chapel — rammed-earth chapel in Kyoto",
-              ),
+          },
+          {
+            type: "stats",
+            fields: {
+              items: [
+                { value: "118", label: "Built" },
+                { value: "26", label: "In studio" },
+                { value: "42", label: "Awards & citations" },
+                { value: "17", label: "Years continuous practice" },
+              ],
             },
-            {
-              title: "Nord-Strata Tower",
-              meta: "Cultural · 2026 · In Studio",
-              location: "Reykjavík · 6,800 m²",
-              brief:
-                "A vertical archive and exhibition tower for the Nordic Council. Sixteen plates stacked around a central daylight void, sequenced by epoch.",
-              image: ref(
-                nordStrata,
-                "00000000-0000-4000-8000-000000000006",
-                "Nord-Strata Tower — vertical archive for the Nordic Council",
-              ),
+          },
+          {
+            type: "testimonial",
+            fields: {
+              attribution: "Client, Salt House",
+              context: "Tjøme · 2023",
+              quote:
+                "They drew our house the way you would a portrait of someone you had known for fifty years. Nothing was decorative, nothing was lazy. We have lived in it for three winters now and have not found a single thing we would change.",
+              name: "Margrét Sól",
             },
-          ],
-        },
-      },
-      {
-        type: "stats",
-        fields: {
-          items: [
-            { value: "118", label: "Built" },
-            { value: "26", label: "In studio" },
-            { value: "42", label: "Awards & citations" },
-            { value: "17", label: "Years continuous practice" },
-          ],
-        },
-      },
-      {
-        type: "testimonial",
-        fields: {
-          attribution: "Client, Salt House",
-          context: "Tjøme · 2023",
-          quote:
-            "They drew our house the way you would a portrait of someone you had known for fifty years. Nothing was decorative, nothing was lazy. We have lived in it for three winters now and have not found a single thing we would change.",
-          name: "Margrét Sól",
-        },
-      },
-      {
-        type: "contact",
-        fields: {
-          eyebrow: "Bring us a site",
-          heading: "Bring us a site,\na story,\na single hour of light.",
-          email: "studio@norven.example",
-          phone: "+47 22 00 00 00",
-          studios: [
-            { city: "Oslo", address: "Akersgata 12, 0158" },
-            { city: "Lisbon", address: "Rua das Janelas Verdes 9" },
-            { city: "Kyoto", address: "Higashiyama, Sanjō 3-15" },
-          ],
-        },
+          },
+          {
+            type: "contact",
+            fields: {
+              eyebrow: "Bring us a site",
+              heading: "Bring us a site,\na story,\na single hour of light.",
+              email: "studio@norven.example",
+              phone: "+47 22 00 00 00",
+              studios: [
+                { city: "Oslo", address: "Akersgata 12, 0158" },
+                { city: "Lisbon", address: "Rua das Janelas Verdes 9" },
+                { city: "Kyoto", address: "Higashiyama, Sanjō 3-15" },
+              ],
+            },
+          },
+        ],
       },
     ],
+    collections: {},
   });
 
   await writeFile(join(OUT_DIR, "norven.json"), JSON.stringify(document, null, 2) + "\n");
-  console.log(`[example-content] wrote norven.json (${document.sections.length} sections)`);
+  console.log(`[example-content] wrote norven.json (${document.pages.length} page(s))`);
 }
 
 main().catch((err: unknown) => {
