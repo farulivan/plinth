@@ -56,6 +56,28 @@ overrides:
   astro>sharp: "^0.35.3"
   next>sharp: "^0.35.3"
 
+  # Transitive advisories with no reachable first-party call, each pinned to
+  # the first patched release rather than added to the accepted list below —
+  # the fix exists, so accepting the advisory would be choosing to ship it.
+  #
+  # postcss (GHSA-fxqj-rqcc-2cmp): an incomplete fix for one of the source-map
+  # advisories already accepted below. Reached through Tailwind at build time
+  # and never given untrusted CSS, but 8.5.25 is a patch release on a range we
+  # already float.
+  postcss: "^8.5.25"
+  # fast-uri (GHSA-7p8r-x3mc-p8w7): host confusion via backslash, via ajv in
+  # commitlint's config loader and Astro's language server. 3.1.5 is a patch
+  # inside the 3.x line the tree already resolves.
+  fast-uri: "^3.1.5"
+  # brace-expansion (GHSA-rgw5-rvv9-x895): a bypass of the mitigation for the
+  # advisory already accepted below, so the accepted entry no longer covers it.
+  # Two lines are present — 2.x under inngest's OpenTelemetry chain, and the
+  # 4.x/5.x line under glob — and only the 2.x one has a patch inside its own
+  # major. The other's fix ships in 5.0.9, so that pin crosses a major on a
+  # package whose whole surface is one glob-expansion function.
+  brace-expansion@2: "^2.1.4"
+  brace-expansion@>=4: "^5.0.9"
+
 # `pnpm audit --prod` runs as a CI gate (.github/workflows/ci.yml). These are
 # the advisories standing at the time the gate landed, each accepted with a
 # reason rather than a blanket severity threshold — the point of the gate is
