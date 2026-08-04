@@ -1,5 +1,5 @@
 import { contentHash, type Db } from "@plinth/db";
-import type { LooseContentDocument } from "@plinth/schema";
+import type { LooseContentDocumentV2 } from "@plinth/schema";
 import type { FieldErrors, VersionSummary } from "@plinth/schema/api";
 import { sectionTypeOf } from "@plinth/schema/content";
 // The /manifest subpath is schemas only — the api validates documents but
@@ -49,39 +49,77 @@ const templateSections: Record<string, Record<string, z.ZodType>> = {
   ),
 };
 
+/** Entry schemas per collection name. Empty until a template declares one —
+ * present now so an unrecognised collection is rejected rather than published
+ * unvalidated, which is the direction a mistake would go otherwise. */
+const collectionEntries: Record<string, z.ZodType> = {};
+
 /**
- * The publish gate (ADR-0007's strict counterpart to loose saves), applied
- * per ENABLED section: a disabled section renders nothing, so a half-typed
- * one must not block the publish — it stays in the snapshot, skipped by the
- * renderer, resumable later. This is also the escape hatch while the editor
- * cannot delete sections: toggling one off is how you park it.
+ * The publish gate (ADR-0007's strict counterpart to loose saves), applied per
+ * ENABLED page, section and collection entry. Everything disabled renders
+ * nothing, so a half-typed one must not block the publish — it stays in the
+ * snapshot, skipped by the renderer, resumable later. That escape hatch now
+ * matters more than it did: without `enabled` on pages and entries, one
+ * unfinished project would refuse to publish an entire site (ADR-0015).
  *
- * Field errors are keyed "<sectionType>.<fieldPath>" (not array indexes) so
- * the message names what the user sees in the editor.
+ * Error keys name what the user sees in the editor: "<path>.<section>.<field>"
+ * for a page, "<collection>.<slug>.<field>" for an entry. Array indexes are
+ * dropped for the same reason they always were — "items.2.title" locates a
+ * field, "items" names one.
  */
 function validateForPublish(
   sectionSchemas: Record<string, z.ZodType>,
-  draft: LooseContentDocument,
+  draft: LooseContentDocumentV2,
 ): FieldErrors | null {
   const errors: FieldErrors = {};
-  const enabled = draft.sections.filter((section) => section.enabled);
-  if (enabled.length === 0) {
-    return { document: ["Enable at least one section before publishing."] };
+
+  const collect = (prefix: string, schema: z.ZodType, value: unknown): void => {
+    const parsed = schema.safeParse(value);
+    if (parsed.success) return;
+    for (const issue of parsed.error.issues) {
+      const path = [prefix, ...issue.path.filter((part) => part !== "fields")].join(".");
+      (errors[path] ??= []).push(issue.message);
+    }
+  };
+
+  if (!draft.site.name || !draft.site.description) {
+    // Seeded blank by the v1 upgrade rather than invented (ADR-0015), so this
+    // is the prompt a migrated workspace sees exactly once.
+    errors["site"] = ["Set the site name and description before publishing."];
   }
-  for (const section of enabled) {
-    const schema = sectionSchemas[section.type];
-    if (!schema) {
-      errors[section.type] = ["This section is not part of the template."];
+
+  const pages = draft.pages.filter((page) => page.enabled);
+  if (pages.length === 0) {
+    return { document: ["Enable at least one page before publishing."] };
+  }
+
+  for (const page of pages) {
+    const enabled = page.sections.filter((section) => section.enabled);
+    if (enabled.length === 0) {
+      errors[page.path] = ["Enable at least one section on this page."];
       continue;
     }
-    const parsed = schema.safeParse(section);
-    if (!parsed.success) {
-      for (const issue of parsed.error.issues) {
-        const path = [section.type, ...issue.path.filter((part) => part !== "fields")].join(".");
-        (errors[path] ??= []).push(issue.message);
+    for (const section of enabled) {
+      const schema = sectionSchemas[section.type];
+      if (!schema) {
+        errors[`${page.path}.${section.type}`] = ["This section is not part of the template."];
+        continue;
       }
+      collect(`${page.path}.${section.type}`, schema, section);
     }
   }
+
+  for (const [name, collection] of Object.entries(draft.collections)) {
+    const entrySchema = collectionEntries[name];
+    if (!entrySchema) {
+      errors[name] = ["This collection is not part of the template."];
+      continue;
+    }
+    for (const entry of collection.entries.filter((candidate) => candidate.enabled)) {
+      collect(`${name}.${entry.slug}`, entrySchema, entry.fields);
+    }
+  }
+
   return Object.keys(errors).length > 0 ? errors : null;
 }
 

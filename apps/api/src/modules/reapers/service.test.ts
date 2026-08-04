@@ -60,6 +60,41 @@ describe("reapOrphanedMedia", () => {
     expect(dbFns.deleteMediaRows).not.toHaveBeenCalled();
   });
 
+  // The scan stringifies and regexes for "mediaId", so it is depth-independent
+  // by construction — but a v2 document nests references two levels deeper
+  // than v1 (page → section → field, collection → entry → field), and getting
+  // this wrong deletes live images and their R2 variants after seven days,
+  // with nothing to indicate why.
+  it("finds references nested inside v2 pages and collection entries", async () => {
+    const IN_PAGE = "00000000-0000-0000-0000-000000000001";
+    const IN_ENTRY = "00000000-0000-0000-0000-000000000002";
+    vi.mocked(dbFns.findMediaRows).mockResolvedValue([
+      { id: IN_PAGE, contentHash: "hash-page", createdAt: OLD },
+      { id: IN_ENTRY, contentHash: "hash-entry", createdAt: OLD },
+    ]);
+    vi.mocked(dbFns.getReferenceSources).mockResolvedValue([
+      {
+        schemaVersion: 2,
+        pages: [
+          {
+            path: "/",
+            sections: [{ fields: { items: [{ image: { mediaId: IN_PAGE } }] } }],
+          },
+        ],
+        collections: {
+          projects: {
+            entries: [
+              { slug: "salt-house", fields: { gallery: [{ image: { mediaId: IN_ENTRY } }] } },
+            ],
+          },
+        },
+      },
+    ]);
+
+    expect(await reapOrphanedMedia(db)).toEqual({ deleted: 0 });
+    expect(dbFns.deleteMediaRows).not.toHaveBeenCalled();
+  });
+
   it("spares an unreferenced row that's still inside the 7-day grace window", async () => {
     vi.mocked(dbFns.findMediaRows).mockResolvedValue([
       { id: "media-fresh", contentHash: "hash-fresh", createdAt: RECENT },

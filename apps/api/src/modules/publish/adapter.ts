@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { promisify } from "node:util";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import type { LooseContentDocument } from "@plinth/schema";
+import type { LooseContentDocumentV2 } from "@plinth/schema";
 import { inngest } from "../../inngest/client";
 import { env } from "../../lib/env";
 import { s3 } from "../../lib/s3";
@@ -50,7 +50,7 @@ export async function emitPromoted(input: {
 export async function runSiteBuild(input: {
   versionId: string;
   templateId: string;
-  snapshot: LooseContentDocument;
+  snapshot: LooseContentDocumentV2;
 }): Promise<{ outDir: string; workDir: string }> {
   const workDir = await mkdtemp(join(tmpdir(), `plinth-build-${input.versionId}-`));
   const snapshotPath = join(workDir, "snapshot.json");
