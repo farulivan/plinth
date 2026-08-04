@@ -36,6 +36,11 @@ vi.mock("./db", () => ({
 // writeAuditLog opens its own withWorkspace transaction against the real
 // pool — stub it the same way as adapter/db so tests never touch Postgres.
 vi.mock("../../lib/auditLog", () => ({ writeAuditLog: vi.fn() }));
+// hostnameFor reads TENANT_HOST_SUFFIX from the env contract at import time,
+// same reason adapter is mocked above.
+vi.mock("../domains/service", () => ({
+  hostnameFor: (slug: string) => `${slug}.example.test`,
+}));
 
 const db = {} as Db;
 const WORKSPACE = "00000000-0000-0000-0000-000000000001";
@@ -81,6 +86,7 @@ beforeEach(() => {
   // bleed between tests.
   vi.resetAllMocks();
   vi.mocked(dbFns.getWorkspaceMeta).mockResolvedValue({
+    slug: "norven",
     templateId: "template-norven",
     currentVersionId: null,
   });
@@ -197,6 +203,25 @@ describe("requestPublish", () => {
     expect(result.fieldErrors["projects"]).toEqual([
       "This collection is not part of the template.",
     ]);
+  });
+
+  // The failure this guards is silent: without an origin the build still
+  // succeeds and publishes, just with no canonical, no absolute Open Graph
+  // URL and no sitemap — a site that looks fine and is invisible to crawlers.
+  it("passes the tenant's own origin to the build", async () => {
+    vi.mocked(dbFns.getVersionSnapshot).mockResolvedValue(validDraft);
+    vi.mocked(adapter.runSiteBuild).mockResolvedValue({ outDir: "/tmp/out", workDir: "/tmp/work" });
+    vi.mocked(adapter.uploadSiteDir).mockResolvedValue({ files: 1 });
+
+    await buildAndUploadVersion(db, {
+      workspaceId: WORKSPACE,
+      versionId: VERSION,
+      versionNumber: 4,
+    });
+
+    expect(adapter.runSiteBuild).toHaveBeenCalledWith(
+      expect.objectContaining({ siteUrl: "https://norven.example.test" }),
+    );
   });
 
   it("reuses the existing version when the content hash matches (idempotency)", async () => {
@@ -329,6 +354,7 @@ describe("buildAndUploadVersion", () => {
 
   beforeEach(() => {
     vi.mocked(dbFns.getWorkspaceMeta).mockResolvedValue({
+      slug: "norven",
       templateId: "template-norven",
       currentVersionId: null,
     });
