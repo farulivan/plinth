@@ -26,6 +26,7 @@
     "tenant:build": "./scripts/build-tenant-fixture.sh",
     "check:bundle": "node scripts/check-bundle-budget.mjs .tenant-fixture",
     "worker:sync": "tsx scripts/worker-sync.ts",
+    "migrate:documents": "tsx --env-file-if-exists=.env scripts/migrate-documents.ts",
     "worker:deploy": "pnpm --filter @plinth/worker-router run deploy",
     "local-prod": "./scripts/local-prod.sh",
     "local-prod:down": "docker compose -f docker-compose.local-prod.yml down",
