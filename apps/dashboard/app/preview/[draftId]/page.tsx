@@ -1,12 +1,13 @@
 import { getSession, listUserWorkspaces } from "@plinth/auth";
 import { contentHash } from "@plinth/db";
-import { Document } from "@plinth/renderer";
+import { Sections } from "@plinth/renderer";
 // The template's design system — same stylesheet the published site builds
 // with. Route-scoped: only the preview segment loads it.
 import "@plinth/template-norven/styles.css";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
+import { HOME_PATH } from "@plinth/schema";
 import { z } from "zod";
 import { guardedComponents } from "@/components/preview/guarded-components";
 import { PreviewClient } from "@/components/preview/preview-client";
@@ -51,10 +52,17 @@ export default async function PreviewPage({ params }: { params: Promise<{ draftI
     );
   }
 
+  // One page for now, matching what the builder emits. The hash covers the
+  // whole document, so an edit to any page still invalidates the preview —
+  // path-aware previewing arrives with the routes that need it.
+  const page =
+    preview.document.pages.find((candidate) => candidate.path === HOME_PATH) ??
+    preview.document.pages[0];
+
   return (
     <>
       <PreviewClient draftId={id.data} initialHash={contentHash(preview.document)} />
-      <Document document={preview.document} components={guardedComponents(template)} />
+      {page ? <Sections sections={page.sections} components={guardedComponents(template)} /> : null}
     </>
   );
 }

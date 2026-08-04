@@ -79,6 +79,12 @@ function emptyValuesFor(descriptors: FieldDescriptor[]): Record<string, unknown>
       case "longText":
         values[descriptor.name] = "";
         break;
+      case "prose":
+        // One empty paragraph, not zero: the schema requires min(1), and an
+        // empty array would fail validation before the author had a control
+        // to type into.
+        values[descriptor.name] = [""];
+        break;
       case "link":
         values[descriptor.name] = { label: "", href: "" };
         break;

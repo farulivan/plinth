@@ -1,6 +1,6 @@
 "use client";
 
-import type { LooseContentDocument } from "@plinth/schema";
+import type { LooseContentDocumentV2 } from "@plinth/schema";
 import type { PublishStatus } from "@plinth/schema/api";
 import { Button } from "@plinth/ui/components/button";
 import { useState } from "react";
@@ -30,7 +30,7 @@ export function WorkspaceStudio({
 }: {
   draftId: string;
   templateId: string;
-  initialDocument: LooseContentDocument;
+  initialDocument: LooseContentDocumentV2;
   initialStatus: PublishStatus;
   initialDraftHash: string;
 }) {

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-  defineContentDocument,
+  contentDocumentFor,
   defineSection,
   longText,
   mediaRef,
@@ -112,7 +112,10 @@ export const norvenSection = z.discriminatedUnion("type", [
   contactSection,
 ]);
 
-export const norvenDocument = defineContentDocument(norvenSection);
+/** The template's strict document schema: pages of Norven sections, and no
+ * collections yet — the entry shapes arrive with the routes that render them
+ * (ADR-0015). */
+export const norvenDocument = contentDocumentFor(norvenSection, {});
 export type NorvenDocument = z.infer<typeof norvenDocument>;
 
 export type PhotoHeroFields = z.infer<typeof photoHeroSection>["fields"];
