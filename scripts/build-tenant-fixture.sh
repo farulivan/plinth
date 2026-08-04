@@ -23,9 +23,13 @@ fi
 
 rm -rf "$OUT"
 
+# SITE_URL is what the publish job passes for a real tenant, and the head
+# depends on it: without an origin there is no canonical, no absolute Open
+# Graph URL and no sitemap, so a gate that omitted it would audit a page the
+# publish path never produces.
 SNAPSHOT_PATH="$FIXTURE/norven.json" \
 TEMPLATE_ID="template-norven" \
-SITE_TITLE="Norven" \
+SITE_URL="https://norven.farulivan.com" \
 OUT_DIR="$OUT" \
   pnpm --filter @plinth/site-builder build:site
 

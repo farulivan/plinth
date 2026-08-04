@@ -1,0 +1,93 @@
+---
+/**
+ * The shell every tenant page renders inside: head, chrome, motion runtime.
+ *
+ * Layering (ADR-0015): the renderer turns sections into elements, the template
+ * owns nav and footer because they carry its design tokens, and everything
+ * here needs `SITE_URL` — a deploy fact rather than a render one, which is why
+ * `<head>` lives in the builder and not in either package.
+ */
+import { ClientRouter } from "astro:transitions";
+import type { LooseContentDocumentV2, PageSeo } from "@plinth/schema";
+import { resolveImageUrl } from "@plinth/renderer";
+import { siteUrl } from "../lib/snapshot";
+
+interface Props {
+  site: LooseContentDocumentV2["site"];
+  seo: PageSeo;
+  path: string;
+}
+
+const { site, seo, path } = Astro.props;
+
+const title = seo.title ?? site.name;
+const description = seo.description ?? site.description;
+const origin = siteUrl();
+// Omitted rather than guessed when the origin is unknown (a hand-run build):
+// a canonical pointing at the wrong host de-indexes a page silently, which is
+// strictly worse than shipping none.
+const canonical = origin ? new URL(path, origin).href : null;
+
+const share = seo.ogImage ?? site.ogImage;
+const shareImage =
+  share && origin ? new URL(resolveImageUrl(share.contentHash, 1200, "jpeg"), origin).href : null;
+
+const organization = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: site.name,
+  ...(origin ? { url: origin } : {}),
+  description: site.description,
+  ...(site.social.length > 0 ? { sameAs: site.social.map((link) => link.href) } : {}),
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {canonical ? <link rel="canonical" href={canonical} /> : null}
+    {seo.noindex ? <meta name="robots" content="noindex, nofollow" /> : null}
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#f4f1ea" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:locale" content="en_US" />
+    {canonical ? <meta property="og:url" content={canonical} /> : null}
+    {shareImage ? <meta property="og:image" content={shareImage} /> : null}
+    {shareImage ? <meta property="og:image:alt" content={share!.alt} /> : null}
+
+    <meta name="twitter:card" content={shareImage ? "summary_large_image" : "summary"} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {shareImage ? <meta name="twitter:image" content={shareImage} /> : null}
+    {shareImage ? <meta name="twitter:image:alt" content={share!.alt} /> : null}
+
+    <ClientRouter />
+    <script type="application/ld+json" set:html={JSON.stringify(organization)} is:inline />
+  </head>
+  <body>
+    <a href="#main" class="skip-link">Skip to content</a>
+    <slot />
+    <script>
+      // Bound per navigation, not once. A module script runs on the first load
+      // only, so under view transitions a soft navigation would leave the new
+      // page's reveal effects unbound — content stuck in its pre-reveal state —
+      // while the old page's ScrollTriggers and its Lenis instance leaked.
+      import { boot, teardown } from "@plinth/template-norven/motion";
+
+      boot();
+      document.addEventListener("astro:page-load", boot);
+      document.addEventListener("astro:before-swap", teardown);
+    </script>
+  </body>
+</html>
