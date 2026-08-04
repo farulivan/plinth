@@ -22,8 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v4
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # master
       # App-scoped deploy token (`fly tokens create deploy -a plinth-farulivan-dashboard`),
       # stored as a repo secret. Remote build on Fly; server secrets live in
       # `fly secrets`. The client Sentry DSN is a public build arg (inlined at
