@@ -1,7 +1,7 @@
 import { contentHash, type Db } from "@plinth/db";
 import type { LooseContentDocumentV2 } from "@plinth/schema";
 import type { FieldErrors, VersionSummary } from "@plinth/schema/api";
-import { sectionTypeOf } from "@plinth/schema/content";
+import { resolveEntryPath, sectionTypeOf } from "@plinth/schema/content";
 // The /manifest subpath is schemas only — the api validates documents but
 // never renders, so the components (.tsx, React) stay out of its graph.
 import { norvenSection } from "@plinth/template-norven/manifest";
@@ -93,6 +93,25 @@ function validateForPublish(
   if (pages.length === 0) {
     return { document: ["Enable at least one page before publishing."] };
   }
+
+  // A nav entry pointing at a path no enabled page produces is a link that
+  // 404s on every page of the site. Checked at publish rather than on save,
+  // because mid-edit a link may legitimately point at a page not written yet.
+  const livePaths = new Set(pages.map((page) => page.path));
+  const entryPaths = Object.values(draft.collections).flatMap((collection) =>
+    collection.entries
+      .filter((entry) => entry.enabled)
+      .map((entry) => resolveEntryPath(collection.pathTemplate, entry.slug)),
+  );
+  for (const path of entryPaths) livePaths.add(path);
+
+  draft.site.nav.forEach((item, index) => {
+    if (!item.href.startsWith("/")) return; // external, not ours to resolve
+    if (livePaths.has(item.href)) return;
+    errors[`site.nav.${String(index)}`] = [
+      `"${item.label}" points at ${item.href}, which no enabled page produces.`,
+    ];
+  });
 
   for (const page of pages) {
     const enabled = page.sections.filter((section) => section.enabled);
