@@ -36,6 +36,9 @@ export function WorkspaceStudio({
 }) {
   const [draftHash, setDraftHash] = useState<string | null>(initialDraftHash);
   const [previewWidth, setPreviewWidth] = useState<number | null>(null);
+  // The page the editor has open, so the preview shows what is being edited
+  // rather than always the home page.
+  const [previewPath, setPreviewPath] = useState("/");
 
   return (
     <main className="mx-auto max-w-7xl space-y-6 p-8">
@@ -47,6 +50,7 @@ export function WorkspaceStudio({
             templateId={templateId}
             initialDocument={initialDocument}
             onSaved={setDraftHash}
+            onPageChange={setPreviewPath}
           />
         </div>
         <aside className="hidden min-w-0 lg:block">
@@ -80,7 +84,7 @@ export function WorkspaceStudio({
               style={{ width: previewWidth ?? "100%" }}
             >
               <iframe
-                src={`/preview/${draftId}`}
+                src={`/preview/${draftId}/p${previewPath === "/" ? "" : previewPath}`}
                 title="Live preview"
                 className="h-[calc(100vh-8rem)] w-full rounded-lg border bg-white"
               />

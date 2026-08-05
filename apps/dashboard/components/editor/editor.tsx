@@ -11,6 +11,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { emptyFieldsFor, templateFor } from "@/lib/templates";
 import { saveDraft } from "@/server/actions/drafts";
+import { PageBar } from "./page-bar";
 import { SectionCard } from "./section-card";
 import { SiteSettingsCard } from "./site-settings-card";
 
@@ -30,6 +31,7 @@ export function Editor({
   templateId,
   initialDocument,
   onSaved,
+  onPageChange,
 }: {
   draftId: string;
   templateId: string;
@@ -37,15 +39,23 @@ export function Editor({
   /** Fires with the saved document's content hash — the publish bar's
    * "unpublished changes" comparison rides on it. */
   onSaved?: (contentHash: string) => void;
+  /** Fires with the path of the page being edited, so the preview follows it. */
+  onPageChange?: (path: string) => void;
 }) {
   const template = templateFor(templateId);
   const [document, setDocument] = useState(initialDocument);
-  // One page is edited at a time. Multi-page documents exist in the schema
-  // before the editor offers a switcher (ADR-0015), so this resolves to the
-  // home page and the mutators below are already page-scoped — a mutator that
-  // matched on section type alone would edit the same-named section on every
-  // page at once the moment a second one appears.
-  const activePage = document.pages.find((page) => page.path === HOME_PATH) ?? document.pages[0]!;
+  // One page is edited at a time; every section mutator below is scoped to it,
+  // because section types are unique per page rather than per document
+  // (ADR-0015) and a mutator matching on type alone would edit the same-named
+  // section on every page at once.
+  //
+  // Falls back rather than holding an id directly, so removing the selected
+  // page cannot strand the editor on one that no longer exists.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const activePage =
+    document.pages.find((page) => page.id === selectedId) ??
+    document.pages.find((page) => page.path === HOME_PATH) ??
+    document.pages[0]!;
   const activePageId = activePage.id;
   const [save, setSave] = useState<SaveState>({ status: "idle" });
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -55,6 +65,17 @@ export function Editor({
   useEffect(() => {
     onSavedRef.current = onSaved;
   });
+
+  // Reported rather than derived by the parent: the active page falls back
+  // when the selected one is removed, so the editor is the only place that
+  // knows which page is actually open.
+  const onPageChangeRef = useRef(onPageChange);
+  useEffect(() => {
+    onPageChangeRef.current = onPageChange;
+  });
+  useEffect(() => {
+    onPageChangeRef.current?.(activePage.path);
+  }, [activePage.path]);
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -91,6 +112,67 @@ export function Editor({
 
   const updateSite = useCallback((site: LooseContentDocumentV2["site"]) => {
     setDocument((doc) => ({ ...doc, site }));
+  }, []);
+
+  const updatePage = useCallback(
+    (pageId: string, patch: Partial<LooseContentDocumentV2["pages"][number]>) => {
+      setDocument((doc) => ({
+        ...doc,
+        pages: doc.pages.map((page) => (page.id === pageId ? { ...page, ...patch } : page)),
+      }));
+    },
+    [],
+  );
+
+  const updateSeo = useCallback(
+    (pageId: string, seo: LooseContentDocumentV2["pages"][number]["seo"]) => {
+      updatePage(pageId, { seo });
+    },
+    [updatePage],
+  );
+
+  const togglePage = useCallback(
+    (pageId: string, enabled: boolean) => {
+      updatePage(pageId, { enabled });
+    },
+    [updatePage],
+  );
+
+  const addPage = useCallback(() => {
+    const id = crypto.randomUUID();
+    setDocument((doc) => {
+      // Paths must be unique, so a new page gets a free one rather than
+      // colliding with an existing page and failing validation on creation.
+      let n = doc.pages.length;
+      let path = `/page-${String(n)}/`;
+      while (doc.pages.some((page) => page.path === path)) path = `/page-${String(++n)}/`;
+      return {
+        ...doc,
+        pages: [
+          ...doc.pages,
+          {
+            id,
+            path,
+            navLabel: `Page ${String(n)}`,
+            enabled: false,
+            seo: { noindex: false },
+            sections: [],
+          },
+        ],
+      };
+    });
+    setSelectedId(id);
+  }, []);
+
+  const removePage = useCallback((pageId: string) => {
+    setDocument((doc) => {
+      // min(1) on pages, and a site with no root is not a site.
+      if (doc.pages.length <= 1) return doc;
+      const target = doc.pages.find((page) => page.id === pageId);
+      if (!target || target.path === HOME_PATH) return doc;
+      return { ...doc, pages: doc.pages.filter((page) => page.id !== pageId) };
+    });
+    setSelectedId(null);
   }, []);
 
   /** Every structural edit rewrites exactly one page's sections. */
@@ -175,6 +257,16 @@ export function Editor({
       </header>
 
       <SiteSettingsCard site={document.site} onChange={updateSite} />
+
+      <PageBar
+        pages={document.pages}
+        activePageId={activePageId}
+        onSelect={setSelectedId}
+        onSeoChange={updateSeo}
+        onToggle={togglePage}
+        onAdd={addPage}
+        onRemove={removePage}
+      />
 
       {activePage.sections.map((section, index) => {
         const spec = template.sections.find((candidate) => candidate.type === section.type);
