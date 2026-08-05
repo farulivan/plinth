@@ -35,6 +35,19 @@ export function siteUrl(): string | null {
   return process.env.SITE_URL ?? null;
 }
 
+/**
+ * A page path as `[...path]` wants it: no leading or trailing slash, and
+ * `undefined` for the root.
+ *
+ * The root is the trap. An empty string produces no route at all — Astro needs
+ * the parameter absent to emit `index.html` — so returning `""` silently drops
+ * the home page from the build while every other page works.
+ */
+export function pageParam(path: string): string | undefined {
+  const trimmed = path.replace(/^\/|\/$/g, "");
+  return trimmed === "" ? undefined : trimmed;
+}
+
 /** Paths the sitemap must not list. Read from the snapshot rather than passed,
  * because the sitemap filter runs inside the astro config. */
 export function noindexPaths(): string[] {

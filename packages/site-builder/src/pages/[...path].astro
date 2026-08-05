@@ -1,0 +1,38 @@
+---
+/**
+ * Every page of a tenant site (ADR-0015): one route, fanned out over the
+ * snapshot's enabled pages. Sections render through the same renderer the
+ * preview uses (ADR-0003/0007 — one renderer, two surfaces).
+ *
+ * Throwing here fails the astro build, which the publish job reports as a
+ * failed version — an invalid snapshot must never publish silently.
+ */
+import { Sections } from "@plinth/renderer";
+import { templateFor } from "../lib/templates";
+import { pageParam, snapshot } from "../lib/snapshot";
+import SiteLayout from "../layouts/SiteLayout.astro";
+
+export function getStaticPaths() {
+  const document = snapshot();
+  // Disabled pages are skipped rather than emitted, which is what makes
+  // `enabled` an escape hatch: a half-written page neither blocks the publish
+  // nor appears on the live site.
+  return document.pages
+    .filter((page) => page.enabled)
+    .map((page) => ({ params: { path: pageParam(page.path) }, props: { page } }));
+}
+
+const { page } = Astro.props;
+const document = snapshot();
+const template = templateFor(process.env.TEMPLATE_ID);
+const { Nav, Footer } = template.chrome;
+const { site } = document;
+---
+
+<SiteLayout site={site} seo={page.seo} path={page.path}>
+  <Nav siteName={site.name} items={site.nav} currentPath={page.path} />
+  <main id="main">
+    <Sections sections={page.sections} components={template.components} />
+  </main>
+  <Footer siteName={site.name} note={site.footerNote} social={site.social} />
+</SiteLayout>
