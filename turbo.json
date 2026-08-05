@@ -10,7 +10,7 @@
     "SNAPSHOT_PATH",
     "TEMPLATE_ID",
     "OUT_DIR",
-    "SITE_TITLE"
+    "SITE_URL"
   ],
   "tasks": {
     "build": {

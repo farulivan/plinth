@@ -50,6 +50,10 @@ export async function emitPromoted(input: {
 export async function runSiteBuild(input: {
   versionId: string;
   templateId: string;
+  /** The tenant's own origin. The build needs it for canonical URLs, absolute
+   * Open Graph URLs and the sitemap — none of which can be derived from the
+   * snapshot, and all of which are wrong rather than absent if guessed. */
+  siteUrl: string;
   snapshot: LooseContentDocumentV2;
 }): Promise<{ outDir: string; workDir: string }> {
   const workDir = await mkdtemp(join(tmpdir(), `plinth-build-${input.versionId}-`));
@@ -66,6 +70,7 @@ export async function runSiteBuild(input: {
       ...process.env,
       SNAPSHOT_PATH: snapshotPath,
       TEMPLATE_ID: input.templateId,
+      SITE_URL: input.siteUrl,
       OUT_DIR: outDir,
     },
     timeout: BUILD_TIMEOUT_MS,

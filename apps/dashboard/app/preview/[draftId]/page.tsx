@@ -59,10 +59,19 @@ export default async function PreviewPage({ params }: { params: Promise<{ draftI
     preview.document.pages.find((candidate) => candidate.path === HOME_PATH) ??
     preview.document.pages[0];
 
+  const { site } = preview.document;
+  const { Nav, Footer } = template.chrome;
+
   return (
     <>
       <PreviewClient draftId={id.data} initialHash={contentHash(preview.document)} />
-      {page ? <Sections sections={page.sections} components={guardedComponents(template)} /> : null}
+      <Nav siteName={site.name} items={site.nav} currentPath={page?.path ?? HOME_PATH} />
+      <main id="main">
+        {page ? (
+          <Sections sections={page.sections} components={guardedComponents(template)} />
+        ) : null}
+      </main>
+      <Footer siteName={site.name} note={site.footerNote} social={site.social} />
     </>
   );
 }

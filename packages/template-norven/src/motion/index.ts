@@ -21,13 +21,21 @@ export const reducedMotion = (): boolean =>
   document.documentElement.hasAttribute("data-prefers-reduced-motion");
 
 // --- Lenis smooth scroll ---
+/** Held so teardown can release them. Without references, a second boot leaves
+ * the previous Lenis instance and its ticker callback running forever — one
+ * more of each per navigation, each still driving scroll. */
+let lenis: Lenis | null = null;
+let tick: ((time: number) => void) | null = null;
+
 function initLenis(): void {
   if (reducedMotion()) return;
-  const lenis = new Lenis({ autoRaf: false, lerp: 0.12, smoothWheel: true });
+  lenis = new Lenis({ autoRaf: false, lerp: 0.12, smoothWheel: true });
   lenis.on("scroll", ScrollTrigger.update);
-  gsap.ticker.add((time) => {
-    lenis.raf(time * 1000);
-  });
+  const instance = lenis;
+  tick = (time: number) => {
+    instance.raf(time * 1000);
+  };
+  gsap.ticker.add(tick);
   gsap.ticker.lagSmoothing(0);
 }
 
@@ -176,9 +184,16 @@ function bindCounters(): void {
   });
 }
 
-/** Boot the runtime: mark html.js (activates the CSS hidden states), then
- * bind every effect. Static single-page site — no navigation lifecycle. */
+/**
+ * Boot the runtime: mark html.js (activates the CSS hidden states), then bind
+ * every effect.
+ *
+ * Idempotent, because view transitions call it per navigation (ADR-0015) and
+ * the first load calls it directly — so the two overlap on the initial page.
+ * Tearing down first is what makes a second call safe rather than additive.
+ */
 export function boot(): void {
+  teardown();
   document.documentElement.classList.add("js");
   initLenis();
   bindReveals();
@@ -188,4 +203,28 @@ export function boot(): void {
   bindHeroScale();
   bindCounters();
   requestAnimationFrame(() => ScrollTrigger.refresh());
+}
+
+/**
+ * Release everything boot bound. Called before a view transition swaps the
+ * document, and by boot itself.
+ *
+ * Every ScrollTrigger on a tenant page comes from this runtime — the renderer
+ * is the only script source (ADR-0011) — so killing all of them is exact
+ * rather than broad. The DOM the old triggers pointed at is about to be
+ * discarded, and a trigger holding a detached element keeps that whole subtree
+ * alive.
+ */
+export function teardown(): void {
+  ScrollTrigger.getAll().forEach((trigger) => {
+    trigger.kill();
+  });
+  if (tick) {
+    gsap.ticker.remove(tick);
+    tick = null;
+  }
+  if (lenis) {
+    lenis.destroy();
+    lenis = null;
+  }
 }

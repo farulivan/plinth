@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { emptyFieldsFor, templateFor } from "@/lib/templates";
 import { saveDraft } from "@/server/actions/drafts";
 import { SectionCard } from "./section-card";
+import { SiteSettingsCard } from "./site-settings-card";
 
 type SaveState =
   | { status: "idle" | "pending" | "saving" | "saved" }
@@ -87,6 +88,10 @@ export function Editor({
       if (timer.current) clearTimeout(timer.current);
     };
   }, [document, draftId]);
+
+  const updateSite = useCallback((site: LooseContentDocumentV2["site"]) => {
+    setDocument((doc) => ({ ...doc, site }));
+  }, []);
 
   /** Every structural edit rewrites exactly one page's sections. */
   const editPage = useCallback(
@@ -168,6 +173,8 @@ export function Editor({
         </div>
         <SaveStatus save={save} />
       </header>
+
+      <SiteSettingsCard site={document.site} onChange={updateSite} />
 
       {activePage.sections.map((section, index) => {
         const spec = template.sections.find((candidate) => candidate.type === section.type);

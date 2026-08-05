@@ -33,9 +33,13 @@ const versionColumns = {
 export async function getWorkspaceMeta(
   db: Db,
   workspaceId: string,
-): Promise<{ templateId: string; currentVersionId: string | null } | null> {
+): Promise<{ slug: string; templateId: string; currentVersionId: string | null } | null> {
   const [row] = await db
-    .select({ templateId: workspaces.templateId, currentVersionId: workspaces.currentVersionId })
+    .select({
+      slug: workspaces.slug,
+      templateId: workspaces.templateId,
+      currentVersionId: workspaces.currentVersionId,
+    })
     .from(workspaces)
     .where(eq(workspaces.id, workspaceId));
   return row ?? null;

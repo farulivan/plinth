@@ -7,6 +7,7 @@ import { sectionTypeOf } from "@plinth/schema/content";
 import { norvenSection } from "@plinth/template-norven/manifest";
 import type { z } from "zod";
 import { writeAuditLog } from "../../lib/auditLog";
+import { hostnameFor } from "../domains/service";
 import {
   emitPromoted,
   enqueuePublish,
@@ -343,6 +344,7 @@ export async function buildAndUploadVersion(
   const { outDir, workDir } = await runSiteBuild({
     versionId: input.versionId,
     templateId: meta.templateId,
+    siteUrl: `https://${hostnameFor(meta.slug)}`,
     snapshot,
   });
   try {

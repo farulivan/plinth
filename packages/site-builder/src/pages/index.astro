@@ -1,50 +1,40 @@
 ---
 /**
- * The home page of every tenant site: render its sections through the same
- * renderer the preview uses (ADR-0003/0007 — one renderer, two surfaces).
- * Throwing here fails the astro build, which the publish job reports as a
- * failed version — an invalid snapshot must never publish silently.
+ * The home page of every tenant site: its sections rendered through the same
+ * renderer the preview uses (ADR-0003/0007 — one renderer, two surfaces),
+ * inside the shell that owns head and chrome.
  *
  * The snapshot is a v2 document (ADR-0015), so it carries many pages; this
- * build still emits only the one at `/`. Route fan-out over the rest arrives
- * with the head and chrome that make a second page worth serving.
+ * build still emits only the one at `/`. Route fan-out over the rest is a
+ * separate change.
  */
-import { readFileSync } from "node:fs";
 import { Sections, type ComponentMap } from "@plinth/renderer";
-import { HOME_PATH, parseContentDocument } from "@plinth/schema";
-import { norvenComponents } from "@plinth/template-norven";
+import { HOME_PATH } from "@plinth/schema";
+import { norvenChrome, norvenComponents } from "@plinth/template-norven";
 import "@plinth/template-norven/styles.css";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { snapshot } from "../lib/snapshot";
 
-const templates: Record<string, ComponentMap> = {
-  "template-norven": norvenComponents,
+const templates: Record<string, { components: ComponentMap; chrome: typeof norvenChrome }> = {
+  "template-norven": { components: norvenComponents, chrome: norvenChrome },
 };
 
-const snapshotPath = process.env.SNAPSHOT_PATH;
-if (!snapshotPath) throw new Error("SNAPSHOT_PATH is required (ADR-0013).");
 const templateId = process.env.TEMPLATE_ID ?? "template-norven";
-const components = templates[templateId];
-if (!components) throw new Error(`Template "${templateId}" is not registered in site-builder.`);
+const template = templates[templateId];
+if (!template) throw new Error(`Template "${templateId}" is not registered in site-builder.`);
 
-// parseContentDocument upgrades a v1 snapshot on read, so a rollback to a
-// version published before the pages migration still builds (docs/migrations.md).
-const document = parseContentDocument(JSON.parse(readFileSync(snapshotPath, "utf8")));
+const document = snapshot();
 const home = document.pages.find((page) => page.path === HOME_PATH && page.enabled);
 if (!home) throw new Error(`Snapshot has no enabled page at ${HOME_PATH}.`);
+
+const { Nav, Footer } = template.chrome;
+const { site } = document;
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{process.env.SITE_TITLE ?? "Site"}</title>
-  </head>
-  <body>
-    <Sections sections={home.sections} components={components} />
-    <script>
-      import { boot } from "@plinth/template-norven/motion";
-      boot();
-    </script>
-  </body>
-</html>
+<SiteLayout site={site} seo={home.seo} path={home.path}>
+  <Nav siteName={site.name} items={site.nav} currentPath={home.path} />
+  <main id="main">
+    <Sections sections={home.sections} components={template.components} />
+  </main>
+  <Footer siteName={site.name} note={site.footerNote} social={site.social} />
+</SiteLayout>

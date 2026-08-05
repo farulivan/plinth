@@ -40,6 +40,26 @@
 }
 
 @layer base {
+  /* Visible only on focus: the first tab stop on every page skips the nav for
+     keyboard and screen-reader users. Hidden by clipping rather than
+     display:none so it stays focusable. */
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    z-index: 50;
+    background: var(--color-ink);
+    color: var(--color-bone);
+    padding: 0.5rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .skip-link:focus {
+    left: 0.5rem;
+    top: 0.5rem;
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     html {
       scroll-behavior: smooth;

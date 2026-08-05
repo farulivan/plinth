@@ -58,6 +58,25 @@ describe("describeSectionFields", () => {
     });
   });
 
+  // A standalone link is matched by shape, but inside an array the element is
+  // destructured and `href` — a union of an absolute URL and a site-relative
+  // path — arrives on its own. That threw until site settings introduced the
+  // first array of links.
+  it("describes an array of links, whose href is a union", () => {
+    const nav = defineSection("nav", z.object({ items: z.array(link) }));
+    expect(describeSectionFields(nav)).toEqual([
+      {
+        kind: "array",
+        name: "items",
+        optional: false,
+        item: [
+          { kind: "shortText", name: "label", optional: false, maxLength: 200 },
+          { kind: "shortText", name: "href", optional: false, maxLength: 500 },
+        ],
+      },
+    ]);
+  });
+
   it("describes a string array as prose — paragraphs, not rows", () => {
     const body = defineSection("body", z.object({ paragraphs: prose }));
     expect(describeSectionFields(body)).toEqual([
