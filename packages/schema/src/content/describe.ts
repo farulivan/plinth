@@ -12,6 +12,7 @@ export type FieldDescriptor =
   | { kind: "shortText"; name: string; optional: boolean; maxLength: number }
   | { kind: "longText"; name: string; optional: boolean; maxLength: number }
   | { kind: "prose"; name: string; optional: boolean; maxLength: number }
+  | { kind: "toggle"; name: string; optional: boolean }
   | { kind: "link"; name: string; optional: boolean }
   | { kind: "media"; name: string; optional: boolean }
   | { kind: "array"; name: string; optional: boolean; item: FieldDescriptor[] };
@@ -45,6 +46,10 @@ function describeField(name: string, schema: z.ZodType): FieldDescriptor {
     return maxLength <= LONG_TEXT_THRESHOLD
       ? { kind: "shortText", name, optional, maxLength }
       : { kind: "longText", name, optional, maxLength };
+  }
+
+  if (inner.def.type === "boolean") {
+    return { kind: "toggle", name, optional };
   }
 
   // A union of string variants is still one text input. `link.href` is the
