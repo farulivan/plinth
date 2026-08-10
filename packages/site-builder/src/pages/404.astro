@@ -1,0 +1,47 @@
+---
+/**
+ * The tenant's own 404. Its own file rather than a page in the snapshot:
+ * Astro special-cases `404.astro` into `/404.html`, which is the object the
+ * worker reaches for when a path misses inside a mapped site (ADR-0011).
+ *
+ * Not tenant-authored. A page whose whole job is to appear when content is
+ * missing should not itself be content that can go missing — an author who
+ * disabled or deleted it would silently drop the site back to the platform's
+ * plain-text 404. The chrome and design tokens are the template's, so it still
+ * looks like the tenant's site.
+ */
+import { templateFor } from "../lib/templates";
+import { snapshot } from "../lib/snapshot";
+import SiteLayout from "../layouts/SiteLayout.astro";
+
+const document = snapshot();
+const template = templateFor(process.env.TEMPLATE_ID);
+const { Nav, Footer } = template.chrome;
+const { site } = document;
+
+// noindex: a 404 that gets indexed competes with the real pages for the same
+// terms, and there is nothing here worth a search result.
+const seo = {
+  title: `Page not found — ${site.name}`,
+  description: "This page does not exist.",
+  noindex: true,
+} as const;
+---
+
+<SiteLayout site={site} seo={seo} path="/404">
+  <Nav siteName={site.name} items={site.nav} currentPath="/404" />
+  <main id="main" class="mx-auto max-w-2xl px-6 py-32">
+    <p class="eyebrow text-muted">404</p>
+    <h1 class="font-display text-display-3 text-ink mt-4">This page doesn’t exist.</h1>
+    <p class="text-ink-3 mt-6 max-w-prose">
+      The link may be out of date, or the page may have moved.
+    </p>
+    <a
+      href="/"
+      class="text-ink border-ink mt-10 inline-block border-b font-mono text-xs tracking-widest uppercase"
+    >
+      Back to the start
+    </a>
+  </main>
+  <Footer siteName={site.name} note={site.footerNote} social={site.social} />
+</SiteLayout>

@@ -95,6 +95,9 @@ function emptyValuesFor(descriptors: FieldDescriptor[]): Record<string, unknown>
         // to type into.
         values[descriptor.name] = [""];
         break;
+      case "toggle":
+        values[descriptor.name] = false;
+        break;
       case "link":
         values[descriptor.name] = { label: "", href: "" };
         break;

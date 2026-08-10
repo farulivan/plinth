@@ -10,6 +10,7 @@ import {
   FormMessage,
 } from "@plinth/ui/components/form";
 import { Input } from "@plinth/ui/components/input";
+import { Switch } from "@plinth/ui/components/switch";
 import { Textarea } from "@plinth/ui/components/textarea";
 import { useFieldArray, type Control, type FieldValues } from "react-hook-form";
 import { emptyItemFor } from "@/lib/templates";
@@ -121,6 +122,28 @@ export function FieldControl({
             )}
           />
         </fieldset>
+      );
+    case "toggle":
+      return (
+        <FormField
+          control={control}
+          name={name}
+          render={({ field }) => (
+            <FormItem className="flex items-center gap-3">
+              <FormControl>
+                <Switch
+                  checked={field.value === true}
+                  onCheckedChange={field.onChange}
+                  onBlur={field.onBlur}
+                  ref={field.ref}
+                  name={field.name}
+                />
+              </FormControl>
+              <Label descriptor={descriptor} name={descriptor.name} />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       );
     case "prose":
       return <ProseField control={control} descriptor={descriptor} name={name} />;

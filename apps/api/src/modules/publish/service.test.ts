@@ -191,6 +191,61 @@ describe("requestPublish", () => {
     ]);
   });
 
+  // A nav entry pointing nowhere is a link that 404s on every page of the
+  // site, and it is invisible until someone clicks it.
+  it("refuses a nav link no enabled page produces", async () => {
+    const draft = docWith([validSection]);
+    draft.site.nav = [{ label: "Studio", href: "/studio/" }];
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
+
+    const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
+
+    expect(result.outcome).toBe("invalid-draft");
+    if (result.outcome !== "invalid-draft") return;
+    expect(result.fieldErrors["site.nav.0"]?.[0]).toContain("/studio/");
+  });
+
+  it("accepts a nav link to a page that exists, and leaves external links alone", async () => {
+    const draft = docWith([validSection]);
+    draft.pages.push({
+      id: "00000000-0000-4000-8000-000000000001",
+      path: "/studio/",
+      enabled: true,
+      seo: { noindex: false },
+      sections: [validSection],
+    } as (typeof draft.pages)[number]);
+    draft.site.nav = [
+      { label: "Studio", href: "/studio/" },
+      { label: "Instagram", href: "https://example.com/norven" },
+    ];
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
+    vi.mocked(dbFns.findVersionByIdempotencyKey).mockResolvedValue(null);
+    vi.mocked(dbFns.createVersion).mockResolvedValue(versionRow("queued"));
+
+    expect((await requestPublish(db, { workspaceId: WORKSPACE, userId: USER })).outcome).toBe(
+      "created",
+    );
+  });
+
+  // A disabled page emits no route, so a nav link to one is as broken as a
+  // link to a page that was never written.
+  it("refuses a nav link to a disabled page", async () => {
+    const draft = docWith([validSection]);
+    draft.pages.push({
+      id: "00000000-0000-4000-8000-000000000001",
+      path: "/studio/",
+      enabled: false,
+      seo: { noindex: false },
+      sections: [validSection],
+    } as (typeof draft.pages)[number]);
+    draft.site.nav = [{ label: "Studio", href: "/studio/" }];
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
+
+    const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
+
+    expect(result.outcome).toBe("invalid-draft");
+  });
+
   it("refuses a collection the template does not declare", async () => {
     const draft = docWith([validSection]);
     draft.collections = { projects: { pathTemplate: "/projects/{slug}/", entries: [] } };

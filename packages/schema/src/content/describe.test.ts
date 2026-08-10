@@ -77,6 +77,16 @@ describe("describeSectionFields", () => {
     ]);
   });
 
+  // Page SEO's `noindex` is the first boolean any schema-derived form has had
+  // to render. Section manifests never needed one, so this threw at module
+  // load and took the editor down with it.
+  it("describes a boolean as a toggle", () => {
+    const flags = defineSection("flags", z.object({ hidden: z.boolean().default(false) }));
+    expect(describeSectionFields(flags)).toEqual([
+      { kind: "toggle", name: "hidden", optional: false },
+    ]);
+  });
+
   it("describes a string array as prose — paragraphs, not rows", () => {
     const body = defineSection("body", z.object({ paragraphs: prose }));
     expect(describeSectionFields(body)).toEqual([

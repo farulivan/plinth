@@ -28,8 +28,12 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
  * editor page — session required, workspace from the session — and the draft
  * read rides RLS, so a draft id from another workspace simply 404s.
  */
-export default async function PreviewPage({ params }: { params: Promise<{ draftId: string }> }) {
-  const { draftId } = await params;
+export default async function PreviewPage({
+  params,
+}: {
+  params: Promise<{ draftId: string; path?: string[] }>;
+}) {
+  const { draftId, path } = await params;
   const id = z.uuid().safeParse(draftId);
   if (!id.success) notFound();
 
@@ -52,12 +56,13 @@ export default async function PreviewPage({ params }: { params: Promise<{ draftI
     );
   }
 
-  // One page for now, matching what the builder emits. The hash covers the
-  // whole document, so an edit to any page still invalidates the preview —
-  // path-aware previewing arrives with the routes that need it.
-  const page =
-    preview.document.pages.find((candidate) => candidate.path === HOME_PATH) ??
-    preview.document.pages[0];
+  // The requested page, in the same `/`-wrapped shape a page path carries, so
+  // the segments the editor puts in the URL round-trip to the stored value.
+  // Disabled pages stay previewable: parking one is how an author works on it,
+  // and a preview that refused to show it would remove the only way to see it.
+  const requested = path && path.length > 0 ? `/${path.join("/")}/` : HOME_PATH;
+  const page = preview.document.pages.find((candidate) => candidate.path === requested);
+  if (!page) notFound();
 
   const { site } = preview.document;
   const { Nav, Footer } = template.chrome;
@@ -65,11 +70,9 @@ export default async function PreviewPage({ params }: { params: Promise<{ draftI
   return (
     <>
       <PreviewClient draftId={id.data} initialHash={contentHash(preview.document)} />
-      <Nav siteName={site.name} items={site.nav} currentPath={page?.path ?? HOME_PATH} />
+      <Nav siteName={site.name} items={site.nav} currentPath={page.path} />
       <main id="main">
-        {page ? (
-          <Sections sections={page.sections} components={guardedComponents(template)} />
-        ) : null}
+        <Sections sections={page.sections} components={guardedComponents(template)} />
       </main>
       <Footer siteName={site.name} note={site.footerNote} social={site.social} />
     </>

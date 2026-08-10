@@ -10,6 +10,10 @@
 import { ClientRouter } from "astro:transitions";
 import type { LooseContentDocumentV2, PageSeo } from "@plinth/schema";
 import { resolveImageUrl } from "@plinth/renderer";
+// Imported here rather than per page: the layout is the one thing every route
+// goes through, including 404.astro, so a new route cannot forget it and ship
+// an unstyled page.
+import "@plinth/template-norven/styles.css";
 import { siteUrl } from "../lib/snapshot";
 
 interface Props {
