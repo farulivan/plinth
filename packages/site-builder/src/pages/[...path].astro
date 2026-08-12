@@ -1,38 +1,108 @@
 ---
 /**
  * Every page of a tenant site (ADR-0015): one route, fanned out over the
- * snapshot's enabled pages. Sections render through the same renderer the
- * preview uses (ADR-0003/0007 — one renderer, two surfaces).
+ * snapshot's enabled pages and over every living collection entry. Sections
+ * and detail bodies render through the same renderer the preview uses
+ * (ADR-0003/0007 — one renderer, two surfaces).
+ *
+ * Pages and entries share one route rather than getting one each. They occupy
+ * the same path space, so a single `getStaticPaths` is the only place the
+ * "one route per path" invariant can actually be checked — two route files
+ * would each be internally consistent and collide silently in R2.
  *
  * Throwing here fails the astro build, which the publish job reports as a
  * failed version — an invalid snapshot must never publish silently.
  */
 import { Sections } from "@plinth/renderer";
 import { templateFor } from "../lib/templates";
-import { pageParam, snapshot } from "../lib/snapshot";
+import {
+  assertUniquePaths,
+  entryRoutes,
+  pageParam,
+  resolvedCollections,
+  snapshot,
+} from "../lib/snapshot";
 import SiteLayout from "../layouts/SiteLayout.astro";
 
 export function getStaticPaths() {
   const document = snapshot();
+  const template = templateFor(process.env.TEMPLATE_ID);
+
   // Disabled pages are skipped rather than emitted, which is what makes
   // `enabled` an escape hatch: a half-written page neither blocks the publish
-  // nor appears on the live site.
-  return document.pages
+  // nor appears on the live site. `livingEntries` applies the same rule.
+  const pages = document.pages
     .filter((page) => page.enabled)
-    .map((page) => ({ params: { path: pageParam(page.path) }, props: { page } }));
+    .map((page) => ({ path: page.path, props: { kind: "page" as const, page } }));
+
+  const entries = entryRoutes(document).flatMap((route) => {
+    const renderer = template.collections[route.collection];
+    // A collection the template does not render is content without a view.
+    // Skipped rather than thrown: the publish gate rejects it with a message
+    // naming the collection, and a rollback to a snapshot from before a
+    // template dropped one should still build the rest of the site.
+    if (!renderer) return [];
+    return [
+      {
+        path: route.path,
+        props: {
+          kind: "entry" as const,
+          entry: route.entry,
+          prev: route.prev,
+          next: route.next,
+          collection: route.collection,
+        },
+      },
+    ];
+  });
+
+  const routes = [...pages, ...entries];
+  assertUniquePaths(routes);
+
+  return routes.map(({ path, props }) => ({
+    params: { path: pageParam(path) },
+    props: { ...props, path },
+  }));
 }
 
-const { page } = Astro.props;
+const props = Astro.props;
 const document = snapshot();
 const template = templateFor(process.env.TEMPLATE_ID);
 const { Nav, Footer } = template.chrome;
 const { site } = document;
+
+// An entry has no SEO of its own until an author writes one, and falling back
+// to the site name would title every project page identically. The template
+// summarises the entry instead — the one thing that can read its fields.
+const seo =
+  props.kind === "entry"
+    ? (() => {
+        const summary = template.collections[props.collection]!.summarize(props.entry);
+        return {
+          ...props.entry.seo,
+          title: props.entry.seo.title ?? summary.title,
+          description: props.entry.seo.description ?? summary.description,
+        };
+      })()
+    : props.page.seo;
+
+const Detail = props.kind === "entry" ? template.collections[props.collection]!.Detail : null;
 ---
 
-<SiteLayout site={site} seo={page.seo} path={page.path}>
-  <Nav siteName={site.name} items={site.nav} currentPath={page.path} />
+<SiteLayout site={site} seo={seo} path={props.path}>
+  <Nav siteName={site.name} items={site.nav} currentPath={props.path} />
   <main id="main">
-    <Sections sections={page.sections} components={template.components} />
+    {
+      props.kind === "page" ? (
+        <Sections
+          sections={props.page.sections}
+          components={template.components}
+          collections={resolvedCollections(document)}
+        />
+      ) : Detail ? (
+        <Detail entry={props.entry} prev={props.prev} next={props.next} />
+      ) : null
+    }
   </main>
   <Footer siteName={site.name} note={site.footerNote} social={site.social} />
 </SiteLayout>

@@ -5,7 +5,8 @@ export type {
   ResolvedCollections,
   EntryComponentProps,
   EntryComponent,
-  EntryComponentMap,
+  CollectionRenderer,
+  CollectionRendererMap,
 } from "./componentMap";
 export { resolveImageUrl } from "./resolveImageUrl";
 export { MediaRef } from "./components/MediaRef";

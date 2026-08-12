@@ -32,4 +32,5 @@ export { ProjectIndex } from "./sections/ProjectIndex";
 export { Frame } from "./media/Frame";
 export { norvenComponents } from "./sections";
 export { ProjectDetail } from "./collections/ProjectDetail";
-export { norvenEntryComponents } from "./collections";
+export { summarizeProject } from "./collections/summarize";
+export { norvenCollections } from "./collections";

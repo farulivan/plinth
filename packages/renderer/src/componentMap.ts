@@ -58,5 +58,24 @@ export interface EntryComponentProps {
 
 export type EntryComponent = ComponentType<EntryComponentProps>;
 
-/** Maps a collection name to the component that renders one of its entries. */
-export type EntryComponentMap = Record<string, EntryComponent>;
+/**
+ * What a template provides per collection: the detail component, and a way to
+ * describe an entry in one line.
+ *
+ * `summarize` exists because `<head>` is not the component's to write. A
+ * detail page still needs a title and a description, and the only honest
+ * source is the entry's own fields — which only the template can read. Without
+ * it every project page would fall back to the site name, and an author would
+ * have to retype the title into per-entry SEO to get a distinct `<title>`.
+ *
+ * It must not throw. Entries are savable half-written (ADR-0007), and this is
+ * called for neighbours as well as for the page being rendered — a complete
+ * project must not fail because the one after it is unfinished.
+ */
+export interface CollectionRenderer {
+  Detail: EntryComponent;
+  summarize: (entry: EntryComponentProps["entry"]) => { title: string; description: string };
+}
+
+/** Maps a collection name to how a template renders and describes it. */
+export type CollectionRendererMap = Record<string, CollectionRenderer>;

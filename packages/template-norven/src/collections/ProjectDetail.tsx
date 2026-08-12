@@ -1,6 +1,7 @@
 import type { EntryComponentProps } from "@plinth/renderer";
 import { projectEntryFields } from "../manifest";
 import { Frame } from "../media/Frame";
+import { summarizeProject } from "./summarize";
 
 /**
  * One project's detail page, ported from norven's projects/[slug].astro: a
@@ -16,8 +17,25 @@ import { Frame } from "../media/Frame";
 export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
   const project = projectEntryFields.parse(entry.fields);
 
+  // In the body rather than the head: the shape is CreativeWork, which only
+  // this template knows, and the builder's layout has no way to read a
+  // project's fields. JSON-LD is valid anywhere in the document.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: project.title,
+    dateCreated: String(project.year),
+    genre: project.kind,
+    locationCreated: { "@type": "Place", name: project.location },
+    description: project.brief,
+  };
+
   return (
     <article data-collection="projects">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Frame
         media={project.cover}
         ratio="16/9"
@@ -118,13 +136,13 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
             <a href={prev.path} className="group block max-w-[45%]" rel="prev">
               <span className="eyebrow text-ink-3 mb-2 block">Previous</span>
               <span className="font-display text-ink group-hover:text-brass-2 text-xl transition-colors">
-                {titleOf(prev.entry.fields)}
+                {titleOf(prev.entry)}
               </span>
             </a>
             <a href={next.path} className="group block max-w-[45%] text-right" rel="next">
               <span className="eyebrow text-ink-3 mb-2 block">Next</span>
               <span className="font-display text-ink group-hover:text-brass-2 text-xl transition-colors">
-                {titleOf(next.entry.fields)}
+                {titleOf(next.entry)}
               </span>
             </a>
           </div>
@@ -134,12 +152,8 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
   );
 }
 
-/**
- * A neighbour's label. Read leniently rather than parsed: a neighbour is
- * someone else's entry and may still be half-written, and throwing here would
- * take down a project that is itself complete because the one after it is not.
- */
-function titleOf(fields: unknown): string {
-  const title = (fields as { title?: unknown }).title;
-  return typeof title === "string" && title.length > 0 ? title : "Untitled project";
+/** A neighbour's label — the same lenient read the page head uses, so a link
+ * and the page it points at can never disagree about a project's name. */
+function titleOf(entry: EntryComponentProps["entry"]): string {
+  return summarizeProject(entry).title;
 }

@@ -1,11 +1,12 @@
-import type { EntryComponentMap } from "@plinth/renderer";
+import type { CollectionRendererMap } from "@plinth/renderer";
 import { ProjectDetail } from "./ProjectDetail";
+import { summarizeProject } from "./summarize";
 
 /**
- * Binds a collection name to the component that renders one of its entries.
- * Keys match the collection names in the manifest's document schema, the same
- * way `norvenComponents` keys match section `type` literals.
+ * How Norven renders and describes each of its collections. Keys match the
+ * collection names in the manifest's document schema, the same way
+ * `norvenComponents` keys match section `type` literals.
  */
-export const norvenEntryComponents: EntryComponentMap = {
-  projects: ProjectDetail,
+export const norvenCollections: CollectionRendererMap = {
+  projects: { Detail: ProjectDetail, summarize: summarizeProject },
 };
