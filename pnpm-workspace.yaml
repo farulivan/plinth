@@ -77,6 +77,15 @@ overrides:
   # package whose whole surface is one glob-expansion function.
   brace-expansion@2: "^2.1.4"
   brace-expansion@>=4: "^5.0.9"
+  # js-yaml (GHSA-5p4m-2wfm-xmqj): quadratic CPU resolving `!!omap`, and the
+  # CVE-2026-59870 fix was not backported below 4.3.1. Two copies resolve
+  # today. Astro itself already pulls the patched one through
+  # @astrojs/internal-helpers 0.10.2; @astrojs/react pins that helper at
+  # exactly 0.10.1, whose `js-yaml: ^4.1.1` floats back to 4.2.0. Pinning the
+  # leaf rather than the helper keeps this inside every declared range —
+  # 4.3.1 satisfies both ^4.1.1 and ^4.3.0 — where overriding the helper would
+  # step past an exact pin. It also dedupes the tree to one copy.
+  js-yaml: "^4.3.1"
 
 # `pnpm audit --prod` runs as a CI gate (.github/workflows/ci.yml). These are
 # the advisories standing at the time the gate landed, each accepted with a
@@ -107,10 +116,6 @@ auditConfig:
     # in CI or in either image.
     - GHSA-g7r4-m6w7-qqqr
     - GHSA-67mh-4wv8-2f99
-    # js-yaml — via @astrojs/internal-helpers and commitlint's config loader.
-    # Quadratic CPU on merge-key chains, reachable only by parsing untrusted
-    # YAML; both parse our own files.
-    - GHSA-52cp-r559-cp3m
     # brace-expansion — via eslint's config-array and OpenTelemetry's
     # auto-instrumentation. DoS on untrusted glob patterns; the patterns are
     # literals in our config.
