@@ -98,15 +98,26 @@ function emptyValuesFor(descriptors: FieldDescriptor[]): Record<string, unknown>
       case "toggle":
         values[descriptor.name] = false;
         break;
+      case "select":
+        // The first option, not blank: every value in the set is valid, so an
+        // empty select would be the one state the schema rejects.
+        values[descriptor.name] = descriptor.options[0];
+        break;
       case "link":
         values[descriptor.name] = { label: "", href: "" };
+        break;
+      case "group":
+        values[descriptor.name] = emptyValuesFor(descriptor.item);
         break;
       case "array":
         values[descriptor.name] = [];
         break;
+      case "number":
       case "media":
-        // Left absent: the picker fills the whole object at once, and the
-        // publish gate flags a missing image.
+        // Left absent. The media picker fills its whole object at once, and a
+        // number has no blank that is also a valid value — seeding 0 would put
+        // a year of 0 into a field nobody has touched. The publish gate flags
+        // both if they are still missing.
         break;
     }
   }

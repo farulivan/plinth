@@ -13,8 +13,11 @@ export type FieldDescriptor =
   | { kind: "longText"; name: string; optional: boolean; maxLength: number }
   | { kind: "prose"; name: string; optional: boolean; maxLength: number }
   | { kind: "toggle"; name: string; optional: boolean }
+  | { kind: "number"; name: string; optional: boolean; min?: number; max?: number }
+  | { kind: "select"; name: string; optional: boolean; options: string[] }
   | { kind: "link"; name: string; optional: boolean }
   | { kind: "media"; name: string; optional: boolean }
+  | { kind: "group"; name: string; optional: boolean; item: FieldDescriptor[] }
   | { kind: "array"; name: string; optional: boolean; item: FieldDescriptor[] };
 
 /** Keys `mediaRef` is recognised by. A subset check rather than an exact match:
@@ -52,6 +55,30 @@ function describeField(name: string, schema: z.ZodType): FieldDescriptor {
     return { kind: "toggle", name, optional };
   }
 
+  if (inner.def.type === "number") {
+    // Unbounded reads as ±Infinity here, not null. Passing that straight
+    // through would put `min="-Infinity"` on the input element, which is not a
+    // valid HTML constraint — the browser drops it and the control silently
+    // stops enforcing anything.
+    const { minValue, maxValue } = inner as z.ZodNumber;
+    return {
+      kind: "number",
+      name,
+      optional,
+      ...(Number.isFinite(minValue) ? { min: minValue as number } : {}),
+      ...(Number.isFinite(maxValue) ? { max: maxValue as number } : {}),
+    };
+  }
+
+  // A closed set of strings is a control, not a text box. Typing a value the
+  // schema does not accept is a publish failure an author cannot see coming,
+  // and the set is already declared — the form has no reason to make them
+  // guess it.
+  if (inner.def.type === "enum") {
+    const values = Object.values((inner as z.ZodEnum<Record<string, string>>).enum);
+    return { kind: "select", name, optional, options: values };
+  }
+
   // A union of string variants is still one text input. `link.href` is the
   // case that forces this: as a standalone field the whole link is matched by
   // shape below, but inside an array the element is destructured into its keys
@@ -75,6 +102,12 @@ function describeField(name: string, schema: z.ZodType): FieldDescriptor {
     if (keys.length === 2 && keys.includes("href") && keys.includes("label")) {
       return { kind: "link", name, optional };
     }
+    // Any other object is a fieldset of its own fields — an array row's shape
+    // without the repetition. `link` and `mediaRef` are matched above only
+    // because they have controls of their own; nothing else needs a special
+    // case, and falling through to "unknown primitive" would have made every
+    // grouped field a schema change to the describer.
+    return { kind: "group", name, optional, item: describeObjectFields(inner as z.ZodObject) };
   }
 
   if (inner.def.type === "array") {

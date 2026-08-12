@@ -1,9 +1,11 @@
 import { z } from "zod";
 import {
+  collectionInstanceFor,
   contentDocumentFor,
   defineSection,
   longText,
   mediaRef,
+  prose,
   shortText,
 } from "@plinth/schema/content";
 
@@ -103,6 +105,24 @@ export const contactSection = defineSection(
   }),
 );
 
+/**
+ * The index of a collection, rendered as a section so it sits in a page's
+ * section list like any other — reorderable, with its own heading, on a page
+ * that can carry an intro above it. `collection` names which one; the builder
+ * resolves the entries and the component only draws links.
+ */
+export const projectIndexSection = defineSection(
+  "projectIndex",
+  z.object({
+    eyebrow: shortText.optional(),
+    heading: shortText,
+    /** The collection to list. A union of one today, and a union rather than a
+     * free string so the editor offers a picker instead of asking an author to
+     * recall an internal name. */
+    collection: z.enum(["projects"]).default("projects"),
+  }),
+);
+
 export const norvenSection = z.discriminatedUnion("type", [
   photoHeroSection,
   statementSection,
@@ -110,12 +130,48 @@ export const norvenSection = z.discriminatedUnion("type", [
   statsSection,
   testimonialSection,
   contactSection,
+  projectIndexSection,
 ]);
 
-/** The template's strict document schema: pages of Norven sections, and no
- * collections yet — the entry shapes arrive with the routes that render them
- * (ADR-0015). */
-export const norvenDocument = contentDocumentFor(norvenSection, {});
+/**
+ * One project's detail page (ADR-0015).
+ *
+ * `year`, `kind` and `status` are separate fields here where `featuredProjects`
+ * keeps a single "Residence · 2023 · Built" caption. The caption is display
+ * copy and nothing reads it; these are read twice over — the component
+ * composes the same eyebrow from them, and the page's CreativeWork JSON-LD
+ * needs a real `dateCreated` and a real name for the work's kind. A search
+ * engine cannot split a bullet-separated string, and inventing a parser for
+ * one would be a taxonomy the CMS pretends not to have.
+ */
+export const projectEntryFields = z.object({
+  title: shortText,
+  year: z.number().int().min(1900).max(2100),
+  kind: z.enum(["Residence", "Cultural", "Commercial", "Civic", "Landscape"]),
+  status: z.enum(["Built", "In Studio"]),
+  location: shortText,
+  area: shortText,
+  brief: longText,
+  cover: mediaRef,
+  /** Paragraphs, not markdown (ADR-0015) — the body of the project write-up. */
+  body: prose,
+  gallery: z
+    .array(z.object({ image: mediaRef, caption: shortText.optional() }))
+    .max(12)
+    .default([]),
+  testimonial: z.object({ quote: longText, author: shortText, role: shortText }).optional(),
+});
+export type ProjectEntryFields = z.infer<typeof projectEntryFields>;
+
+/** Entry field schemas by collection name — what the publish gate validates
+ * against and what the editor builds an entry form from. */
+export const norvenCollectionFields = { projects: projectEntryFields };
+
+/** The template's strict document schema: pages of Norven sections, plus the
+ * collections that fan out into a page each (ADR-0015). */
+export const norvenDocument = contentDocumentFor(norvenSection, {
+  projects: collectionInstanceFor(projectEntryFields),
+});
 export type NorvenDocument = z.infer<typeof norvenDocument>;
 
 export type PhotoHeroFields = z.infer<typeof photoHeroSection>["fields"];
