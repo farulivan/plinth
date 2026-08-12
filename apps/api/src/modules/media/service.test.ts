@@ -135,6 +135,13 @@ describe("uploadMedia", () => {
     expect(result.outcome).toBe("refreshed");
     // Only the missing two are encoded — the legacy four already exist.
     expect(adapter.processImage).toHaveBeenCalledWith(bytes, [1366, 1920]);
+    // And the original is kept, so the next width needs no second re-upload.
+    expect(adapter.uploadMediaOriginal).toHaveBeenCalledWith(
+      WORKSPACE,
+      expect.any(String),
+      "image/jpeg",
+      bytes,
+    );
     expect(dbFns.updateMediaWidths).toHaveBeenCalledWith(
       db,
       WORKSPACE,
@@ -194,18 +201,31 @@ describe("reencodeMediaVariants", () => {
     );
   });
 
-  // Uploads from before originals were retained have nothing to decode. They
-  // are counted, not retried and not failed — their references already claim
-  // the legacy set, which is exactly what exists.
-  it("skips a row whose original was never retained", async () => {
+  // Width recording and original retention shipped together, so a null column
+  // means no original exists — knowable without asking R2. Reaching for the
+  // object anyway would cost one missing-object lookup per legacy image per
+  // night, in perpetuity, to reach an answer the column already gave.
+  it("never reaches for an original a null column already rules out", async () => {
     vi.mocked(dbFns.listMediaRows).mockResolvedValue([
       row({ width: 6240, height: 3510, variantWidths: null }),
+    ]);
+
+    expect(await reencodeMediaVariants(db)).toEqual({ widened: 0, skipped: 0 });
+    expect(adapter.getMediaOriginal).not.toHaveBeenCalled();
+    expect(dbFns.updateMediaWidths).not.toHaveBeenCalled();
+  });
+
+  // Distinct from the case above: this row claims a width set, so its original
+  // is supposed to be there. Counted, so the anomaly is visible in the run
+  // result rather than silently doing nothing.
+  it("counts a row whose recorded original has gone missing", async () => {
+    vi.mocked(dbFns.listMediaRows).mockResolvedValue([
+      row({ width: 6240, height: 3510, variantWidths: [400, 800, 1200, 1600] }),
     ]);
     vi.mocked(adapter.getMediaOriginal).mockResolvedValue(null);
 
     expect(await reencodeMediaVariants(db)).toEqual({ widened: 0, skipped: 1 });
     expect(adapter.processImage).not.toHaveBeenCalled();
-    expect(dbFns.updateMediaWidths).not.toHaveBeenCalled();
   });
 
   it("does nothing on a library that is already current", async () => {
@@ -220,9 +240,9 @@ describe("reencodeMediaVariants", () => {
 
   it("stops at the batch limit so one run cannot hold a step open", async () => {
     vi.mocked(dbFns.listMediaRows).mockResolvedValue([
-      row({ id: "a", width: 6240, variantWidths: null }),
-      row({ id: "b", width: 6240, variantWidths: null }),
-      row({ id: "c", width: 6240, variantWidths: null }),
+      row({ id: "a", width: 6240, variantWidths: [400, 800, 1200, 1600] }),
+      row({ id: "b", width: 6240, variantWidths: [400, 800, 1200, 1600] }),
+      row({ id: "c", width: 6240, variantWidths: [400, 800, 1200, 1600] }),
     ]);
     vi.mocked(adapter.getMediaOriginal).mockResolvedValue(bytes);
     vi.mocked(adapter.processImage).mockResolvedValue({
@@ -240,7 +260,9 @@ describe("reencodeMediaVariants", () => {
     // widths design exists to prevent, and every reference picked afterwards
     // would carry the lie.
     const order: string[] = [];
-    vi.mocked(dbFns.listMediaRows).mockResolvedValue([row({ width: 6240, variantWidths: null })]);
+    vi.mocked(dbFns.listMediaRows).mockResolvedValue([
+      row({ width: 6240, variantWidths: [400, 800, 1200, 1600] }),
+    ]);
     vi.mocked(adapter.getMediaOriginal).mockResolvedValue(bytes);
     vi.mocked(adapter.processImage).mockResolvedValue({
       width: 6240,

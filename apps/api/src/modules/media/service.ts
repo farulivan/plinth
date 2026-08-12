@@ -104,7 +104,15 @@ export async function uploadMedia(
       return { outcome: "reused", item: toItem(existing) };
     }
 
-    const refreshed = await widenVariants(db, input.workspaceId, existing, input.bytes, missing);
+    // Retain the original too. The bytes are in hand and this row is one that
+    // did not have them — a re-upload that widened the variants but kept the
+    // image un-re-encodable would leave it needing another manual re-upload
+    // the next time a width is added, which is the toil this is meant to end.
+    // A no-op cost when the original was already stored: same key, same bytes.
+    const [refreshed] = await Promise.all([
+      widenVariants(db, input.workspaceId, existing, input.bytes, missing),
+      uploadMediaOriginal(input.workspaceId, contentHash, contentType, input.bytes),
+    ]);
     await writeAuditLog(db, {
       workspaceId: input.workspaceId,
       actorUserId: input.actorUserId,
@@ -195,9 +203,15 @@ async function widenVariants(
  * the wider set on a page after re-picking the image; re-uploading the file
  * does both at once (see `uploadMedia`).
  *
- * Rows with no retained original are skipped, permanently and by design: there
- * is nothing to decode. They keep the legacy set, which is exactly what their
- * references already claim.
+ * A null `variantWidths` is not a candidate and never becomes one. Width
+ * recording and original retention shipped together, so a null column means
+ * exactly "no original was kept" — there is nothing to decode, forever. Ruling
+ * those out from the column rather than from a failed R2 read is what keeps
+ * this cheap: otherwise every legacy image in every workspace would cost one
+ * missing-object lookup a night, in perpetuity, to reach the same answer.
+ *
+ * `skipped` therefore counts a genuine anomaly — a row claiming widths whose
+ * original has gone missing — rather than a permanent background population.
  *
  * Bounded per run so a library that has fallen far behind converges over
  * several nights instead of holding one Inngest step open for an hour.
@@ -216,6 +230,7 @@ export async function reencodeMediaVariants(
 
     for (const row of await listMediaRows(db, workspaceId)) {
       if (widened >= limit) break;
+      if (row.variantWidths === null) continue;
       const missing = missingWidths(row);
       if (missing.length === 0) continue;
 
