@@ -1,6 +1,12 @@
 "use client";
 
-import { HOME_PATH, type LooseContentDocumentV2, type SectionInstance } from "@plinth/schema";
+import {
+  HOME_PATH,
+  resolveEntryPath,
+  type EntryInstance,
+  type LooseContentDocumentV2,
+  type SectionInstance,
+} from "@plinth/schema";
 import { Button } from "@plinth/ui/components/button";
 import {
   DropdownMenu,
@@ -8,10 +14,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@plinth/ui/components/dropdown-menu";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { emptyFieldsFor, templateFor } from "@/lib/templates";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { emptyFieldsFor, emptyItemFor, templateFor, type TemplateSpec } from "@/lib/templates";
 import { saveDraft } from "@/server/actions/drafts";
-import { PageBar } from "./page-bar";
+import { EntryCard } from "./entry-card";
+import { RouteBar, type Selection } from "./route-bar";
 import { SectionCard } from "./section-card";
 import { SiteSettingsCard } from "./site-settings-card";
 
@@ -20,6 +27,51 @@ type SaveState =
   | { status: "error"; detail: string };
 
 const AUTOSAVE_DEBOUNCE_MS = 500;
+
+type Collections = Record<string, { pathTemplate: string; entries: EntryInstance[] }>;
+
+/**
+ * Every collection the TEMPLATE declares, carrying whatever entries the
+ * document holds for it.
+ *
+ * Reading the document alone would mean a workspace that has never added a
+ * project has no `projects` key, so the editor would offer no way to add the
+ * first one — the collection unreachable for exactly the authors who had not
+ * used it yet.
+ *
+ * Its caller wraps this in `useMemo`, which is load-bearing rather than an
+ * optimisation. The React Compiler treats a call it cannot see into as capable
+ * of mutating what it is passed, so calling this with state during render made
+ * it give up on the whole component — every `useCallback` in this file lost
+ * its memoisation, silently, and the lint rule was the only thing that said so.
+ */
+function declaredCollections(template: TemplateSpec | null, stored: Collections): Collections {
+  const merged: Collections = {};
+  for (const spec of template?.collections ?? []) {
+    merged[spec.name] = stored[spec.name] ?? { pathTemplate: spec.pathTemplate, entries: [] };
+  }
+  return merged;
+}
+
+/**
+ * The entry a selection names, or null when it names none — either because a
+ * page is open, or because the entry was just removed.
+ *
+ * A module function rather than an inline expression: the compiler bails out
+ * of optimising a whole component when it cannot analyse a function created in
+ * render, and an IIFE here silently cost every `useCallback` in this file its
+ * memoisation.
+ */
+function resolveEntry(
+  collections: Collections,
+  selection: Selection | null,
+): { collection: string; entry: EntryInstance; pathTemplate: string } | null {
+  if (selection?.kind !== "entry") return null;
+  const collection = collections[selection.collection];
+  const entry = collection?.entries.find((candidate) => candidate.id === selection.id);
+  if (!entry || !collection) return null;
+  return { collection: selection.collection, entry, pathTemplate: collection.pathTemplate };
+}
 
 /**
  * The editor root: owns the document, the 500 ms autosave debounce
@@ -39,24 +91,40 @@ export function Editor({
   /** Fires with the saved document's content hash — the publish bar's
    * "unpublished changes" comparison rides on it. */
   onSaved?: (contentHash: string) => void;
-  /** Fires with the path of the page being edited, so the preview follows it. */
+  /** Fires with the path of the route being edited, so the preview follows it. */
   onPageChange?: (path: string) => void;
 }) {
   const template = templateFor(templateId);
   const [document, setDocument] = useState(initialDocument);
-  // One page is edited at a time; every section mutator below is scoped to it,
-  // because section types are unique per page rather than per document
-  // (ADR-0015) and a mutator matching on type alone would edit the same-named
-  // section on every page at once.
+  // One route is edited at a time; every section mutator below is scoped to
+  // its page, because section types are unique per page rather than per
+  // document (ADR-0015) and a mutator matching on type alone would edit the
+  // same-named section on every page at once.
   //
-  // Falls back rather than holding an id directly, so removing the selected
-  // page cannot strand the editor on one that no longer exists.
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const activePage =
-    document.pages.find((page) => page.id === selectedId) ??
-    document.pages.find((page) => page.path === HOME_PATH) ??
-    document.pages[0]!;
-  const activePageId = activePage.id;
+  // A collection entry is a route too, so the selection is either — one
+  // control, and no question about which of two switchers the preview follows.
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const homePage = document.pages.find((page) => page.path === HOME_PATH) ?? document.pages[0]!;
+
+  const collections = useMemo(
+    () => declaredCollections(template, document.collections),
+    [template, document.collections],
+  );
+
+  // Resolved rather than trusted, so removing the open route cannot strand the
+  // editor on one that no longer exists.
+  const activeEntry = resolveEntry(collections, selection);
+  const activePage = activeEntry
+    ? null
+    : (document.pages.find((page) => page.id === selection?.id) ?? homePage);
+  const activePageId = activePage?.id ?? homePage.id;
+
+  const activeSelection: Selection = activeEntry
+    ? { kind: "entry", collection: activeEntry.collection, id: activeEntry.entry.id }
+    : { kind: "page", id: activePageId };
+  const activePath = activeEntry
+    ? resolveEntryPath(activeEntry.pathTemplate, activeEntry.entry.slug)
+    : activePage!.path;
   const [save, setSave] = useState<SaveState>({ status: "idle" });
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveSeq = useRef(0);
@@ -66,16 +134,17 @@ export function Editor({
     onSavedRef.current = onSaved;
   });
 
-  // Reported rather than derived by the parent: the active page falls back
+  // Reported rather than derived by the parent: the active route falls back
   // when the selected one is removed, so the editor is the only place that
-  // knows which page is actually open.
+  // knows what is actually open. Entry paths follow their slug, so renaming a
+  // project moves the preview with it.
   const onPageChangeRef = useRef(onPageChange);
   useEffect(() => {
     onPageChangeRef.current = onPageChange;
   });
   useEffect(() => {
-    onPageChangeRef.current?.(activePage.path);
-  }, [activePage.path]);
+    onPageChangeRef.current?.(activePath);
+  }, [activePath]);
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -124,18 +193,47 @@ export function Editor({
     [],
   );
 
-  const updateSeo = useCallback(
-    (pageId: string, seo: LooseContentDocumentV2["pages"][number]["seo"]) => {
-      updatePage(pageId, { seo });
+  /** Every entry edit rewrites exactly one collection's list. */
+  const editCollection = useCallback(
+    (name: string, edit: (entries: EntryInstance[]) => EntryInstance[]) => {
+      setDocument((doc) => {
+        const collection = doc.collections[name];
+        if (!collection) return doc;
+        return {
+          ...doc,
+          collections: {
+            ...doc.collections,
+            [name]: { ...collection, entries: edit(collection.entries) },
+          },
+        };
+      });
     },
-    [updatePage],
+    [],
   );
 
-  const togglePage = useCallback(
-    (pageId: string, enabled: boolean) => {
-      updatePage(pageId, { enabled });
+  const updateEntry = useCallback(
+    (name: string, entryId: string, patch: Partial<EntryInstance>) => {
+      editCollection(name, (entries) =>
+        entries.map((entry) => (entry.id === entryId ? { ...entry, ...patch } : entry)),
+      );
     },
-    [updatePage],
+    [editCollection],
+  );
+
+  const updateSeo = useCallback(
+    (target: Selection, seo: LooseContentDocumentV2["pages"][number]["seo"]) => {
+      if (target.kind === "page") updatePage(target.id, { seo });
+      else updateEntry(target.collection, target.id, { seo });
+    },
+    [updatePage, updateEntry],
+  );
+
+  const toggleRoute = useCallback(
+    (target: Selection, enabled: boolean) => {
+      if (target.kind === "page") updatePage(target.id, { enabled });
+      else updateEntry(target.collection, target.id, { enabled });
+    },
+    [updatePage, updateEntry],
   );
 
   const addPage = useCallback(() => {
@@ -161,7 +259,7 @@ export function Editor({
         ],
       };
     });
-    setSelectedId(id);
+    setSelection({ kind: "page", id });
   }, []);
 
   const removePage = useCallback((pageId: string) => {
@@ -172,8 +270,73 @@ export function Editor({
       if (!target || target.path === HOME_PATH) return doc;
       return { ...doc, pages: doc.pages.filter((page) => page.id !== pageId) };
     });
-    setSelectedId(null);
+    setSelection(null);
   }, []);
+
+  const addEntry = useCallback(
+    (name: string) => {
+      const spec = template?.collections.find((candidate) => candidate.name === name);
+      if (!spec) return;
+      const id = crypto.randomUUID();
+      setDocument((doc) => {
+        const existing = doc.collections[name];
+        // Slugs are unique within a collection and one resolves to a path, so
+        // a new entry gets a free slug rather than colliding on creation.
+        const entries = existing?.entries ?? [];
+        let n = entries.length + 1;
+        let slug = `untitled-${String(n)}`;
+        while (entries.some((entry) => entry.slug === slug)) slug = `untitled-${String(++n)}`;
+        return {
+          ...doc,
+          collections: {
+            ...doc.collections,
+            [name]: {
+              // The template owns the path template; a document that has never
+              // held this collection has none to reuse.
+              pathTemplate: existing?.pathTemplate ?? spec.pathTemplate,
+              entries: [
+                ...entries,
+                {
+                  id,
+                  slug,
+                  // Created parked, like a new page: an empty project must not
+                  // appear on the live index the moment it is created.
+                  enabled: false,
+                  seo: { noindex: false },
+                  fields: emptyItemFor(spec.fields),
+                },
+              ],
+            },
+          },
+        };
+      });
+      setSelection({ kind: "entry", collection: name, id });
+    },
+    [template],
+  );
+
+  const removeEntry = useCallback(
+    (name: string, entryId: string) => {
+      editCollection(name, (entries) => entries.filter((entry) => entry.id !== entryId));
+      setSelection(null);
+    },
+    [editCollection],
+  );
+
+  const moveEntry = useCallback(
+    (name: string, entryId: string, direction: -1 | 1) => {
+      editCollection(name, (entries) => {
+        const index = entries.findIndex((entry) => entry.id === entryId);
+        const target = index + direction;
+        if (index < 0 || target < 0 || target >= entries.length) return entries;
+        const next = [...entries];
+        const [moved] = next.splice(index, 1);
+        next.splice(target, 0, moved!);
+        return next;
+      });
+    },
+    [editCollection],
+  );
 
   /** Every structural edit rewrites exactly one page's sections. */
   const editPage = useCallback(
@@ -241,8 +404,11 @@ export function Editor({
     );
   }
 
-  const presentTypes = new Set(activePage.sections.map((section) => section.type));
+  const presentTypes = new Set(activePage?.sections.map((section) => section.type) ?? []);
   const addableSections = template.sections.filter((spec) => !presentTypes.has(spec.type));
+  const entrySpec = activeEntry
+    ? template.collections.find((spec) => spec.name === activeEntry.collection)
+    : undefined;
 
   return (
     <div className="space-y-4">
@@ -258,17 +424,40 @@ export function Editor({
 
       <SiteSettingsCard site={document.site} onChange={updateSite} />
 
-      <PageBar
+      <RouteBar
         pages={document.pages}
-        activePageId={activePageId}
-        onSelect={setSelectedId}
+        collections={collections}
+        selection={activeSelection}
+        onSelect={setSelection}
         onSeoChange={updateSeo}
-        onToggle={togglePage}
-        onAdd={addPage}
-        onRemove={removePage}
+        onToggle={toggleRoute}
+        onAddPage={addPage}
+        onRemovePage={removePage}
+        onAddEntry={addEntry}
+        onRemoveEntry={removeEntry}
+        onMoveEntry={moveEntry}
       />
 
-      {activePage.sections.map((section, index) => {
+      {activeEntry && entrySpec ? (
+        <EntryCard
+          // Keyed on the entry for the reason every form here is keyed: it
+          // seeds react-hook-form at mount and is uncontrolled after, so
+          // switching entries without remounting would show the previous
+          // project's values and stream them over the new one's.
+          key={activeEntry.entry.id}
+          spec={entrySpec}
+          slug={activeEntry.entry.slug}
+          fields={(activeEntry.entry.fields ?? {}) as Record<string, unknown>}
+          onSlugChange={(slug) =>
+            updateEntry(activeEntry.collection, activeEntry.entry.id, { slug })
+          }
+          onFieldsChange={(fields) =>
+            updateEntry(activeEntry.collection, activeEntry.entry.id, { fields })
+          }
+        />
+      ) : null}
+
+      {(activePage?.sections ?? []).map((section, index) => {
         const spec = template.sections.find((candidate) => candidate.type === section.type);
         if (!spec) {
           return (
@@ -291,7 +480,7 @@ export function Editor({
             fields={(section.fields ?? {}) as Record<string, unknown>}
             enabled={section.enabled}
             canMoveUp={index > 0}
-            canMoveDown={index < activePage.sections.length - 1}
+            canMoveDown={index < (activePage?.sections.length ?? 0) - 1}
             onFieldsChange={(fields) => updateFields(activePageId, section.type, fields)}
             onToggle={(enabled) => toggleSection(activePageId, section.type, enabled)}
             onMove={(direction) => moveSection(activePageId, section.type, direction)}
@@ -299,7 +488,7 @@ export function Editor({
         );
       })}
 
-      {addableSections.length > 0 ? (
+      {activePage && addableSections.length > 0 ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline">Add section</Button>

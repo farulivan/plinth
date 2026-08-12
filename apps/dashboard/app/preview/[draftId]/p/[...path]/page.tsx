@@ -7,9 +7,17 @@ import "@plinth/template-norven/styles.css";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { HOME_PATH } from "@plinth/schema";
+import {
+  HOME_PATH,
+  livingEntries,
+  resolveEntryPath,
+  withNeighbors,
+  type EntryInstance,
+  type LooseContentDocumentV2,
+  type ResolvedEntry,
+} from "@plinth/schema";
 import { z } from "zod";
-import { guardedComponents } from "@/components/preview/guarded-components";
+import { guardedComponents, renderGuardedEntry } from "@/components/preview/guarded-components";
 import { PreviewClient } from "@/components/preview/preview-client";
 import { templateFor } from "@/lib/templates";
 import { auth } from "@/server/auth";
@@ -56,13 +64,21 @@ export default async function PreviewPage({
     );
   }
 
-  // The requested page, in the same `/`-wrapped shape a page path carries, so
+  // The requested route, in the same `/`-wrapped shape a page path carries, so
   // the segments the editor puts in the URL round-trip to the stored value.
-  // Disabled pages stay previewable: parking one is how an author works on it,
-  // and a preview that refused to show it would remove the only way to see it.
+  // Disabled pages and parked entries stay previewable: parking one is how an
+  // author works on it, and a preview that refused to show it would remove the
+  // only way to see it.
   const requested = path && path.length > 0 ? `/${path.join("/")}/` : HOME_PATH;
   const page = preview.document.pages.find((candidate) => candidate.path === requested);
-  if (!page) notFound();
+
+  // Entries are resolved from the whole list, not just the enabled ones, but
+  // their NEIGHBOURS come from the living ones — so prev/next in the preview
+  // points where it will point once published, rather than at a page the
+  // build would skip.
+  const entryMatch = page ? null : findEntry(preview.document.collections, requested);
+
+  if (!page && !entryMatch) notFound();
 
   const { site } = preview.document;
   const { Nav, Footer } = template.chrome;
@@ -70,11 +86,61 @@ export default async function PreviewPage({
   return (
     <>
       <PreviewClient draftId={id.data} initialHash={contentHash(preview.document)} />
-      <Nav siteName={site.name} items={site.nav} currentPath={page.path} />
+      <Nav siteName={site.name} items={site.nav} currentPath={requested} />
       <main id="main">
-        <Sections sections={page.sections} components={guardedComponents(template)} />
+        {page ? (
+          <Sections
+            sections={page.sections}
+            components={guardedComponents(template)}
+            collections={resolvedCollections(preview.document)}
+          />
+        ) : entryMatch ? (
+          renderGuardedEntry(template, entryMatch.collection, {
+            entry: entryMatch.entry,
+            prev: entryMatch.prev,
+            next: entryMatch.next,
+          })
+        ) : null}
       </main>
       <Footer siteName={site.name} note={site.footerNote} social={site.social} />
     </>
+  );
+}
+
+/** The entry a path names, with the neighbours it will have once published. */
+function findEntry(
+  collections: LooseContentDocumentV2["collections"],
+  requested: string,
+): {
+  collection: string;
+  entry: EntryInstance;
+  prev: ResolvedEntry | null;
+  next: ResolvedEntry | null;
+} | null {
+  for (const [collection, value] of Object.entries(collections)) {
+    const entry = value.entries.find(
+      (candidate) => resolveEntryPath(value.pathTemplate, candidate.slug) === requested,
+    );
+    if (!entry) continue;
+    const chain = withNeighbors(livingEntries(value as never));
+    const position = chain.find((item) => item.entry.id === entry.id);
+    return {
+      collection,
+      entry: entry as EntryInstance,
+      prev: position?.prev ?? null,
+      next: position?.next ?? null,
+    };
+  }
+  return null;
+}
+
+/** The same resolution the builder does, so an index section in the preview
+ * lists exactly what the published one will. */
+function resolvedCollections(document: LooseContentDocumentV2) {
+  return Object.fromEntries(
+    Object.entries(document.collections).map(([name, value]) => [
+      name,
+      livingEntries(value as never),
+    ]),
   );
 }
