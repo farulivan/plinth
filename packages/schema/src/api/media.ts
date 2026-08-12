@@ -13,13 +13,39 @@ export const mediaItem = z.object({
   height: z.number().int().positive(),
   fileSize: z.number().int().positive(),
   contentType: z.string().min(1),
+  /** The variant widths generated for this upload, copied onto a mediaRef at
+   * pick time. Absent on rows written before widths were recorded — see
+   * `variantWidthsFor`. */
+  widths: z.array(z.number().int().positive()).min(1).optional(),
   createdAt: z.iso.datetime(),
 });
 
 export type MediaItem = z.infer<typeof mediaItem>;
 
-/** The widths every upload is rendered at (ADR-0006 — Norven's grid). */
-export const MEDIA_VARIANT_WIDTHS = [400, 800, 1200, 1600] as const;
+/**
+ * The widths uploads were rendered at before references began recording their
+ * own set. **Frozen — never edit this array.** A reference carrying no
+ * `widths` was produced under exactly this rule, and these are the only
+ * objects that exist for it in R2. Changing the number below would make the
+ * renderer ask for variants that were never generated.
+ */
+export const LEGACY_MEDIA_VARIANT_WIDTHS = [400, 800, 1200, 1600] as const;
+
+/**
+ * The widths every new upload is rendered at (ADR-0006).
+ *
+ * 1366 is load-bearing for the tenant quality gates: Lighthouse desktop
+ * emulates a 1350 px viewport at DPR 1, so a `sizes="100vw"` hero jumping
+ * 1200 → 1600 hands the browser 22.5% more pixels than it paints and fails
+ * `uses-responsive-images`. 1920 covers the most common desktop resolution,
+ * which previously upscaled from 1600 — visible on a full-bleed photograph.
+ *
+ * Adding a width here is safe for published sites and existing references:
+ * both are pinned to the set recorded on the reference itself. New uploads
+ * get it immediately; older media converges through `reencodeMediaVariants`
+ * where the original bytes were retained.
+ */
+export const MEDIA_VARIANT_WIDTHS = [400, 800, 1200, 1366, 1600, 1920] as const;
 /** The formats every upload is rendered in, best-first. */
 export const MEDIA_VARIANT_FORMATS = ["avif", "webp", "jpeg"] as const;
 export type MediaVariantFormat = (typeof MEDIA_VARIANT_FORMATS)[number];
@@ -30,13 +56,38 @@ export const MEDIA_MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 export const MEDIA_STORAGE_CAP_BYTES = 5 * 1024 * 1024 * 1024;
 
 /**
- * The variant widths that actually exist for an original of a given width:
- * upscaling is never done, so widths beyond the original are skipped; a tiny
- * original still gets one variant (stored under the smallest width's name).
- * The upload pipeline emits exactly this set and the renderer derives its
- * srcset from the same rule — one function, no drift.
+ * Upscaling is never done, so widths beyond the original are skipped; a tiny
+ * original still gets one variant, stored under the smallest width's name.
+ */
+function widthsWithin(set: readonly number[], originalWidth: number): number[] {
+  const fit = set.filter((width) => width <= originalWidth);
+  return fit.length > 0 ? [...fit] : [set[0]!];
+}
+
+/**
+ * The widths a **new** upload produces. The encoder emits exactly this set and
+ * records it on the media row, so what was generated is a stored fact rather
+ * than something recomputed later from a constant that has since moved.
  */
 export function mediaVariantWidths(originalWidth: number): number[] {
-  const fit = MEDIA_VARIANT_WIDTHS.filter((width) => width <= originalWidth);
-  return fit.length > 0 ? [...fit] : [MEDIA_VARIANT_WIDTHS[0]];
+  return widthsWithin(MEDIA_VARIANT_WIDTHS, originalWidth);
+}
+
+/** What exists for media uploaded before widths were recorded. */
+export function legacyVariantWidths(originalWidth: number): number[] {
+  return widthsWithin(LEGACY_MEDIA_VARIANT_WIDTHS, originalWidth);
+}
+
+/**
+ * The widths that exist in R2 for one image — the renderer's srcset source,
+ * and the reason `MEDIA_VARIANT_WIDTHS` can grow without breaking anything.
+ *
+ * A reference that records its own `widths` is authoritative: those objects
+ * were written when it was picked. One that doesn't predates the recording and
+ * falls back to the frozen legacy rule. Deriving from today's constant instead
+ * would emit `w1920` URLs for every image ever uploaded, and 404 on all of the
+ * ones that were encoded before it existed.
+ */
+export function variantWidthsFor(media: { width: number; widths?: number[] }): number[] {
+  return media.widths ?? legacyVariantWidths(media.width);
 }

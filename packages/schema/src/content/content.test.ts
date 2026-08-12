@@ -66,7 +66,21 @@ describe("mediaRef", () => {
       contentHash: string;
       width: number;
       height: number;
+      widths?: number[] | undefined;
     }>();
+  });
+
+  // Optional, and it has to stay optional: every reference written before
+  // widths were recorded is missing it, and those documents must keep parsing
+  // for as long as their snapshots are retained.
+  it("accepts a reference that records no widths", () => {
+    expect(mediaRef.safeParse(MEDIA_REF).success).toBe(true);
+    expect(mediaRef.parse(MEDIA_REF).widths).toBeUndefined();
+  });
+
+  it("refuses an empty width list, which would render no sources at all", () => {
+    expect(mediaRef.safeParse({ ...MEDIA_REF, widths: [] }).success).toBe(false);
+    expect(mediaRef.safeParse({ ...MEDIA_REF, widths: [400, 1366] }).success).toBe(true);
   });
 });
 

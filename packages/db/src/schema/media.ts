@@ -24,6 +24,16 @@ export const media = pgTable(
      * storage cap (5 GB free / 50 GB paid). */
     fileSize: bigint("file_size", { mode: "number" }).notNull(),
     contentType: text("content_type").notNull(),
+    /**
+     * The variant widths generated for this original, copied onto a mediaRef
+     * at pick time so a snapshot renders from itself.
+     *
+     * Null means the row predates the recording, and its variants are the
+     * frozen legacy set (`LEGACY_MEDIA_VARIANT_WIDTHS`). Null is permanent for
+     * those rows, not a backlog: uploads from before this column existed did
+     * not retain their original bytes, so there is nothing to re-encode from.
+     */
+    variantWidths: integer("variant_widths").array(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [uniqueIndex("media_workspace_hash_unique").on(table.workspaceId, table.contentHash)],

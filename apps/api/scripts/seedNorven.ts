@@ -36,7 +36,10 @@ async function ingest(
 ): Promise<MediaItem> {
   const bytes = await readFile(path);
   const result = await uploadMedia(db, { workspaceId, bytes, actorUserId });
-  if (result.outcome !== "created" && result.outcome !== "reused") {
+  if (result.outcome === "unsupported-type" || result.outcome === "unreadable-image") {
+    throw new Error(`ingest failed for ${path}: ${result.outcome}`);
+  }
+  if (result.outcome === "too-large" || result.outcome === "storage-cap") {
     throw new Error(`ingest failed for ${path}: ${result.outcome}`);
   }
   console.log(`[seed:norven] ${result.outcome} ${path.split("/").at(-1)} (${result.item.width}px)`);
@@ -49,6 +52,7 @@ const ref = (item: MediaItem, alt: string) => ({
   contentHash: item.contentHash,
   width: item.width,
   height: item.height,
+  ...(item.widths ? { widths: item.widths } : {}),
 });
 
 async function main(): Promise<void> {

@@ -46,6 +46,11 @@ export function MediaField({
       contentHash: item.contentHash,
       width: item.width,
       height: item.height,
+      // Frozen here alongside the hash, and for the same reason: the snapshot
+      // this ends up in must render years later without consulting the media
+      // table. Absent for images uploaded before widths were recorded, which
+      // the renderer reads as the legacy set.
+      ...(item.widths ? { widths: item.widths } : {}),
     } satisfies MediaRef);
     setOpen(false);
   }

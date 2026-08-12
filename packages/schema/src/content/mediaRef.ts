@@ -20,5 +20,13 @@ export const mediaRef = z.object({
   contentHash: z.string().regex(/^[0-9a-f]{64}$/),
   width: z.number().int().positive(),
   height: z.number().int().positive(),
+  /**
+   * Which variant widths exist in R2 for this image, copied from the media row
+   * alongside the hash. Self-describing for the same reason the hash is: a
+   * snapshot renders from itself. Deriving the srcset from whatever
+   * `MEDIA_VARIANT_WIDTHS` says today would break every reference the moment a
+   * width is added — see `variantWidthsFor`, which owns the absent case.
+   */
+  widths: z.array(z.number().int().positive()).min(1).optional(),
 });
 export type MediaRef = z.infer<typeof mediaRef>;

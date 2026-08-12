@@ -58,8 +58,12 @@ export const mediaRoutes = new Hono<AppBindings>()
         actorUserId: session.user.id,
       });
       switch (result.outcome) {
+        // "refreshed" — a re-upload that widened an existing image's variants
+        // — answers like a reuse: the caller's next move is identical, take
+        // the item and write it into the field.
         case "created":
         case "reused":
+        case "refreshed":
           return c.json(ok({ outcome: result.outcome, item: result.item }));
         case "unsupported-type":
           return c.json(
