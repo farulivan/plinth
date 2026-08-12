@@ -4,20 +4,32 @@ Scheduled cleanup, backups, and the runbook for recovering from them going wrong
 
 ## Scheduled jobs
 
-All four run as Inngest cron functions (`apps/api/src/inngest/functions/`), registered in `apps/api/src/inngest/index.ts`. Locally, watch them in the Inngest dev server UI (`http://localhost:8288`) — each has its own run history, retries, and a "Trigger" button that fires it on demand without waiting for the schedule.
+All five run as Inngest cron functions (`apps/api/src/inngest/functions/`), registered in `apps/api/src/inngest/index.ts`. Locally, watch them in the Inngest dev server UI (`http://localhost:8288`) — each has its own run history, retries, and a "Trigger" button that fires it on demand without waiting for the schedule.
 
 | Job | Schedule (UTC) | What it does | Source |
 |---|---|---|---|
 | `reap-expired-sessions` | daily, 03:00 | Deletes `session` rows past `expires_at`. Not RLS-scoped — Better Auth sessions are keyed by user, not workspace. | `apps/api/src/modules/reapers/service.ts` → `reapExpiredSessions` |
-| `reap-orphaned-media` | daily, 03:15 | Per workspace: deletes `media` rows unreferenced by any current draft or version snapshot, older than 7 days, plus their R2 variant objects. | `reapOrphanedMedia` |
+| `reap-orphaned-media` | daily, 03:15 | Per workspace: deletes `media` rows unreferenced by any current draft or version snapshot, older than 7 days, plus their R2 variant objects and the retained original. | `reapOrphanedMedia` |
 | `reap-old-versions` | daily, 03:30 | Per workspace: keeps the 10 most recent `content_versions` rows plus whichever one is currently live, deletes the rest plus their R2 site files. | `reapOldVersions` |
+| `reencode-media-variants` | daily, 03:40 | Per workspace: encodes variant widths that were added after an image was uploaded, from its retained original, then records the wider set on the row. | `apps/api/src/modules/media/service.ts` → `reencodeMediaVariants` |
 | `backup-database` | weekly, Sunday 04:00 | `pg_dump --format=custom` uploaded to `r2://plinth-backups/postgres/{iso_week}.dump`. | `backupDatabase` |
 
-Times are staggered 15 minutes apart so the daily reapers don't contend for the same connection pool slot on a slow morning.
+Times are staggered so the daily jobs don't contend for the same connection pool slot on a slow morning. The re-encoder runs last on purpose: it is the only one that writes rather than deletes, and running it after the media reaper means it never spends Sharp time on an image that is about to be swept.
 
 ### Why these are safe to re-run
 
 Every reaper is idempotent by construction — re-running "delete what's already gone" is a no-op, not an error. None of them mutate anything that isn't already scheduled for deletion; a manual trigger from the Inngest dev UI is always safe to use for testing without waiting for the cron.
+
+The re-encoder is idempotent for a different reason: it only ever adds widths an image does not have, so a second run finds nothing to do. It is capped at 25 images per run and carries `retries: 0` — a partial run is not a failure state, whatever it widened is durable, and the next night resumes from what is still missing.
+
+### The re-encoder, and when it does anything
+
+Nothing, on a healthy library — which is the normal state. It exists for the night after `MEDIA_VARIANT_WIDTHS` grows, when it converges every tenant without anyone remembering to trigger it.
+
+Two things it does not do, both deliberate:
+
+- **It skips images whose original was never retained**, permanently rather than as a retry. Originals began being kept only when the width set moved to six; anything uploaded before that has no bytes to decode from. Those rows keep the legacy `[400, 800, 1200, 1600]`, which is exactly what their references already claim, so nothing is broken — it just cannot improve. A rising `skipped` count is that population, not an error.
+- **It widens objects, not references.** A `mediaRef` freezes its widths when the image is picked, so a page does not gain the wider set until the image is re-picked. When an author wants an old image widened on a live page, tell them to re-upload the file: that path encodes the missing widths *and* rewrites the reference, which the cron cannot do.
 
 ### Orphan detection, in one sentence
 

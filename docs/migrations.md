@@ -55,6 +55,31 @@ A rename is the same sequence: it is an add, a backfill, and a drop. There is no
 `ALTER TABLE … RENAME` that is safe here, because the moment it lands the old
 image is querying a column that no longer exists.
 
+### When null is a value, not a backlog
+
+The table above assumes the backfill eventually completes and null stops
+occurring. Some columns are not like that, and it is worth recognising one
+before scheduling a contract that can never happen.
+
+`media.variant_widths` (migration `0002`) is the example. It records which
+image variants were generated for a row. Null means "this upload predates the
+recording", and the code reads that as the frozen legacy set — which is
+correct, permanently, because those uploads did not retain their original bytes
+and so cannot be re-encoded into anything else
+([ADR-0006](./adr/0006-media-pipeline.md)). There is no backfill that would
+finish, and `NOT NULL` is not a later tightening to look forward to.
+
+The test is whether null carries information the new value cannot express. If
+it does, say so in the column's comment, because the next person reading a
+nullable column will otherwise assume the contract step was simply forgotten.
+
+What this shape still owes you is that every reader agrees on the reading. A
+single `?? legacyDefault` helper, used everywhere the column is consumed, is
+the whole discipline: the bug this prevents is one caller treating null as
+"empty" while another treats it as the default, which typechecks, passes tests
+that only cover populated rows, and produces the wrong answer on exactly the
+oldest data.
+
 ### Forward-only, and what that costs
 
 There are no down migrations ([ADR-0011](./adr/0011-operational-baseline.md)). A
