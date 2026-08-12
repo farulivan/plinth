@@ -71,3 +71,62 @@ export function collectionInstanceFor<TFields extends z.ZodType>(fields: TFields
     entries: z.array(entryInstanceFor(fields)).max(200).default([]).superRefine(uniqueBySlug),
   });
 }
+
+/** One stored entry, with template fields left unvalidated — the shape every
+ * surface passes around before a template's own schema narrows `fields`. */
+export const entryInstance = entryInstanceFor(z.unknown());
+export type EntryInstance = z.infer<typeof entryInstance>;
+
+/** An entry paired with the path it resolves to. Paths are computed once, at
+ * the boundary that knows the template, so no renderer or editor ever has to
+ * hold a path template. */
+export interface ResolvedEntry {
+  path: string;
+  entry: EntryInstance;
+}
+
+/**
+ * The entries a collection actually produces pages for, in array order, each
+ * with its resolved path.
+ *
+ * Disabled entries are dropped here rather than at each call site, because
+ * every consumer wants the same answer: the build emits no page for one, the
+ * index must not link to one, and prev/next must not walk through one. A
+ * neighbour pointing at a parked entry is a 404 reachable only by clicking
+ * "next", which is exactly the kind of link nobody tests.
+ */
+export function livingEntries(collection: {
+  pathTemplate: string;
+  entries: EntryInstance[];
+}): ResolvedEntry[] {
+  return collection.entries
+    .filter((entry) => entry.enabled)
+    .map((entry) => ({ path: resolveEntryPath(collection.pathTemplate, entry.slug), entry }));
+}
+
+export interface WithNeighbors extends ResolvedEntry {
+  /** Null only when this is the sole entry — see below. */
+  prev: ResolvedEntry | null;
+  next: ResolvedEntry | null;
+}
+
+/**
+ * Attach cyclic prev/next to an ordered entry list — Norven's `withNeighbors`,
+ * minus its `order` field. Array position is the order (ADR-0015): a separate
+ * sort key is a second source of truth that drifts from the first the moment
+ * someone reorders in one place.
+ *
+ * The wraparound is deliberate — from the last project, "next" returns to the
+ * first, so the sequence has no dead end. The exception is a collection of one,
+ * where the cycle would make both links point at the page they are on: a "next
+ * project" that reloads the same project reads as broken, so both are null and
+ * the template omits the control.
+ */
+export function withNeighbors(entries: ResolvedEntry[]): WithNeighbors[] {
+  const count = entries.length;
+  return entries.map((resolved, index) => ({
+    ...resolved,
+    prev: count > 1 ? entries[(index - 1 + count) % count]! : null,
+    next: count > 1 ? entries[(index + 1) % count]! : null,
+  }));
+}

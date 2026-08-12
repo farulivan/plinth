@@ -12,8 +12,14 @@ export {
   pathTemplate,
   resolveEntryPath,
   entryInstanceFor,
+  entryInstance,
+  type EntryInstance,
   collectionInstanceFor,
   uniqueBySlug,
+  livingEntries,
+  withNeighbors,
+  type ResolvedEntry,
+  type WithNeighbors,
 } from "./collection";
 export {
   DOCUMENT_SCHEMA_VERSION,
