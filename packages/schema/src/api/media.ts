@@ -34,18 +34,25 @@ export const LEGACY_MEDIA_VARIANT_WIDTHS = [400, 800, 1200, 1600] as const;
 /**
  * The widths every new upload is rendered at (ADR-0006).
  *
- * 1366 is load-bearing for the tenant quality gates: Lighthouse desktop
- * emulates a 1350 px viewport at DPR 1, so a `sizes="100vw"` hero jumping
- * 1200 → 1600 hands the browser 22.5% more pixels than it paints and fails
- * `uses-responsive-images`. 1920 covers the most common desktop resolution,
- * which previously upscaled from 1600 — visible on a full-bleed photograph.
+ * Each width answers to a slot a template actually renders, measured rather
+ * than guessed against Lighthouse's 1350 px desktop viewport at DPR 1:
+ *
+ * - **640** — a two-column card grid. Inside a 1400 px container with side
+ *   padding and a gutter, each slot measures 615 px. Without it the browser
+ *   reaches past 400 to 800 and wastes 21% of the bytes it decodes.
+ * - **1366** — a full-bleed hero, where a `sizes="100vw"` image jumping
+ *   1200 → 1600 wastes 22.5%.
+ * - **1920** — the commonest desktop resolution, which otherwise upscales
+ *   from 1600 — visible on a full-bleed photograph.
  *
  * Adding a width here is safe for published sites and existing references:
  * both are pinned to the set recorded on the reference itself. New uploads
  * get it immediately; older media converges through `reencodeMediaVariants`
- * where the original bytes were retained.
+ * where the original bytes were retained. That is the property this list was
+ * made movable for, and 640 is the first width to use it — one constant and
+ * a fixture regeneration, with nothing to coordinate.
  */
-export const MEDIA_VARIANT_WIDTHS = [400, 800, 1200, 1366, 1600, 1920] as const;
+export const MEDIA_VARIANT_WIDTHS = [400, 640, 800, 1200, 1366, 1600, 1920] as const;
 /** The formats every upload is rendered in, best-first. */
 export const MEDIA_VARIANT_FORMATS = ["avif", "webp", "jpeg"] as const;
 export type MediaVariantFormat = (typeof MEDIA_VARIANT_FORMATS)[number];

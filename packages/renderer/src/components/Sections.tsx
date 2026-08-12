@@ -1,10 +1,11 @@
 import type { SectionInstance } from "@plinth/schema/content";
-import type { ComponentMap } from "../componentMap";
+import type { ComponentMap, ResolvedCollections } from "../componentMap";
 import { Section } from "./Section";
 
 interface SectionsProps {
   sections: SectionInstance[];
   components: ComponentMap;
+  collections?: ResolvedCollections;
 }
 
 /**
@@ -21,11 +22,16 @@ interface SectionsProps {
  * pages it is not, which is why callers rendering more than one page at a time
  * key the pages themselves by id.
  */
-export function Sections({ sections, components }: SectionsProps) {
+export function Sections({ sections, components, collections }: SectionsProps) {
   return (
     <>
       {sections.map((section) => (
-        <Section key={section.type} section={section} components={components} />
+        <Section
+          key={section.type}
+          section={section}
+          components={components}
+          collections={collections}
+        />
       ))}
     </>
   );

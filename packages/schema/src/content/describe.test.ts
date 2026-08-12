@@ -112,9 +112,57 @@ describe("describeSectionFields", () => {
     ]);
   });
 
+  // Numbers and enums are the two primitives collection entries introduced —
+  // a project's year and its build status. Both would have thrown at module
+  // load inside the eagerly-built template registry, which is the third time
+  // that failure shape would have taken the whole editor down.
+  it("describes a bounded number", () => {
+    const spec = defineSection("spec", z.object({ year: z.number().int().min(2000).max(2100) }));
+    expect(describeSectionFields(spec)).toEqual([
+      { kind: "number", name: "year", optional: false, min: 2000, max: 2100 },
+    ]);
+  });
+
+  it("describes an unbounded number without inventing limits", () => {
+    const spec = defineSection("spec", z.object({ count: z.number() }));
+    expect(describeSectionFields(spec)).toEqual([
+      { kind: "number", name: "count", optional: false },
+    ]);
+  });
+
+  // A closed set is a control, not a text box: typing a value the schema
+  // rejects is a publish failure the author could not have seen coming.
+  it("describes an enum as a select carrying its options", () => {
+    const spec = defineSection("spec", z.object({ status: z.enum(["built", "in-studio"]) }));
+    expect(describeSectionFields(spec)).toEqual([
+      { kind: "select", name: "status", optional: false, options: ["built", "in-studio"] },
+    ]);
+  });
+
+  // Everything object-shaped that is not a link or a mediaRef is a fieldset.
+  // Treating an unrecognised object as an error would have made every grouped
+  // field a change to this file.
+  it("describes a plain object as a group of its own fields", () => {
+    const spec = defineSection(
+      "spec",
+      z.object({ quote: z.object({ text: longText, author: shortText }).optional() }),
+    );
+    expect(describeSectionFields(spec)).toEqual([
+      {
+        kind: "group",
+        name: "quote",
+        optional: true,
+        item: [
+          { kind: "longText", name: "text", optional: false, maxLength: 5000 },
+          { kind: "shortText", name: "author", optional: false, maxLength: 200 },
+        ],
+      },
+    ]);
+  });
+
   it("fails loudly on a primitive it does not know", () => {
-    const rogue = defineSection("rogue", z.object({ count: z.number() }));
-    expect(() => describeSectionFields(rogue)).toThrow(/No field descriptor for "count"/);
+    const rogue = defineSection("rogue", z.object({ when: z.date() }));
+    expect(() => describeSectionFields(rogue)).toThrow(/No field descriptor for "when"/);
   });
 
   it("extracts the section type literal", () => {

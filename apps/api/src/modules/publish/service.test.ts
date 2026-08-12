@@ -73,6 +73,37 @@ const validSection = {
 };
 const validDraft = docWith([validSection]);
 
+const media = {
+  mediaId: "00000000-0000-4000-8000-0000000000aa",
+  alt: "Salt House",
+  contentHash: "a".repeat(64),
+  width: 2400,
+  height: 1350,
+};
+
+/** Every required field of a Norven project — the baseline a test subtracts
+ * from when it wants to prove the gate catches something. */
+const completeProject = {
+  title: "Salt House",
+  year: 2023,
+  kind: "Residence",
+  status: "Built",
+  location: "Tjøme, Norway",
+  area: "280 m²",
+  brief: "A coastal residence cut into a granite shelf.",
+  cover: media,
+  body: ["First paragraph."],
+  gallery: [],
+};
+
+const entry = (slug: string, fields: Record<string, unknown>) => ({
+  id: `00000000-0000-4000-8000-0000000000${slug.length.toString().padStart(2, "0")}`,
+  slug,
+  enabled: true,
+  seo: { noindex: false },
+  fields,
+});
+
 const versionRow = (status: "queued" | "building" | "built" | "failed") => ({
   id: VERSION,
   versionNumber: 4,
@@ -248,16 +279,98 @@ describe("requestPublish", () => {
 
   it("refuses a collection the template does not declare", async () => {
     const draft = docWith([validSection]);
-    draft.collections = { projects: { pathTemplate: "/projects/{slug}/", entries: [] } };
+    draft.collections = { journal: { pathTemplate: "/journal/{slug}/", entries: [] } };
     vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
 
     const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
 
     expect(result.outcome).toBe("invalid-draft");
     if (result.outcome !== "invalid-draft") return;
-    expect(result.fieldErrors["projects"]).toEqual([
-      "This collection is not part of the template.",
-    ]);
+    expect(result.fieldErrors["journal"]).toEqual(["This collection is not part of the template."]);
+  });
+
+  it("validates an enabled entry's fields against the template's entry schema", async () => {
+    const draft = docWith([validSection]);
+    draft.collections = {
+      projects: {
+        pathTemplate: "/projects/{slug}/",
+        entries: [entry("salt-house", { title: "Salt House" })],
+      },
+    };
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
+
+    const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
+
+    expect(result.outcome).toBe("invalid-draft");
+    if (result.outcome !== "invalid-draft") return;
+    // Keyed by collection and slug, which is what the editor shows.
+    expect(
+      Object.keys(result.fieldErrors).some((key) => key.startsWith("projects.salt-house.")),
+    ).toBe(true);
+  });
+
+  // The escape hatch that makes strict publishing survivable: one unfinished
+  // project must not refuse to publish the entire site (ADR-0015).
+  it("skips a parked entry, however unfinished", async () => {
+    const draft = docWith([validSection]);
+    draft.collections = {
+      projects: {
+        pathTemplate: "/projects/{slug}/",
+        entries: [{ ...entry("draft-project", {}), enabled: false }],
+      },
+    };
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
+    vi.mocked(dbFns.findVersionByIdempotencyKey).mockResolvedValue(null);
+    vi.mocked(dbFns.createVersion).mockResolvedValue(versionRow("queued"));
+
+    expect((await requestPublish(db, { workspaceId: WORKSPACE, userId: USER })).outcome).toBe(
+      "created",
+    );
+  });
+
+  // Nothing downstream reports this. The build emits both routes and the
+  // second upload wins in R2, so the loser reads as a page that simply did
+  // not publish — and a slug is exactly the field most likely to collide.
+  it("refuses an entry whose path a page already publishes", async () => {
+    const draft = docWith([validSection]);
+    draft.pages.push({
+      id: "00000000-0000-4000-8000-000000000001",
+      path: "/projects/salt-house/",
+      enabled: true,
+      seo: { noindex: false },
+      sections: [validSection],
+    } as (typeof draft.pages)[number]);
+    draft.collections = {
+      projects: {
+        pathTemplate: "/projects/{slug}/",
+        entries: [entry("salt-house", completeProject)],
+      },
+    };
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
+
+    const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
+
+    expect(result.outcome).toBe("invalid-draft");
+    if (result.outcome !== "invalid-draft") return;
+    expect(result.fieldErrors["projects.salt-house"]?.[0]).toContain("/projects/salt-house/");
+  });
+
+  it("accepts a nav link to a path a collection entry produces", async () => {
+    const draft = docWith([validSection]);
+    draft.collections = {
+      projects: {
+        pathTemplate: "/projects/{slug}/",
+        entries: [entry("salt-house", completeProject)],
+      },
+    };
+    draft.site.nav = [{ label: "Salt House", href: "/projects/salt-house/" }];
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
+    vi.mocked(dbFns.findVersionByIdempotencyKey).mockResolvedValue(null);
+    vi.mocked(dbFns.createVersion).mockResolvedValue(versionRow("queued"));
+
+    expect((await requestPublish(db, { workspaceId: WORKSPACE, userId: USER })).outcome).toBe(
+      "created",
+    );
   });
 
   // The failure this guards is silent: without an origin the build still

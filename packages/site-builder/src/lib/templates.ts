@@ -1,5 +1,5 @@
-import type { ComponentMap } from "@plinth/renderer";
-import { norvenChrome, norvenComponents } from "@plinth/template-norven";
+import type { ComponentMap, CollectionRendererMap } from "@plinth/renderer";
+import { norvenChrome, norvenCollections, norvenComponents } from "@plinth/template-norven";
 
 /**
  * The builder's template registry: components and chrome per template id.
@@ -12,11 +12,18 @@ import { norvenChrome, norvenComponents } from "@plinth/template-norven";
 
 export interface BuilderTemplate {
   components: ComponentMap;
+  /** Per collection name: the detail body, and how to describe an entry in the
+   * page head. */
+  collections: CollectionRendererMap;
   chrome: typeof norvenChrome;
 }
 
 const templates: Record<string, BuilderTemplate> = {
-  "template-norven": { components: norvenComponents, chrome: norvenChrome },
+  "template-norven": {
+    components: norvenComponents,
+    collections: norvenCollections,
+    chrome: norvenChrome,
+  },
 };
 
 export function templateFor(templateId: string | undefined): BuilderTemplate {

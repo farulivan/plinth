@@ -1,7 +1,14 @@
-import type { ComponentMap } from "@plinth/renderer";
-import { describeSectionFields, sectionTypeOf, type FieldDescriptor } from "@plinth/schema/content";
+import type { CollectionRendererMap, ComponentMap } from "@plinth/renderer";
+import {
+  describeObjectFields,
+  describeSectionFields,
+  sectionTypeOf,
+  type FieldDescriptor,
+} from "@plinth/schema/content";
 import {
   norvenChrome,
+  norvenCollectionFields,
+  norvenCollections,
   norvenComponents,
   norvenDocument,
   norvenSection,
@@ -25,13 +32,29 @@ export interface SectionSpec {
   fields: FieldDescriptor[];
 }
 
+export interface CollectionSpec {
+  name: string;
+  /** The path an entry resolves to, e.g. `/projects/{slug}/`. */
+  pathTemplate: string;
+  /** The entry's field schema — the per-entry form's resolver. */
+  fieldsSchema: z.ZodType;
+  fields: FieldDescriptor[];
+}
+
 export interface TemplateSpec {
   label: string;
   document: z.ZodType;
   sections: SectionSpec[];
+  /** Collections the template declares. A document may hold entries for any of
+   * them; one it does not declare is rejected at publish. */
+  collections: CollectionSpec[];
   /** Section React components for SSR rendering — preview now, publish later
    * (ADR-0007: one renderer for both). */
   components: ComponentMap;
+  /** Detail components and entry summaries, per collection name. The preview
+   * renders these too — a detail page that only existed in the published build
+   * would be the one page an author could not see before shipping it. */
+  collectionRenderers: CollectionRendererMap;
   /** Nav and footer. The preview renders them too: chrome that appeared only
    * in the published build would make the preview a different page from the
    * one it claims to show (ADR-0015). */
@@ -55,12 +78,31 @@ function toSectionSpec(section: z.ZodType): SectionSpec {
   };
 }
 
+/** Where each collection's entries live on the site. Declared here rather than
+ * read from the draft: a fresh workspace has no collections in its document
+ * yet, and the first entry an author adds has to be given a path template from
+ * somewhere. */
+const NORVEN_PATH_TEMPLATES: Record<string, string> = { projects: "/projects/{slug}/" };
+
+function toCollectionSpec(name: string, fields: z.ZodObject): CollectionSpec {
+  return {
+    name,
+    pathTemplate: NORVEN_PATH_TEMPLATES[name] ?? `/${name}/{slug}/`,
+    fieldsSchema: fields,
+    fields: describeObjectFields(fields),
+  };
+}
+
 export const templates: Record<string, TemplateSpec> = {
   "template-norven": {
     label: "Norven",
     document: norvenDocument,
     sections: norvenSection.options.map(toSectionSpec),
+    collections: Object.entries(norvenCollectionFields).map(([name, fields]) =>
+      toCollectionSpec(name, fields),
+    ),
     components: norvenComponents,
+    collectionRenderers: norvenCollections,
     chrome: norvenChrome,
   },
 };
@@ -98,15 +140,26 @@ function emptyValuesFor(descriptors: FieldDescriptor[]): Record<string, unknown>
       case "toggle":
         values[descriptor.name] = false;
         break;
+      case "select":
+        // The first option, not blank: every value in the set is valid, so an
+        // empty select would be the one state the schema rejects.
+        values[descriptor.name] = descriptor.options[0];
+        break;
       case "link":
         values[descriptor.name] = { label: "", href: "" };
+        break;
+      case "group":
+        values[descriptor.name] = emptyValuesFor(descriptor.item);
         break;
       case "array":
         values[descriptor.name] = [];
         break;
+      case "number":
       case "media":
-        // Left absent: the picker fills the whole object at once, and the
-        // publish gate flags a missing image.
+        // Left absent. The media picker fills its whole object at once, and a
+        // number has no blank that is also a valid value — seeding 0 would put
+        // a year of 0 into a field nobody has touched. The publish gate flags
+        // both if they are still missing.
         break;
     }
   }

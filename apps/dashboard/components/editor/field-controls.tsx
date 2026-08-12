@@ -10,6 +10,13 @@ import {
   FormMessage,
 } from "@plinth/ui/components/form";
 import { Input } from "@plinth/ui/components/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@plinth/ui/components/select";
 import { Switch } from "@plinth/ui/components/switch";
 import { Textarea } from "@plinth/ui/components/textarea";
 import { useFieldArray, type Control, type FieldValues } from "react-hook-form";
@@ -145,10 +152,85 @@ export function FieldControl({
           )}
         />
       );
+    case "number":
+      return (
+        <FormField
+          control={control}
+          name={name}
+          render={({ field }) => (
+            <FormItem>
+              <Label descriptor={descriptor} name={descriptor.name} />
+              <FormControl>
+                <Input
+                  {...field}
+                  type="number"
+                  value={typeof field.value === "number" ? field.value : ""}
+                  min={descriptor.min}
+                  max={descriptor.max}
+                  // Numbers, not numeric strings: the schema is z.number(), so
+                  // the browser's string would fail validation on a field the
+                  // author filled in correctly. Empty stays undefined rather
+                  // than becoming 0 — a year nobody typed is not year zero.
+                  onChange={(event) =>
+                    field.onChange(
+                      event.target.value === "" ? undefined : event.target.valueAsNumber,
+                    )
+                  }
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      );
+    case "select":
+      return (
+        <FormField
+          control={control}
+          name={name}
+          render={({ field }) => (
+            <FormItem>
+              <Label descriptor={descriptor} name={descriptor.name} />
+              <Select
+                onValueChange={field.onChange}
+                value={typeof field.value === "string" ? field.value : ""}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose…" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {descriptor.options.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      );
     case "prose":
       return <ProseField control={control} descriptor={descriptor} name={name} />;
     case "media":
       return <MediaField control={control} name={name} label={labelFor(descriptor.name)} />;
+    case "group":
+      return (
+        <fieldset className="space-y-3 rounded-md border p-3">
+          <legend className="px-1 text-sm font-medium">{labelFor(descriptor.name)}</legend>
+          {descriptor.item.map((itemDescriptor) => (
+            <FieldControl
+              key={itemDescriptor.name}
+              control={control}
+              descriptor={itemDescriptor}
+              name={`${name}.${itemDescriptor.name}`}
+            />
+          ))}
+        </fieldset>
+      );
     case "array":
       return <ArrayField control={control} descriptor={descriptor} name={name} />;
   }

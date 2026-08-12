@@ -5,7 +5,10 @@ export {
   statsSection,
   testimonialSection,
   contactSection,
+  projectIndexSection,
   norvenSection,
+  projectEntryFields,
+  norvenCollectionFields,
   norvenDocument,
   type NorvenDocument,
   type PhotoHeroFields,
@@ -14,6 +17,7 @@ export {
   type StatsFields,
   type TestimonialFields,
   type ContactFields,
+  type ProjectEntryFields,
 } from "./manifest";
 
 export { norvenChrome, Nav, Footer, type NorvenChrome } from "./chrome";
@@ -24,5 +28,9 @@ export { FeaturedProjects } from "./sections/FeaturedProjects";
 export { Stats } from "./sections/Stats";
 export { Testimonial } from "./sections/Testimonial";
 export { Contact } from "./sections/Contact";
+export { ProjectIndex } from "./sections/ProjectIndex";
 export { Frame } from "./media/Frame";
 export { norvenComponents } from "./sections";
+export { ProjectDetail } from "./collections/ProjectDetail";
+export { summarizeProject } from "./collections/summarize";
+export { norvenCollections } from "./collections";

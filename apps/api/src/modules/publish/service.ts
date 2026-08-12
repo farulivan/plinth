@@ -4,7 +4,7 @@ import type { FieldErrors, VersionSummary } from "@plinth/schema/api";
 import { resolveEntryPath, sectionTypeOf } from "@plinth/schema/content";
 // The /manifest subpath is schemas only — the api validates documents but
 // never renders, so the components (.tsx, React) stay out of its graph.
-import { norvenSection } from "@plinth/template-norven/manifest";
+import { norvenCollectionFields, norvenSection } from "@plinth/template-norven/manifest";
 import type { z } from "zod";
 import { writeAuditLog } from "../../lib/auditLog";
 import { hostnameFor } from "../domains/service";
@@ -50,10 +50,13 @@ const templateSections: Record<string, Record<string, z.ZodType>> = {
   ),
 };
 
-/** Entry schemas per collection name. Empty until a template declares one —
- * present now so an unrecognised collection is rejected rather than published
- * unvalidated, which is the direction a mistake would go otherwise. */
-const collectionEntries: Record<string, z.ZodType> = {};
+/** Entry schemas per collection name, per template — the same posture as the
+ * section registry above: publish must not trust the dashboard's validation,
+ * so an unrecognised collection is rejected rather than published
+ * unvalidated. */
+const templateCollections: Record<string, Record<string, z.ZodType>> = {
+  "template-norven": norvenCollectionFields,
+};
 
 /**
  * The publish gate (ADR-0007's strict counterpart to loose saves), applied per
@@ -70,6 +73,7 @@ const collectionEntries: Record<string, z.ZodType> = {};
  */
 function validateForPublish(
   sectionSchemas: Record<string, z.ZodType>,
+  entrySchemas: Record<string, z.ZodType>,
   draft: LooseContentDocumentV2,
 ): FieldErrors | null {
   const errors: FieldErrors = {};
@@ -98,12 +102,31 @@ function validateForPublish(
   // 404s on every page of the site. Checked at publish rather than on save,
   // because mid-edit a link may legitimately point at a page not written yet.
   const livePaths = new Set(pages.map((page) => page.path));
-  const entryPaths = Object.values(draft.collections).flatMap((collection) =>
+  const entryPaths = Object.entries(draft.collections).flatMap(([name, collection]) =>
     collection.entries
       .filter((entry) => entry.enabled)
-      .map((entry) => resolveEntryPath(collection.pathTemplate, entry.slug)),
+      .map((entry) => ({
+        name,
+        slug: entry.slug,
+        path: resolveEntryPath(collection.pathTemplate, entry.slug),
+      })),
   );
-  for (const path of entryPaths) livePaths.add(path);
+
+  // Two routes at one path is not a conflict anything downstream reports: the
+  // build emits both and the second upload wins in R2, so the loser reads as a
+  // page that simply did not publish. Page paths are already unique among
+  // themselves and slugs among their collection, but nothing until here
+  // compares the two spaces — and a slug is exactly the field an author is
+  // most likely to set to something a page already occupies.
+  for (const entry of entryPaths) {
+    if (livePaths.has(entry.path)) {
+      errors[`${entry.name}.${entry.slug}`] = [
+        `This entry resolves to ${entry.path}, which another page already publishes.`,
+      ];
+      continue;
+    }
+    livePaths.add(entry.path);
+  }
 
   draft.site.nav.forEach((item, index) => {
     if (!item.href.startsWith("/")) return; // external, not ours to resolve
@@ -130,7 +153,7 @@ function validateForPublish(
   }
 
   for (const [name, collection] of Object.entries(draft.collections)) {
-    const entrySchema = collectionEntries[name];
+    const entrySchema = entrySchemas[name];
     if (!entrySchema) {
       errors[name] = ["This collection is not part of the template."];
       continue;
@@ -171,12 +194,15 @@ export async function requestPublish(
   const meta = await getWorkspaceMeta(db, input.workspaceId);
   if (!meta) return { outcome: "no-draft" };
   const sectionSchemas = templateSections[meta.templateId];
-  if (!sectionSchemas) return { outcome: "unknown-template", templateId: meta.templateId };
+  const entrySchemas = templateCollections[meta.templateId];
+  if (!sectionSchemas || !entrySchemas) {
+    return { outcome: "unknown-template", templateId: meta.templateId };
+  }
 
   const draft = await getDraftDocument(db, input.workspaceId);
   if (!draft) return { outcome: "no-draft" };
 
-  const fieldErrors = validateForPublish(sectionSchemas, draft);
+  const fieldErrors = validateForPublish(sectionSchemas, entrySchemas, draft);
   if (fieldErrors) return { outcome: "invalid-draft", fieldErrors };
 
   // Hash the stored draft document (not the strict parse output) so this key

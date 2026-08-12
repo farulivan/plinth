@@ -16,8 +16,10 @@ describe("variant width sets", () => {
     expect(LEGACY_MEDIA_VARIANT_WIDTHS).toEqual([400, 800, 1200, 1600]);
   });
 
-  it("carries 1366 — the width Lighthouse desktop actually paints", () => {
+  it("carries the widths real slots measure at", () => {
+    // 1366 is the hero at Lighthouse desktop; 640 is a two-column card grid.
     expect(MEDIA_VARIANT_WIDTHS).toContain(1366);
+    expect(MEDIA_VARIANT_WIDTHS).toContain(640);
   });
 
   it("stays ascending, so the last entry is the largest", () => {
@@ -37,7 +39,7 @@ describe("variant width sets", () => {
 
 describe("mediaVariantWidths", () => {
   it("never upscales", () => {
-    expect(mediaVariantWidths(1500)).toEqual([400, 800, 1200, 1366]);
+    expect(mediaVariantWidths(1500)).toEqual([400, 640, 800, 1200, 1366]);
   });
 
   it("gives a tiny original one variant under the smallest width's name", () => {
@@ -45,7 +47,7 @@ describe("mediaVariantWidths", () => {
   });
 
   it("emits the full set for a large original", () => {
-    expect(mediaVariantWidths(6240)).toEqual([400, 800, 1200, 1366, 1600, 1920]);
+    expect(mediaVariantWidths(6240)).toEqual([400, 640, 800, 1200, 1366, 1600, 1920]);
   });
 });
 
@@ -65,5 +67,7 @@ describe("variantWidthsFor", () => {
   it("applies the no-upscale rule to the fallback too", () => {
     expect(legacyVariantWidths(1000)).toEqual([400, 800]);
     expect(variantWidthsFor({ width: 1000 })).toEqual([400, 800]);
+    // The legacy rule keeps its own ladder — 640 is not in it and never was.
+    expect(variantWidthsFor({ width: 1000 })).not.toContain(640);
   });
 });
