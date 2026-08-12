@@ -84,5 +84,23 @@ export const siteSettings = z.object({
   social: z.array(link).max(8).default([]),
   /** Site-wide share image, used by any page whose SEO sets none. */
   ogImage: mediaRef.optional(),
+  /**
+   * Web3Forms access key — what a contact form posts alongside a submission
+   * so the service knows which inbox to deliver to.
+   *
+   * A site setting rather than a template field because the platform picked
+   * the provider, not the template: the edge widens a tenant's CSP for
+   * `api.web3forms.com` only when this is set, and that decision is made in
+   * the worker. A template that renders a form reads it; one that does not
+   * ignores it.
+   *
+   * Not a secret. It authorises posting to one form and nothing else, and it
+   * ships in the page's HTML by design — Web3Forms' own model. It is stored
+   * in `content_drafts.document`, so it is also in the weekly database dump
+   * and in every retained version snapshot; that is fine for a value the
+   * published page already hands to every visitor, and it is written down
+   * here so nobody has to rediscover it during an audit.
+   */
+  contactFormKey: z.string().trim().max(200).optional(),
 });
 export type SiteSettings = z.infer<typeof siteSettings>;

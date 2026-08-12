@@ -1,5 +1,10 @@
 import type { ComponentType } from "react";
-import type { ResolvedEntry, SectionInstance, WithNeighbors } from "@plinth/schema/content";
+import type {
+  ResolvedEntry,
+  SectionInstance,
+  SiteSettings,
+  WithNeighbors,
+} from "@plinth/schema/content";
 
 /**
  * Every collection's living entries, keyed by collection name, each with its
@@ -27,6 +32,17 @@ export interface SectionComponentProps {
    * section list, is reorderable, and carries its own heading.
    */
   collections?: ResolvedCollections;
+  /**
+   * Site-level settings, for the few sections whose content is genuinely
+   * site-wide rather than their own. The contact form is the case: its
+   * delivery key belongs to the site, not to one section on one page, because
+   * the edge decides a tenant's CSP from it.
+   *
+   * Deliberately the whole settings object rather than a field per need —
+   * a `formKey` prop would have made the renderer, which is
+   * template-agnostic, carry the name of one template's feature.
+   */
+  site?: SiteSettings;
 }
 
 /** A component that renders a single document section. */
