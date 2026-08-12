@@ -9,6 +9,10 @@ import { env } from "../../lib/env";
 export interface TenantHostMapping {
   workspaceId: string;
   versionNumber: number;
+  /** Origins this tenant's pages may post a form to. Absent for the great
+   * majority of tenants, which have no form; the worker composes its CSP from
+   * this rather than storing a whole policy per tenant (ADR-0011). */
+  formOrigins?: string[];
 }
 
 /**

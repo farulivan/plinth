@@ -58,6 +58,14 @@ const templateCollections: Record<string, Record<string, z.ZodType>> = {
   "template-norven": norvenCollectionFields,
 };
 
+/** Section types that need `site.contactFormKey` to do anything (ADR-0011).
+ * Declared per template rather than inferred, because "this section delivers
+ * somewhere" is a fact about the section, and the gate has no way to see it
+ * from a zod schema. */
+const templateFormSections: Record<string, string[]> = {
+  "template-norven": ["contactForm"],
+};
+
 /**
  * The publish gate (ADR-0007's strict counterpart to loose saves), applied per
  * ENABLED page, section and collection entry. Everything disabled renders
@@ -74,6 +82,7 @@ const templateCollections: Record<string, Record<string, z.ZodType>> = {
 function validateForPublish(
   sectionSchemas: Record<string, z.ZodType>,
   entrySchemas: Record<string, z.ZodType>,
+  formSections: string[],
   draft: LooseContentDocumentV2,
 ): FieldErrors | null {
   const errors: FieldErrors = {};
@@ -149,6 +158,17 @@ function validateForPublish(
         continue;
       }
       collect(`${page.path}.${section.type}`, schema, section);
+
+      // A form with no delivery key posts into nowhere and looks identical to
+      // one that works — the enquiry is lost silently, which is the worst
+      // shape this failure could take. Refused at publish rather than on save:
+      // the section and the key are edited in two different places, so being
+      // briefly inconsistent is normal.
+      if (formSections.includes(section.type) && !draft.site.contactFormKey) {
+        errors["site.contactFormKey"] = [
+          "This site has a contact form but no delivery key — submissions would be lost.",
+        ];
+      }
     }
   }
 
@@ -195,6 +215,7 @@ export async function requestPublish(
   if (!meta) return { outcome: "no-draft" };
   const sectionSchemas = templateSections[meta.templateId];
   const entrySchemas = templateCollections[meta.templateId];
+  const formSections = templateFormSections[meta.templateId] ?? [];
   if (!sectionSchemas || !entrySchemas) {
     return { outcome: "unknown-template", templateId: meta.templateId };
   }
@@ -202,7 +223,7 @@ export async function requestPublish(
   const draft = await getDraftDocument(db, input.workspaceId);
   if (!draft) return { outcome: "no-draft" };
 
-  const fieldErrors = validateForPublish(sectionSchemas, entrySchemas, draft);
+  const fieldErrors = validateForPublish(sectionSchemas, entrySchemas, formSections, draft);
   if (fieldErrors) return { outcome: "invalid-draft", fieldErrors };
 
   // Hash the stored draft document (not the strict parse output) so this key
