@@ -1,5 +1,6 @@
 import type { ComponentMap } from "@plinth/renderer";
 import { Contact } from "./Contact";
+import { ContactForm } from "./ContactForm";
 import { FeaturedProjects } from "./FeaturedProjects";
 import { PhotoHero } from "./PhotoHero";
 import { ProjectIndex } from "./ProjectIndex";
@@ -19,5 +20,6 @@ export const norvenComponents: ComponentMap = {
   stats: Stats,
   testimonial: Testimonial,
   contact: Contact,
+  contactForm: ContactForm,
   projectIndex: ProjectIndex,
 };

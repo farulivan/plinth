@@ -106,6 +106,36 @@ export const contactSection = defineSection(
 );
 
 /**
+ * The contact form, separate from the `contact` section rather than folded
+ * into it. The landing page ends on contact details as a call to action and
+ * has no form; the contact page carries the form and the same details beside
+ * it. One section doing both would mean the home page rendering a form it
+ * does not want, or a flag deciding which half appears.
+ *
+ * Field labels are the names Web3Forms puts in the delivered email, so they
+ * are editable copy rather than identifiers.
+ */
+export const contactFormSection = defineSection(
+  "contactForm",
+  z.object({
+    eyebrow: shortText.optional(),
+    heading: longText,
+    /** Sits above the fields — Norven's portfolio disclosure lives here. */
+    note: longText.optional(),
+    /** Where a visitor is told to write if the submission fails. Distinct from
+     * the `contact` section's address on purpose: this one has to be an inbox
+     * that is actually monitored, and it is read out in an error message. */
+    fallbackEmail: shortText,
+    projectTypes: z
+      .array(z.object({ label: shortText }))
+      .min(1)
+      .max(12),
+    submitLabel: shortText,
+    successMessage: longText,
+  }),
+);
+
+/**
  * The index of a collection, rendered as a section so it sits in a page's
  * section list like any other — reorderable, with its own heading, on a page
  * that can carry an intro above it. `collection` names which one; the builder
@@ -130,6 +160,7 @@ export const norvenSection = z.discriminatedUnion("type", [
   statsSection,
   testimonialSection,
   contactSection,
+  contactFormSection,
   projectIndexSection,
 ]);
 
@@ -180,3 +211,4 @@ export type FeaturedProjectsFields = z.infer<typeof featuredProjectsSection>["fi
 export type StatsFields = z.infer<typeof statsSection>["fields"];
 export type TestimonialFields = z.infer<typeof testimonialSection>["fields"];
 export type ContactFields = z.infer<typeof contactSection>["fields"];
+export type ContactFormFields = z.infer<typeof contactFormSection>["fields"];

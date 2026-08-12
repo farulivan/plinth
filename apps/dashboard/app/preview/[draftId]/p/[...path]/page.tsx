@@ -93,6 +93,7 @@ export default async function PreviewPage({
             sections={page.sections}
             components={guardedComponents(template)}
             collections={resolvedCollections(preview.document)}
+            site={site}
           />
         ) : entryMatch ? (
           renderGuardedEntry(template, entryMatch.collection, {

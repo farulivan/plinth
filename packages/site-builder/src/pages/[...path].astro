@@ -98,6 +98,7 @@ const Detail = props.kind === "entry" ? template.collections[props.collection]!.
           sections={props.page.sections}
           components={template.components}
           collections={resolvedCollections(document)}
+          site={site}
         />
       ) : Detail ? (
         <Detail entry={props.entry} prev={props.prev} next={props.next} />
