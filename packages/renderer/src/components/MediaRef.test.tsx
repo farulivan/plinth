@@ -4,15 +4,36 @@ import { MediaRef } from "./MediaRef";
 
 const HASH = "a".repeat(64);
 
-const media = (width: number, height: number) => ({
+const media = (width: number, height: number, widths?: number[]) => ({
   mediaId: "11111111-1111-1111-1111-111111111111",
   alt: "Salt House facade",
   contentHash: HASH,
   width,
   height,
+  ...(widths ? { widths } : {}),
 });
 
 describe("MediaRef", () => {
+  it("emits exactly the widths the reference records", () => {
+    const html = renderToStaticMarkup(
+      <MediaRef media={media(6240, 3510, [400, 800, 1200, 1366, 1600, 1920])} />,
+    );
+
+    expect(html).toContain(`src="/_media/${HASH}/w1920.jpeg"`);
+    expect(html).toContain(`/_media/${HASH}/w1366.avif 1366w`);
+  });
+
+  // The regression the whole `widths` field exists to prevent. Every reference
+  // in every already-published snapshot looks like this one, and none of them
+  // have w1366 or w1920 objects behind them.
+  it("never invents a width for a reference that records none", () => {
+    const html = renderToStaticMarkup(<MediaRef media={media(6240, 3510)} />);
+
+    expect(html).not.toContain("w1366");
+    expect(html).not.toContain("w1920");
+    expect(html).toContain(`src="/_media/${HASH}/w1600.jpeg"`);
+  });
+
   it("renders a picture with avif/webp sources and a jpeg fallback carrying alt + dimensions", () => {
     const html = renderToStaticMarkup(<MediaRef media={media(1600, 1200)} loading="lazy" />);
 

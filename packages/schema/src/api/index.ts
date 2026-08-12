@@ -12,11 +12,14 @@ export {
   mediaItem,
   type MediaItem,
   MEDIA_VARIANT_WIDTHS,
+  LEGACY_MEDIA_VARIANT_WIDTHS,
   MEDIA_VARIANT_FORMATS,
   type MediaVariantFormat,
   MEDIA_MAX_UPLOAD_BYTES,
   MEDIA_STORAGE_CAP_BYTES,
   mediaVariantWidths,
+  legacyVariantWidths,
+  variantWidthsFor,
 } from "./media";
 export {
   versionStatus,
