@@ -15,6 +15,13 @@
       "when": 1781254955447,
       "tag": "0001_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786541607878,
+      "tag": "0002_media_variant_widths",
+      "breakpoints": true
     }
   ]
 }

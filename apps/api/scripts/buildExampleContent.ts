@@ -30,6 +30,7 @@ interface Ingested {
   contentHash: string;
   width: number;
   height: number;
+  widths: number[];
 }
 
 /** Encode one source image into the fixture's media tree and return the
@@ -37,7 +38,7 @@ interface Ingested {
 async function ingest(path: string): Promise<Ingested> {
   const bytes = await readFile(path);
   const contentHash = hashBody(bytes);
-  const { width, height, variants } = await processImage(bytes);
+  const { width, height, widths, variants } = await processImage(bytes);
 
   const dir = join(OUT_DIR, "media", contentHash);
   await mkdir(dir, { recursive: true });
@@ -51,7 +52,7 @@ async function ingest(path: string): Promise<Ingested> {
     `[example-content] ${path.split("/").at(-1)} → ${contentHash.slice(0, 12)}… ` +
       `(${width}×${height}, ${variants.length} variants)`,
   );
-  return { contentHash, width, height };
+  return { contentHash, width, height, widths };
 }
 
 /** `mediaId` is a stable fake here: the fixture is never loaded into Postgres,
@@ -64,6 +65,10 @@ const ref = (item: Ingested, mediaId: string, alt: string) => ({
   contentHash: item.contentHash,
   width: item.width,
   height: item.height,
+  // Recorded exactly as a real pick records it — the fixture asserts the
+  // renderer asks only for variants that were written, so a ref that lied
+  // here would turn the tenant gates green against missing images.
+  widths: item.widths,
 });
 
 async function main(): Promise<void> {

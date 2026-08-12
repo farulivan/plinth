@@ -3,6 +3,7 @@ import { buildSite } from "./functions/buildSite";
 import { sessionReaper } from "./functions/reapExpiredSessions";
 import { versionReaper } from "./functions/reapOldVersions";
 import { mediaReaper } from "./functions/reapOrphanedMedia";
+import { mediaReencoder } from "./functions/reencodeMediaVariants";
 import { syncTenantHosts } from "./functions/syncTenantHosts";
 import { inngest } from "./client";
 
@@ -13,6 +14,7 @@ export const functions = [
   syncTenantHosts,
   sessionReaper,
   mediaReaper,
+  mediaReencoder,
   versionReaper,
   databaseBackup,
 ];

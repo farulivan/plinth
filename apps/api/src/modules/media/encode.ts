@@ -18,21 +18,30 @@ export interface ImageVariant {
 export interface ProcessedImage {
   width: number;
   height: number;
+  /** The widths actually produced — recorded on the media row and copied onto
+   * every reference, so the renderer never has to guess (ADR-0006). */
+  widths: number[];
   variants: ImageVariant[];
 }
 
 /**
  * Decode once, emit AVIF + WebP + JPEG at every width that exists for the
- * original (never upscaled — `mediaVariantWidths` is the shared rule the
- * renderer's srcset derives from). `.rotate()` bakes EXIF orientation in, so
- * stored dimensions match what the browser will lay out.
+ * original (never upscaled — `mediaVariantWidths` is the rule new uploads
+ * follow). `.rotate()` bakes EXIF orientation in, so stored dimensions match
+ * what the browser will lay out.
+ *
+ * `only` narrows the output to a subset, which is what the re-encoder passes
+ * when it is filling in widths added after an image was first uploaded: the
+ * existing objects are byte-identical to what a full re-run would write, so
+ * re-encoding them would be work with no result.
  */
-export async function processImage(input: Buffer): Promise<ProcessedImage> {
+export async function processImage(input: Buffer, only?: number[]): Promise<ProcessedImage> {
   const oriented = sharp(input).rotate();
   const meta = await oriented.toBuffer({ resolveWithObject: true });
   const { width, height } = meta.info;
 
-  const widths = mediaVariantWidths(width);
+  const available = mediaVariantWidths(width);
+  const widths = only ? available.filter((candidate) => only.includes(candidate)) : available;
   const variants = await Promise.all(
     widths.flatMap((targetWidth) => [
       encode(meta.data, targetWidth, "avif"),
@@ -40,7 +49,7 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
       encode(meta.data, targetWidth, "jpeg"),
     ]),
   );
-  return { width, height, variants };
+  return { width, height, widths, variants };
 }
 
 async function encode(
