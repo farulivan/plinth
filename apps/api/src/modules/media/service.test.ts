@@ -1,4 +1,5 @@
 import type { Db } from "@plinth/db";
+import { legacyVariantWidths, mediaVariantWidths } from "@plinth/schema/api";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as auditLog from "../../lib/auditLog";
 import * as adapter from "./adapter";
@@ -33,6 +34,17 @@ const USER = "00000000-0000-0000-0000-000000000002";
 const MEDIA_ID = "00000000-0000-0000-0000-000000000003";
 const bytes = Buffer.from("fake-image-bytes");
 
+// Derived, not spelled out. These assertions are about the RULE — what a
+// fresh upload makes, and what an old row is still missing — so a width
+// added to the ladder must not read as a broken test.
+const CURRENT_SMALL = mediaVariantWidths(800);
+const CURRENT_LARGE = mediaVariantWidths(6240);
+const LEGACY_LARGE = legacyVariantWidths(6240);
+const MISSING_FROM_LEGACY = CURRENT_LARGE.filter((w) => !LEGACY_LARGE.includes(w));
+/** An original small enough that the legacy ladder and the current one
+ * produce the same set for it — the case where null truly means complete. */
+const SMALL_ORIGINAL = 500;
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(sniff.sniffImageType).mockReturnValue("image/jpeg");
@@ -47,7 +59,7 @@ const row = (over: Partial<dbFns.MediaRow> = {}): dbFns.MediaRow => ({
   height: 600,
   fileSize: bytes.byteLength,
   contentType: "image/jpeg",
-  variantWidths: [400, 800],
+  variantWidths: CURRENT_SMALL,
   createdAt: new Date("2026-07-20T00:00:00Z"),
   ...over,
 });
@@ -58,7 +70,7 @@ describe("uploadMedia", () => {
     vi.mocked(adapter.processImage).mockResolvedValue({
       width: 800,
       height: 600,
-      widths: [400, 800],
+      widths: CURRENT_SMALL,
       variants: [],
     });
     vi.mocked(dbFns.insertMedia).mockResolvedValue(row());
@@ -76,7 +88,7 @@ describe("uploadMedia", () => {
     expect(dbFns.insertMedia).toHaveBeenCalledWith(
       db,
       WORKSPACE,
-      expect.objectContaining({ variantWidths: [400, 800] }),
+      expect.objectContaining({ variantWidths: CURRENT_SMALL }),
     );
     expect(auditLog.writeAuditLog).toHaveBeenCalledWith(
       db,
@@ -105,11 +117,17 @@ describe("uploadMedia", () => {
     );
   });
 
-  // A legacy row narrower than the widths that were added has everything the
-  // current rule would produce. Reading its null column as "no variants" would
-  // re-encode it into byte-identical objects on every re-upload.
+  // A legacy row narrower than every width that was added since already has
+  // what the current rule would produce. Reading its null column as "no
+  // variants" would re-encode it into byte-identical objects on re-upload.
+  //
+  // SMALL_ORIGINAL is chosen so the legacy ladder and the current one agree
+  // for it — spelling a width here would make this test a liability the next
+  // time one is added, which is exactly what happened when 640 landed.
   it("reuses a pre-recording row whose original is too small for the new widths", async () => {
-    vi.mocked(dbFns.findMediaByHash).mockResolvedValue(row({ variantWidths: null }));
+    vi.mocked(dbFns.findMediaByHash).mockResolvedValue(
+      row({ width: SMALL_ORIGINAL, variantWidths: null }),
+    );
 
     const result = await uploadMedia(db, { workspaceId: WORKSPACE, bytes, actorUserId: USER });
 
@@ -126,15 +144,15 @@ describe("uploadMedia", () => {
     vi.mocked(adapter.processImage).mockResolvedValue({
       width: 6240,
       height: 3510,
-      widths: [1366, 1920],
+      widths: MISSING_FROM_LEGACY,
       variants: [],
     });
 
     const result = await uploadMedia(db, { workspaceId: WORKSPACE, bytes, actorUserId: USER });
 
     expect(result.outcome).toBe("refreshed");
-    // Only the missing two are encoded — the legacy four already exist.
-    expect(adapter.processImage).toHaveBeenCalledWith(bytes, [1366, 1920]);
+    // Only the widths added since the legacy set are encoded.
+    expect(adapter.processImage).toHaveBeenCalledWith(bytes, MISSING_FROM_LEGACY);
     // And the original is kept, so the next width needs no second re-upload.
     expect(adapter.uploadMediaOriginal).toHaveBeenCalledWith(
       WORKSPACE,
@@ -142,21 +160,18 @@ describe("uploadMedia", () => {
       "image/jpeg",
       bytes,
     );
-    expect(dbFns.updateMediaWidths).toHaveBeenCalledWith(
-      db,
-      WORKSPACE,
-      MEDIA_ID,
-      [400, 800, 1200, 1366, 1600, 1920],
-    );
+    expect(dbFns.updateMediaWidths).toHaveBeenCalledWith(db, WORKSPACE, MEDIA_ID, CURRENT_LARGE);
     if (result.outcome === "refreshed") {
-      expect(result.item.widths).toEqual([400, 800, 1200, 1366, 1600, 1920]);
+      expect(result.item.widths).toEqual(CURRENT_LARGE);
     }
   });
 
   it("reports no widths for a row that has none, rather than an empty list", async () => {
     // `variantWidthsFor` reads absence as the legacy set; an empty array would
     // render a picture element with no sources at all.
-    vi.mocked(dbFns.findMediaByHash).mockResolvedValue(row({ variantWidths: null }));
+    vi.mocked(dbFns.findMediaByHash).mockResolvedValue(
+      row({ width: SMALL_ORIGINAL, variantWidths: null }),
+    );
 
     const result = await uploadMedia(db, { workspaceId: WORKSPACE, bytes, actorUserId: USER });
 
@@ -181,24 +196,19 @@ describe("reencodeMediaVariants", () => {
 
   it("encodes only the widths an image is missing", async () => {
     vi.mocked(dbFns.listMediaRows).mockResolvedValue([
-      row({ width: 6240, height: 3510, variantWidths: [400, 800, 1200, 1600] }),
+      row({ width: 6240, height: 3510, variantWidths: LEGACY_LARGE }),
     ]);
     vi.mocked(adapter.getMediaOriginal).mockResolvedValue(bytes);
     vi.mocked(adapter.processImage).mockResolvedValue({
       width: 6240,
       height: 3510,
-      widths: [1366, 1920],
+      widths: MISSING_FROM_LEGACY,
       variants: [],
     });
 
     expect(await reencodeMediaVariants(db)).toEqual({ widened: 1, skipped: 0 });
-    expect(adapter.processImage).toHaveBeenCalledWith(bytes, [1366, 1920]);
-    expect(dbFns.updateMediaWidths).toHaveBeenCalledWith(
-      db,
-      WORKSPACE,
-      MEDIA_ID,
-      [400, 800, 1200, 1366, 1600, 1920],
-    );
+    expect(adapter.processImage).toHaveBeenCalledWith(bytes, MISSING_FROM_LEGACY);
+    expect(dbFns.updateMediaWidths).toHaveBeenCalledWith(db, WORKSPACE, MEDIA_ID, CURRENT_LARGE);
   });
 
   // Width recording and original retention shipped together, so a null column
@@ -220,7 +230,7 @@ describe("reencodeMediaVariants", () => {
   // result rather than silently doing nothing.
   it("counts a row whose recorded original has gone missing", async () => {
     vi.mocked(dbFns.listMediaRows).mockResolvedValue([
-      row({ width: 6240, height: 3510, variantWidths: [400, 800, 1200, 1600] }),
+      row({ width: 6240, height: 3510, variantWidths: LEGACY_LARGE }),
     ]);
     vi.mocked(adapter.getMediaOriginal).mockResolvedValue(null);
 
@@ -230,8 +240,8 @@ describe("reencodeMediaVariants", () => {
 
   it("does nothing on a library that is already current", async () => {
     vi.mocked(dbFns.listMediaRows).mockResolvedValue([
-      row({ width: 6240, height: 3510, variantWidths: [400, 800, 1200, 1366, 1600, 1920] }),
-      row({ width: 500, variantWidths: [400] }),
+      row({ width: 6240, height: 3510, variantWidths: CURRENT_LARGE }),
+      row({ width: 500, variantWidths: mediaVariantWidths(500) }),
     ]);
 
     expect(await reencodeMediaVariants(db)).toEqual({ widened: 0, skipped: 0 });
@@ -240,15 +250,15 @@ describe("reencodeMediaVariants", () => {
 
   it("stops at the batch limit so one run cannot hold a step open", async () => {
     vi.mocked(dbFns.listMediaRows).mockResolvedValue([
-      row({ id: "a", width: 6240, variantWidths: [400, 800, 1200, 1600] }),
-      row({ id: "b", width: 6240, variantWidths: [400, 800, 1200, 1600] }),
-      row({ id: "c", width: 6240, variantWidths: [400, 800, 1200, 1600] }),
+      row({ id: "a", width: 6240, variantWidths: LEGACY_LARGE }),
+      row({ id: "b", width: 6240, variantWidths: LEGACY_LARGE }),
+      row({ id: "c", width: 6240, variantWidths: LEGACY_LARGE }),
     ]);
     vi.mocked(adapter.getMediaOriginal).mockResolvedValue(bytes);
     vi.mocked(adapter.processImage).mockResolvedValue({
       width: 6240,
       height: 3510,
-      widths: [1366, 1920],
+      widths: MISSING_FROM_LEGACY,
       variants: [],
     });
 
@@ -261,13 +271,13 @@ describe("reencodeMediaVariants", () => {
     // would carry the lie.
     const order: string[] = [];
     vi.mocked(dbFns.listMediaRows).mockResolvedValue([
-      row({ width: 6240, variantWidths: [400, 800, 1200, 1600] }),
+      row({ width: 6240, variantWidths: LEGACY_LARGE }),
     ]);
     vi.mocked(adapter.getMediaOriginal).mockResolvedValue(bytes);
     vi.mocked(adapter.processImage).mockResolvedValue({
       width: 6240,
       height: 3510,
-      widths: [1366, 1920],
+      widths: MISSING_FROM_LEGACY,
       variants: [],
     });
     vi.mocked(adapter.uploadMediaVariants).mockImplementation(async () => {

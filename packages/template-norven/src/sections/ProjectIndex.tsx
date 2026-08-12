@@ -52,7 +52,17 @@ export function ProjectIndex({ section, collections }: SectionComponentProps) {
                     media={project.cover}
                     ratio="4/3"
                     seed={index}
-                    sizes="(min-width: 768px) 50vw, 100vw"
+                    // The first card is above the fold and is the LCP element
+                    // on this page. Without this it inherits `loading="lazy"`
+                    // and the browser deprioritises the one image the score
+                    // is measured on.
+                    priority={index === 0}
+                    // 46vw, not 50vw: two columns inside a 1400px container
+                    // with 40px of side padding and a 40px gap leaves each
+                    // slot narrower than half the viewport. Overstating it
+                    // makes the browser reach for a wider variant than the
+                    // slot can use.
+                    sizes="(min-width: 768px) 46vw, 100vw"
                   />
                   <p className="eyebrow text-brass-2 mt-6 mb-3">
                     {project.kind} · {project.year} · {project.status}
