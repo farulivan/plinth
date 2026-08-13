@@ -1,4 +1,4 @@
-import type { SectionInstance } from "@plinth/schema/content";
+import type { SectionInstance, SiteSettings } from "@plinth/schema/content";
 import type { ComponentMap, ResolvedCollections } from "../componentMap";
 import { Section } from "./Section";
 
@@ -6,6 +6,7 @@ interface SectionsProps {
   sections: SectionInstance[];
   components: ComponentMap;
   collections?: ResolvedCollections;
+  site?: SiteSettings;
 }
 
 /**
@@ -22,7 +23,7 @@ interface SectionsProps {
  * pages it is not, which is why callers rendering more than one page at a time
  * key the pages themselves by id.
  */
-export function Sections({ sections, components, collections }: SectionsProps) {
+export function Sections({ sections, components, collections, site }: SectionsProps) {
   return (
     <>
       {sections.map((section) => (
@@ -31,6 +32,7 @@ export function Sections({ sections, components, collections }: SectionsProps) {
           section={section}
           components={components}
           collections={collections}
+          site={site}
         />
       ))}
     </>

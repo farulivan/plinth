@@ -1,0 +1,1 @@
+export { enhanceContactForms } from "./contactForm";

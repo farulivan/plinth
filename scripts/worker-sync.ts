@@ -17,6 +17,7 @@ import { promisify } from "node:util";
 import { GetObjectCommand, ListObjectsV2Command, S3Client } from "@aws-sdk/client-s3";
 import { createDb, withWorkspace } from "@plinth/db";
 import { contentVersions, workspaces } from "@plinth/db/schema";
+import { CONTACT_FORM_ORIGIN } from "@plinth/schema/content";
 import { eq, isNotNull } from "drizzle-orm";
 
 const execFileAsync = promisify(execFile);
@@ -84,7 +85,10 @@ async function main() {
   for (const workspace of published) {
     const [version] = await withWorkspace(db, workspace.id, (tx) =>
       tx
-        .select({ versionNumber: contentVersions.versionNumber })
+        .select({
+          versionNumber: contentVersions.versionNumber,
+          snapshot: contentVersions.snapshot,
+        })
         .from(contentVersions)
         .where(eq(contentVersions.id, workspace.currentVersionId!)),
     );
@@ -93,13 +97,28 @@ async function main() {
       continue;
     }
 
+    // Mirrors what syncWorkspaceHost derives in production: a tenant whose
+    // published snapshot carries a delivery key gets the form origin in its
+    // CSP, and one without it does not. Local dev would otherwise serve a
+    // policy production never serves, and the form would fail only after
+    // deploy.
+    const site = (version.snapshot as { site?: { contactFormKey?: unknown } }).site;
+    const formOrigins =
+      typeof site?.contactFormKey === "string" && site.contactFormKey
+        ? [CONTACT_FORM_ORIGIN]
+        : undefined;
+
     const hostname = `${workspace.slug}${HOST_SUFFIX}`;
     await wrangler([
       "kv",
       "key",
       "put",
       hostname,
-      JSON.stringify({ workspaceId: workspace.id, versionNumber: version.versionNumber }),
+      JSON.stringify({
+        workspaceId: workspace.id,
+        versionNumber: version.versionNumber,
+        ...(formOrigins ? { formOrigins } : {}),
+      }),
       "--binding",
       "TENANT_HOSTS",
       "--local",

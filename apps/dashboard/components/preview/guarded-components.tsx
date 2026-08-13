@@ -15,7 +15,7 @@ export function guardedComponents(template: TemplateSpec): ComponentMap {
   for (const spec of template.sections) {
     const SectionComponent = template.components[spec.type];
     if (!SectionComponent) continue;
-    const GuardedSection = ({ section, collections }: SectionComponentProps) => {
+    const GuardedSection = ({ section, collections, site }: SectionComponentProps) => {
       if (!spec.schema.safeParse(section).success) {
         return (
           <section
@@ -27,7 +27,7 @@ export function guardedComponents(template: TemplateSpec): ComponentMap {
           </section>
         );
       }
-      return <SectionComponent section={section} collections={collections} />;
+      return <SectionComponent section={section} collections={collections} site={site} />;
     };
     map[spec.type] = GuardedSection;
   }

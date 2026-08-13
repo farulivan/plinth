@@ -109,3 +109,16 @@
     }
   }
 }
+
+/* Contact form status. The node is always in the document so `aria-live` has
+ * something to observe (see ContactForm.tsx), which means it has to collapse
+ * while empty rather than reserve a blank line under the button. */
+[data-form-status]:empty {
+  display: none;
+}
+[data-form-status][data-state="success"] {
+  color: var(--color-brass-3);
+}
+[data-form-status][data-state="error"] {
+  color: var(--color-ink);
+}

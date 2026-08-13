@@ -17,6 +17,7 @@
     "eslint": "^9.39.1",
     "typescript": "^6.0.3",
     "vitest": "~3.2.0",
-    "wrangler": "^4.111.0"
+    "wrangler": "^4.111.0",
+    "@plinth/schema": "workspace:*"
   }
 }

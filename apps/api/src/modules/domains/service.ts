@@ -1,7 +1,8 @@
 import type { Db } from "@plinth/db";
 import { env } from "../../lib/env";
+import { CONTACT_FORM_ORIGIN } from "@plinth/schema/content";
 import { putTenantHostMapping } from "./adapter";
-import { getWorkspaceSlug } from "./db";
+import { getPublishedSiteSettings, getWorkspaceSlug } from "./db";
 
 /**
  * Business logic for the domains module. v1 maps one hostname per workspace —
@@ -25,10 +26,18 @@ export async function syncWorkspaceHost(
   const slug = await getWorkspaceSlug(db, input.workspaceId);
   if (!slug) throw new Error(`Workspace ${input.workspaceId} no longer exists.`);
 
+  // The published snapshot decides the tenant's form allowance, so the CSP
+  // the edge serves describes what is actually being served (ADR-0011). Every
+  // promote re-derives it, which is what makes removing a form close the hole
+  // rather than leaving it open until someone notices.
+  const site = await getPublishedSiteSettings(db, input.workspaceId, input.versionNumber);
+  const formOrigins = site?.contactFormKey ? [CONTACT_FORM_ORIGIN] : undefined;
+
   const hostname = hostnameFor(slug);
   const { written } = await putTenantHostMapping(hostname, {
     workspaceId: input.workspaceId,
     versionNumber: input.versionNumber,
+    ...(formOrigins ? { formOrigins } : {}),
   });
   return { hostname, written };
 }

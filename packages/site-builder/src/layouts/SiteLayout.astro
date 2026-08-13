@@ -87,10 +87,22 @@ const organization = {
       // only, so under view transitions a soft navigation would leave the new
       // page's reveal effects unbound — content stuck in its pre-reveal state —
       // while the old page's ScrollTriggers and its Lenis instance leaked.
+      //
+      // The form enhancement rides the same binding for the same reason: a
+      // soft navigation swaps in a new form element, and a listener attached
+      // to the old one goes with it. Bundled rather than inlined so the
+      // tenant CSP stays `script-src 'self'` — a page with no form runs one
+      // querySelectorAll and stops.
       import { boot, teardown } from "@plinth/template-norven/motion";
+      import { enhanceContactForms } from "@plinth/template-norven/forms";
 
-      boot();
-      document.addEventListener("astro:page-load", boot);
+      const start = () => {
+        boot();
+        enhanceContactForms();
+      };
+
+      start();
+      document.addEventListener("astro:page-load", start);
       document.addEventListener("astro:before-swap", teardown);
     </script>
   </body>

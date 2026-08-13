@@ -355,6 +355,70 @@ describe("requestPublish", () => {
     expect(result.fieldErrors["projects.salt-house"]?.[0]).toContain("/projects/salt-house/");
   });
 
+  // A form with no delivery key posts into nowhere and looks identical to one
+  // that works. The enquiry is lost silently, which is the worst shape this
+  // failure could take, so it is the one the gate exists for.
+  it("refuses a contact form with no delivery key", async () => {
+    const draft = docWith([
+      validSection,
+      {
+        type: "contactForm",
+        enabled: true,
+        fields: {
+          heading: "Tell us what you are building.",
+          fallbackEmail: "studio@norven.example",
+          projectTypes: [{ label: "Residence" }],
+          submitLabel: "Send",
+          successMessage: "Thank you.",
+        },
+      },
+    ]);
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
+
+    const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
+
+    expect(result.outcome).toBe("invalid-draft");
+    if (result.outcome !== "invalid-draft") return;
+    expect(result.fieldErrors["site.contactFormKey"]?.[0]).toContain("submissions would be lost");
+  });
+
+  it("accepts the same form once the key is set", async () => {
+    const draft = docWith([
+      validSection,
+      {
+        type: "contactForm",
+        enabled: true,
+        fields: {
+          heading: "Tell us what you are building.",
+          fallbackEmail: "studio@norven.example",
+          projectTypes: [{ label: "Residence" }],
+          submitLabel: "Send",
+          successMessage: "Thank you.",
+        },
+      },
+    ]);
+    draft.site.contactFormKey = "11111111-2222-3333-4444-555555555555";
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
+    vi.mocked(dbFns.findVersionByIdempotencyKey).mockResolvedValue(null);
+    vi.mocked(dbFns.createVersion).mockResolvedValue(versionRow("queued"));
+
+    expect((await requestPublish(db, { workspaceId: WORKSPACE, userId: USER })).outcome).toBe(
+      "created",
+    );
+  });
+
+  // A parked form renders nothing, so it cannot lose anything either.
+  it("ignores a parked form with no key", async () => {
+    const draft = docWith([validSection, { type: "contactForm", enabled: false, fields: {} }]);
+    vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
+    vi.mocked(dbFns.findVersionByIdempotencyKey).mockResolvedValue(null);
+    vi.mocked(dbFns.createVersion).mockResolvedValue(versionRow("queued"));
+
+    expect((await requestPublish(db, { workspaceId: WORKSPACE, userId: USER })).outcome).toBe(
+      "created",
+    );
+  });
+
   it("accepts a nav link to a path a collection entry produces", async () => {
     const draft = docWith([validSection]);
     draft.collections = {
