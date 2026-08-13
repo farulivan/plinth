@@ -22,6 +22,7 @@
     "db:studio": "pnpm --filter @plinth/db db:studio",
     "seed": "tsx scripts/seed.ts",
     "seed:norven": "pnpm --filter @plinth/api seed:norven",
+    "seed:norven:prod": "pnpm --filter @plinth/api run seed:norven:prod",
     "example-content": "pnpm --filter @plinth/api example-content",
     "tenant:build": "./scripts/build-tenant-fixture.sh",
     "check:bundle": "node scripts/check-bundle-budget.mjs .tenant-fixture",

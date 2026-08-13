@@ -87,9 +87,39 @@ make that true before the flip rather than after.
    and it has to be working *before* it is needed — a rollback plan first
    exercised during an incident is a hypothesis.
 2. **Seed and publish the tenant workspace.**
+
+   The seed runs from a developer machine, not from Fly: it reads the source
+   photographs off disk and uploads them through the real media pipeline, so
+   it needs the `norven` checkout beside this one. Point it at production with
+   its own env file rather than by editing `.env` — a seed aimed at the wrong
+   database by a stale edit is the mistake worth designing out.
+
    ```sh
-   WEB3FORMS_ACCESS_KEY=<key> pnpm seed:norven   # writes the draft
+   cp .env.example .env.production        # then fill in the production values
+   # DATABASE_URL, R2_*, and the secrets the env contract requires; it is
+   # parsed whole at import, so a missing one fails before anything runs.
    ```
+
+   **Back the draft up first — the seed replaces it wholesale.**
+
+   ```sh
+   psql "$PROD_DATABASE_URL" -At -c \
+     "select document from content_drafts where workspace_id =
+        (select id from workspaces where slug = 'norven')" \
+     > norven-draft-$(date +%Y%m%d-%H%M).json
+   ```
+
+   Then:
+
+   ```sh
+   WEB3FORMS_ACCESS_KEY=<key> pnpm seed:norven:prod
+   ```
+
+   It is idempotent on media — re-running dedupes on content hash and uploads
+   nothing the second time — but it is *not* idempotent on the draft: it
+   overwrites whatever is there. Restoring from the file above is a single
+   `update content_drafts set document = ...`.
+
    Then publish from the dashboard. Without the key the contact form is seeded
    parked, because the publish gate refuses a form that would lose
    submissions — set it and enable the section deliberately.

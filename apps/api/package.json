@@ -14,6 +14,7 @@
     "build": "tsup",
     "dev": "tsx watch --env-file=../../.env --import ./src/instrument.ts src/server.ts",
     "seed:norven": "tsx --env-file=../../.env scripts/seedNorven.ts",
+    "seed:norven:prod": "tsx --env-file=../../.env.production scripts/seedNorven.ts",
     "example-content": "tsx scripts/buildExampleContent.ts",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
