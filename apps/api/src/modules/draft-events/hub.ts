@@ -47,6 +47,20 @@ export class DraftEventHub {
     return event;
   }
 
+  /**
+   * The id of the most recent event still buffered, or undefined if none.
+   *
+   * A client with no Last-Event-ID wants to be caught up to *now*, not walked
+   * through history: its only reaction is "this hash differs from what I
+   * rendered, reload". Replaying the whole buffer hands it a stale hash first,
+   * it reloads, the reload replays the same history, and it never settles.
+   * Subscribing just after this id delivers the one event that describes the
+   * current state.
+   */
+  latestEventId(draftId: string): number | undefined {
+    return this.channels.get(draftId)?.buffer.at(-1)?.id;
+  }
+
   /** Replays buffered events newer than `afterId` (the reconnecting client's
    * Last-Event-ID), then delivers live events. Returns the unsubscribe. */
   subscribe(draftId: string, listener: Listener, afterId?: number): () => void {

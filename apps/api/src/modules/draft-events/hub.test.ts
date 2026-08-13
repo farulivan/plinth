@@ -64,4 +64,32 @@ describe("DraftEventHub", () => {
 
     expect(listener).not.toHaveBeenCalled();
   });
+
+  /**
+   * The bound a first connection subscribes at. Replaying the whole buffer
+   * instead reloaded the preview on the oldest hash, and the reload replayed
+   * the same history — a preview that blinked forever, which is what it did
+   * in production.
+   */
+  it("reports the newest buffered event, so a fresh client can catch up to now", () => {
+    const hub = new DraftEventHub();
+    expect(hub.latestEventId(DRAFT_A)).toBeUndefined();
+
+    hub.publish(DRAFT_A, "hash-1");
+    hub.publish(DRAFT_A, "hash-2");
+    const latest = hub.latestEventId(DRAFT_A);
+    expect(latest).toBe(2);
+
+    const seen: string[] = [];
+    hub.subscribe(DRAFT_A, (event) => seen.push(event.hash), latest! - 1);
+
+    // Exactly the current state — not the history behind it.
+    expect(seen).toEqual(["hash-2"]);
+  });
+
+  it("tracks the newest id as the buffer rolls", () => {
+    const hub = new DraftEventHub();
+    for (let i = 1; i <= 25; i++) hub.publish(DRAFT_A, `hash-${String(i)}`);
+    expect(hub.latestEventId(DRAFT_A)).toBe(25);
+  });
 });
