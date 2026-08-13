@@ -1,4 +1,5 @@
 import type { SectionComponentProps } from "@plinth/renderer";
+import type { ReactNode } from "react";
 import { practiceSection } from "../manifest";
 import { lines } from "./lines";
 
@@ -9,48 +10,60 @@ import { lines } from "./lines";
  * enum — which is why the field is an enum and not a free string: a typo would
  * render an empty box, and an author has no way to discover the valid names.
  */
-const ICONS: Record<string, React.ReactNode> = {
-  compass: (
-    <>
-      <circle cx="24" cy="24" r="22" />
-      <line x1="24" y1="6" x2="24" y2="14" />
-      <line x1="24" y1="34" x2="24" y2="42" />
-      <line x1="6" y1="24" x2="14" y2="24" />
-      <line x1="34" y1="24" x2="42" y2="24" />
-      <circle cx="24" cy="24" r="2" fill="currentColor" />
-    </>
-  ),
-  rule: (
-    <>
-      <line x1="6" y1="8" x2="42" y2="8" />
-      <line x1="6" y1="40" x2="42" y2="40" />
-      {[6, 14, 22, 30, 38].map((x, i) => (
-        <line key={`t${String(x)}`} x1={x} y1={8} x2={x} y2={i % 2 === 0 ? 14 : 12} />
-      ))}
-      {[6, 14, 22, 30, 38].map((x, i) => (
-        <line key={`b${String(x)}`} x1={x} y1={40} x2={x} y2={i % 2 === 0 ? 34 : 36} />
-      ))}
-    </>
-  ),
-  leaf: (
-    <>
-      <path d="M8 40 C 8 20, 28 8, 40 8 C 40 28, 28 40, 8 40 Z" />
-      <line x1="8" y1="40" x2="40" y2="8" />
-    </>
-  ),
-  book: (
-    <>
-      <rect x="8" y="8" width="32" height="32" />
-      <line x1="24" y1="8" x2="24" y2="40" />
-      {[16, 22, 28].map((y) => (
-        <line key={`l${String(y)}`} x1={14} y1={y} x2={20} y2={y} />
-      ))}
-      {[16, 22, 28].map((y) => (
-        <line key={`r${String(y)}`} x1={28} y1={y} x2={34} y2={y} />
-      ))}
-    </>
-  ),
-};
+/**
+ * A function, not a module-scope object of JSX.
+ *
+ * JSX evaluated at import time runs the moment anything imports the package
+ * barrel — including the seed scripts, which are plain Node and have no JSX
+ * factory in scope. That crashed `pnpm seed` with "React is not defined" from
+ * a file the seed has no interest in. Inside a function the elements are only
+ * built when something actually renders.
+ */
+function iconFor(name: string): ReactNode {
+  const icons: Record<string, ReactNode> = {
+    compass: (
+      <>
+        <circle cx="24" cy="24" r="22" />
+        <line x1="24" y1="6" x2="24" y2="14" />
+        <line x1="24" y1="34" x2="24" y2="42" />
+        <line x1="6" y1="24" x2="14" y2="24" />
+        <line x1="34" y1="24" x2="42" y2="24" />
+        <circle cx="24" cy="24" r="2" fill="currentColor" />
+      </>
+    ),
+    rule: (
+      <>
+        <line x1="6" y1="8" x2="42" y2="8" />
+        <line x1="6" y1="40" x2="42" y2="40" />
+        {[6, 14, 22, 30, 38].map((x, i) => (
+          <line key={`t${String(x)}`} x1={x} y1={8} x2={x} y2={i % 2 === 0 ? 14 : 12} />
+        ))}
+        {[6, 14, 22, 30, 38].map((x, i) => (
+          <line key={`b${String(x)}`} x1={x} y1={40} x2={x} y2={i % 2 === 0 ? 34 : 36} />
+        ))}
+      </>
+    ),
+    leaf: (
+      <>
+        <path d="M8 40 C 8 20, 28 8, 40 8 C 40 28, 28 40, 8 40 Z" />
+        <line x1="8" y1="40" x2="40" y2="8" />
+      </>
+    ),
+    book: (
+      <>
+        <rect x="8" y="8" width="32" height="32" />
+        <line x1="24" y1="8" x2="24" y2="40" />
+        {[16, 22, 28].map((y) => (
+          <line key={`l${String(y)}`} x1={14} y1={y} x2={20} y2={y} />
+        ))}
+        {[16, 22, 28].map((y) => (
+          <line key={`r${String(y)}`} x1={28} y1={y} x2={34} y2={y} />
+        ))}
+      </>
+    ),
+  };
+  return icons[name] ?? null;
+}
 
 export function Practice({ section }: SectionComponentProps) {
   const { fields } = practiceSection.parse(section);
@@ -84,7 +97,7 @@ export function Practice({ section }: SectionComponentProps) {
                 </p>
                 <div className="text-ink h-12 w-12 transition-transform duration-500 group-hover:rotate-180">
                   <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1">
-                    {ICONS[item.icon]}
+                    {iconFor(item.icon)}
                   </svg>
                 </div>
               </div>
