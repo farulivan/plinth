@@ -23,7 +23,14 @@
     ],
     "footerNote": "Norven is a fictional studio. See the colophon.",
     "social": [],
-    "contactFormKey": ""
+    "ogImage": {
+      "mediaId": "00000000-0000-4000-8000-000000000001",
+      "alt": "Norven — architecture of consequence",
+      "contentHash": "202c450dbc46c002bd97a65ddcce029538cf9771e7ae237ec172d335e7f804f6",
+      "width": 6240,
+      "height": 3510,
+      "widths": [400, 640, 800, 1200, 1366, 1600, 1920]
+    }
   },
   "pages": [
     {
@@ -446,7 +453,7 @@
         },
         {
           "type": "contactForm",
-          "enabled": true,
+          "enabled": false,
           "fields": {
             "eyebrow": "Enquiries",
             "heading": "Send a brief.",

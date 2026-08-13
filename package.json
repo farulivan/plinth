@@ -32,7 +32,8 @@
     "local-prod:down": "docker compose -f docker-compose.local-prod.yml down",
     "smoke": "./scripts/smoke.sh",
     "test:e2e": "playwright test",
-    "prepare": "lefthook install || true"
+    "prepare": "lefthook install || true",
+    "verify:cutover": "./scripts/verify-cutover.sh"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.980.0",

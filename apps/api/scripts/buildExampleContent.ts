@@ -95,7 +95,9 @@ async function main(): Promise<void> {
     Object.entries(ingested).map(([name, item], index) => [name, makeRef(item, index)]),
   ) as unknown as NorvenMedia;
 
-  const document = norvenDocument.parse(norvenContent(media));
+  const document = norvenDocument.parse(
+    norvenContent(media, { contactFormKey: process.env.WEB3FORMS_ACCESS_KEY ?? "" }),
+  );
 
   await writeFile(join(OUT_DIR, "norven.json"), JSON.stringify(document, null, 2) + "\n");
   console.log(

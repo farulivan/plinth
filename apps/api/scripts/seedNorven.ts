@@ -97,7 +97,11 @@ async function main(): Promise<void> {
       Object.entries(ingested).map(([name, item]) => [name, makeRef(item)]),
     ) as unknown as NorvenMedia;
 
-    const document = parseContentDocument(norvenDocument.parse(norvenContent(media)));
+    const document = parseContentDocument(
+      norvenDocument.parse(
+        norvenContent(media, { contactFormKey: process.env.WEB3FORMS_ACCESS_KEY ?? "" }),
+      ),
+    );
 
     await withWorkspace(db, workspace.id, (tx) =>
       tx
