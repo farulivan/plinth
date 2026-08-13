@@ -78,9 +78,29 @@ export default async function PreviewPage({
   // build would skip.
   const entryMatch = page ? null : findEntry(preview.document.collections, requested);
 
-  if (!page && !entryMatch) notFound();
-
   const { site } = preview.document;
+
+  // A path this draft does not carry — not a dead end, and deliberately not
+  // `notFound()`.
+  //
+  // The common cause is a race, not a mistake: adding a page or an entry
+  // points the iframe at its route before the autosave has reached Postgres,
+  // and this renders from Postgres. `notFound()` throws past the SSE client
+  // below, so the preview would have no subscription, nothing would reload it
+  // when the save landed, and it would sit on "page not found" until someone
+  // reloaded by hand. Mounting the client here is what makes the wait
+  // self-correcting.
+  if (!page && !entryMatch) {
+    return (
+      <>
+        <PreviewClient draftId={id.data} initialHash={contentHash(preview.document)} />
+        <p className="p-8 text-sm text-neutral-500">
+          Nothing at this path yet — it appears here as soon as the change saves.
+        </p>
+      </>
+    );
+  }
+
   const { Nav, Footer } = template.chrome;
 
   return (

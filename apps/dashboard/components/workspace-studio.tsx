@@ -39,6 +39,16 @@ export function WorkspaceStudio({
   // The page the editor has open, so the preview shows what is being edited
   // rather than always the home page.
   const [previewPath, setPreviewPath] = useState("/");
+  // One URL for the iframe and the "open in new tab" link, so the tab can
+  // never show a different page from the panel beside it.
+  //
+  // The root is the trap, in the same shape it was in the builder and in a
+  // different disguise: a required catch-all matches one segment or more, so
+  // `/p` — which is what the home page produces — matched no route at all and
+  // 404ed. Every other page worked, and the preview panel simply said "page
+  // not found" on the one page every author opens first. The segment is
+  // optional now, and the home page is the reason.
+  const previewHref = `/preview/${draftId}/p${previewPath === "/" ? "" : previewPath}`;
 
   return (
     <main className="mx-auto max-w-7xl space-y-6 p-8">
@@ -70,7 +80,7 @@ export function WorkspaceStudio({
                   </Button>
                 ))}
                 <a
-                  href={`/preview/${draftId}`}
+                  href={previewHref}
                   target="_blank"
                   rel="noreferrer"
                   className="text-muted-foreground hover:text-foreground ml-2 text-sm underline underline-offset-4"
@@ -84,7 +94,7 @@ export function WorkspaceStudio({
               style={{ width: previewWidth ?? "100%" }}
             >
               <iframe
-                src={`/preview/${draftId}/p${previewPath === "/" ? "" : previewPath}`}
+                src={previewHref}
                 title="Live preview"
                 className="h-[calc(100vh-8rem)] w-full rounded-lg border bg-white"
               />

@@ -19,3 +19,19 @@ test("editing a field autosaves and survives a reload", async ({ page }) => {
   await page.reload();
   await expect(page.getByRole("textbox").first()).toHaveValue(value);
 });
+
+/**
+ * The home page's preview, which is the first thing every author sees.
+ *
+ * A required catch-all matches one segment or more, so `/preview/{id}/p` —
+ * what the home page produces — matched no route and the panel said "page not
+ * found". Every other page worked, which is why the collections test passed
+ * while this was broken: it opens an entry, never the root.
+ */
+test("the preview renders the home page, not just the interior ones", async ({ page }) => {
+  await login(page);
+
+  const preview = page.frameLocator("iframe[title='Live preview']");
+  await expect(preview.locator("main#main")).toBeVisible();
+  await expect(preview.getByText("Page not found")).toHaveCount(0);
+});
