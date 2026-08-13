@@ -287,18 +287,30 @@ export const locationsSection = defineSection(
 );
 
 /**
- * A heading and its paragraphs. The plainest section there is, and the one
- * the colophon is mostly made of — prose that needs no photograph, no grid
- * and no list.
+ * The essay part of a page: several headed blocks of paragraphs.
+ *
+ * A list of blocks rather than one block per section, because section types
+ * are unique per page (ADR-0015) and the colophon needs three. That constraint
+ * is load-bearing — the editor's mutators match on type — so it shapes the
+ * content model rather than bending to it, and the result is arguably the
+ * better one: "the prose on this page" is a thing, and its blocks reorder
+ * together.
  */
 export const proseSection = defineSection(
   "prose",
   z.object({
-    eyebrow: shortText,
-    heading: longText,
-    body: prose,
-    /** Tints the section, so consecutive prose blocks do not read as one. */
-    tone: z.enum(["bone", "bone2"]),
+    blocks: z
+      .array(
+        z.object({
+          eyebrow: shortText,
+          heading: longText,
+          body: prose,
+          /** Tints the block, so consecutive ones do not read as one. */
+          tone: z.enum(["bone", "bone2"]),
+        }),
+      )
+      .min(1)
+      .max(10),
   }),
 );
 

@@ -21,6 +21,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { hashBody } from "@plinth/internal-rpc";
 import { norvenDocument } from "@plinth/template-norven/manifest";
+import { norvenContent, type MakeRef, type NorvenMedia } from "./norvenContent";
 import { processImage } from "../src/modules/media/encode";
 
 const NORVEN_DIR = resolve(import.meta.dirname, process.env.NORVEN_DIR ?? "../../../../norven");
@@ -59,184 +60,48 @@ async function ingest(path: string): Promise<Ingested> {
  * and the renderer resolves variants by content hash, not by id. Keeping the
  * key present matters — the orphaned-media reaper finds references by scanning
  * serialized JSON for `"mediaId"`, so the shape must stay honest. */
-const ref = (item: Ingested, mediaId: string, alt: string) => ({
-  mediaId,
-  alt,
-  contentHash: item.contentHash,
-  width: item.width,
-  height: item.height,
-  // Recorded exactly as a real pick records it — the fixture asserts the
-  // renderer asks only for variants that were written, so a ref that lied
-  // here would turn the tenant gates green against missing images.
-  widths: item.widths,
-});
+const makeRef =
+  (item: Ingested, index: number): MakeRef =>
+  (alt: string) => ({
+    mediaId: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+    alt,
+    contentHash: item.contentHash,
+    width: item.width,
+    height: item.height,
+    // Recorded exactly as a real pick records it — the fixture asserts the
+    // renderer asks only for variants that were written, so a ref that lied
+    // here would turn the tenant gates green against missing images.
+    widths: item.widths,
+  });
 
 async function main(): Promise<void> {
   await rm(join(OUT_DIR, "media"), { recursive: true, force: true });
   await mkdir(OUT_DIR, { recursive: true });
 
   const assets = join(NORVEN_DIR, "src");
-  const hero = await ingest(join(assets, "assets/hero.jpg"));
   const cover = (slug: string) => ingest(join(assets, `content/projects/${slug}/cover.jpg`));
-  const saltHouse = await cover("salt-house");
-  const obsidian = await cover("obsidian-pavilion");
-  const terraWorks = await cover("terra-works");
-  const holmChapel = await cover("holm-chapel");
-  const nordStrata = await cover("nord-strata-tower");
+  const ingested = {
+    hero: await ingest(join(assets, "assets/hero.jpg")),
+    saltHouse: await cover("salt-house"),
+    obsidian: await cover("obsidian-pavilion"),
+    terraWorks: await cover("terra-works"),
+    holmChapel: await cover("holm-chapel"),
+    nordStrata: await cover("nord-strata-tower"),
+  };
 
-  // The landing page verbatim, matching what `seed:norven` writes to a real
-  // draft — the gates audit the page the first tenant actually publishes.
-  const document = norvenDocument.parse({
-    site: {
-      name: "Norven",
-      description:
-        "An architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
-      nav: [],
-      social: [],
-    },
-    pages: [
-      {
-        id: "00000000-0000-4000-8000-000000000000",
-        path: "/",
-        navLabel: "Home",
-        seo: {
-          title: "Norven — Architecture of consequence",
-          description:
-            "An architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
-        },
-        sections: [
-          {
-            type: "photoHero",
-            fields: {
-              eyebrow: "Norven · Est. 2009",
-              title: "Architecture\nof consequence.",
-              subtitle:
-                "Norven is an architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
-              photo: ref(
-                hero,
-                "00000000-0000-4000-8000-000000000001",
-                "Norven — architecture of consequence",
-              ),
-            },
-          },
-          {
-            type: "statement",
-            fields: {
-              eyebrow: "The practice",
-              body: "Norven is an architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
-            },
-          },
-          {
-            type: "featuredProjects",
-            fields: {
-              heading: "Selected work",
-              items: [
-                {
-                  title: "Salt House",
-                  meta: "Residence · 2023 · Built",
-                  location: "Tjøme, Norway · 280 m²",
-                  brief:
-                    "A coastal residence cut into a granite shelf above the Skagerrak. Three volumes stepped down the slope, a single oak stair binding them.",
-                  image: ref(
-                    saltHouse,
-                    "00000000-0000-4000-8000-000000000002",
-                    "Salt House — coastal residence above the Skagerrak",
-                  ),
-                },
-                {
-                  title: "Obsidian Pavilion",
-                  meta: "Cultural · 2024 · Built",
-                  location: "Þingvellir, Iceland · 640 m²",
-                  brief:
-                    "A reading room and lava-field interpretive structure at the seam between the North American and Eurasian plates. Vertical, narrow, deliberately weightless.",
-                  image: ref(
-                    obsidian,
-                    "00000000-0000-4000-8000-000000000003",
-                    "Obsidian Pavilion — interpretive structure at Þingvellir",
-                  ),
-                },
-                {
-                  title: "Terra Works",
-                  meta: "Commercial · 2025 · Built",
-                  location: "Marvila, Lisbon · 4,200 m²",
-                  brief:
-                    "Adaptive reuse of a 1937 ceramics warehouse into studio offices for nine creative tenants. Original shell retained; programme built as freestanding timber inserts.",
-                  image: ref(
-                    terraWorks,
-                    "00000000-0000-4000-8000-000000000004",
-                    "Terra Works — adaptive reuse of a ceramics warehouse",
-                  ),
-                },
-                {
-                  title: "Holm Chapel",
-                  meta: "Civic · 2022 · Built",
-                  location: "Higashiyama, Kyoto · 180 m²",
-                  brief:
-                    "A non-denominational chapel for a small university campus. One room, one bench, one light cut down through three storeys of rammed earth.",
-                  image: ref(
-                    holmChapel,
-                    "00000000-0000-4000-8000-000000000005",
-                    "Holm Chapel — rammed-earth chapel in Kyoto",
-                  ),
-                },
-                {
-                  title: "Nord-Strata Tower",
-                  meta: "Cultural · 2026 · In Studio",
-                  location: "Reykjavík · 6,800 m²",
-                  brief:
-                    "A vertical archive and exhibition tower for the Nordic Council. Sixteen plates stacked around a central daylight void, sequenced by epoch.",
-                  image: ref(
-                    nordStrata,
-                    "00000000-0000-4000-8000-000000000006",
-                    "Nord-Strata Tower — vertical archive for the Nordic Council",
-                  ),
-                },
-              ],
-            },
-          },
-          {
-            type: "stats",
-            fields: {
-              items: [
-                { value: "118", label: "Built" },
-                { value: "26", label: "In studio" },
-                { value: "42", label: "Awards & citations" },
-                { value: "17", label: "Years continuous practice" },
-              ],
-            },
-          },
-          {
-            type: "testimonial",
-            fields: {
-              attribution: "Client, Salt House",
-              context: "Tjøme · 2023",
-              quote:
-                "They drew our house the way you would a portrait of someone you had known for fifty years. Nothing was decorative, nothing was lazy. We have lived in it for three winters now and have not found a single thing we would change.",
-              name: "Margrét Sól",
-            },
-          },
-          {
-            type: "contact",
-            fields: {
-              eyebrow: "Bring us a site",
-              heading: "Bring us a site,\na story,\na single hour of light.",
-              email: "studio@norven.example",
-              phone: "+47 22 00 00 00",
-              studios: [
-                { city: "Oslo", address: "Akersgata 12, 0158" },
-                { city: "Lisbon", address: "Rua das Janelas Verdes 9" },
-                { city: "Kyoto", address: "Higashiyama, Sanjō 3-15" },
-              ],
-            },
-          },
-        ],
-      },
-    ],
-    collections: {},
-  });
+  // Content comes from the shared module, so the fixture the gates audit and
+  // the draft `seed:norven` writes cannot describe different sites.
+  const media = Object.fromEntries(
+    Object.entries(ingested).map(([name, item], index) => [name, makeRef(item, index)]),
+  ) as unknown as NorvenMedia;
+
+  const document = norvenDocument.parse(norvenContent(media));
 
   await writeFile(join(OUT_DIR, "norven.json"), JSON.stringify(document, null, 2) + "\n");
-  console.log(`[example-content] wrote norven.json (${document.pages.length} page(s))`);
+  console.log(
+    `[example-content] wrote norven.json (${String(document.pages.length)} pages, ` +
+      `${String((document.collections as { projects?: { entries: unknown[] } }).projects?.entries.length ?? 0)} project entries)`,
+  );
 }
 
 main().catch((err: unknown) => {

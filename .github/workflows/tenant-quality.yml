@@ -6,10 +6,12 @@ name: Tenant quality
 # through the real publish-time toolchain (ADR-0013) with no Postgres, R2 or
 # Inngest in the loop.
 #
-# Reporting-only for now: the budgets are set at the bar the first tenant's
-# standalone site already clears, which this build does not clear yet. The
-# gaps are tracked deltas, not surprises — making it blocking is the last step
-# of the migration, not the first.
+# Blocking, as of the content port. The budgets are the bar the first tenant's
+# standalone site set for itself, and this build now clears all of them across
+# every route: Lighthouse 1.0 for performance, accessibility, best-practices
+# and SEO on all six audited URLs. It was reporting-only while that was still
+# a set of tracked deltas; keeping it advisory now would mean a regression
+# could land without anyone noticing.
 on:
   workflow_dispatch:
   pull_request:
@@ -57,8 +59,6 @@ jobs:
 
       - run: pnpm tenant:build
       - run: pnpm check:bundle
-        continue-on-error: true
 
       - name: lhci
         run: pnpm dlx @lhci/cli@latest autorun --config=.lighthouserc.tenant.json
-        continue-on-error: true
