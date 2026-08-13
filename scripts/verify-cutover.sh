@@ -26,6 +26,9 @@ fail() {
   printf '  \033[31m✗\033[0m %s\n' "$1"
   fails=$((fails + 1))
 }
+# Not a pass and not a failure: a check that cannot be meaningful here. Kept
+# visible rather than silently dropped, so the reason stays in front of you.
+skip() { printf '  \033[33m–\033[0m %s\n' "$1"; }
 
 # Cache-busting: an intermediate cache answering with a stale object would
 # make a missing route look present.
@@ -83,11 +86,22 @@ for header in content-security-policy x-content-type-options x-frame-options \
   cross-origin-resource-policy; do
   echo "$headers" | grep -qi "^${header}:" && pass "$header" || fail "$header missing"
 done
-# HSTS comes from the zone, not the worker (ADR-0011). Exactly once: a second
-# copy means both are emitting it, and browsers take the first.
-hsts=$(echo "$headers" | grep -ci '^strict-transport-security:' || true)
-[ "$hsts" = "1" ] && pass "strict-transport-security exactly once" ||
-  fail "strict-transport-security appears ${hsts} times (expected 1)"
+# HSTS comes from the Cloudflare zone, not from the worker (ADR-0011), so it
+# only exists once a request actually passes through Cloudflare. Under
+# `wrangler dev` there is no zone in front and it can never appear — asserting
+# it there would report a failure nobody can fix, which is how a check becomes
+# noise you learn to scroll past.
+#
+# Exactly once when it does apply: a second copy means the worker is emitting
+# it as well as the zone, and browsers honour the first. That is a real and
+# silent misconfiguration, which is why this is checked at all.
+if [ "${SCHEME:-https}" = "https" ]; then
+  hsts=$(echo "$headers" | grep -ci '^strict-transport-security:' || true)
+  [ "$hsts" = "1" ] && pass "strict-transport-security exactly once" ||
+    fail "strict-transport-security appears ${hsts} times (expected 1)"
+else
+  skip "strict-transport-security — set by the Cloudflare zone, absent under wrangler dev"
+fi
 
 say "Contact form — rendered, and permitted by the policy"
 contact=$(curl -s "$(bust "${BASE}/contact/")")
