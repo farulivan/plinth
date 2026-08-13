@@ -54,11 +54,23 @@ export const publishRoutes = new Hono<AppBindings>()
         case "invalid-draft": {
           // Name the offenders in the message itself — the bar shows one line,
           // and "something is invalid" without a pointer is undebuggable.
-          const fields = Object.keys(result.fieldErrors).slice(0, 5).join(", ");
+          //
+          // A key alone was not enough of a pointer. A migrated workspace
+          // fails on `site`, whose reason — its name and description were
+          // seeded blank by the v1 upgrade rather than invented (ADR-0015) —
+          // was sitting unread in `fieldErrors`. "fix in the editor: site" is
+          // a field path, not something an author can act on, so the reason
+          // now travels with it.
+          const entries = Object.entries(result.fieldErrors);
+          const detail = entries
+            .slice(0, 3)
+            .map(([field, messages]) => (messages[0] ? `${field} — ${messages[0]}` : field))
+            .join("; ");
+          const rest = entries.length > 3 ? ` (+${String(entries.length - 3)} more)` : "";
           return c.json(
             err(
               "validation_failed",
-              `Not ready to publish — fix in the editor: ${fields}. (A section you can't finish yet can be toggled off.)`,
+              `Not ready to publish. ${detail}${rest} (A section you can't finish yet can be toggled off.)`,
               result.fieldErrors,
             ),
             { status: ERROR_STATUS.validation_failed },
