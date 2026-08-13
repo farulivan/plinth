@@ -55,9 +55,22 @@
    */
   "env": {
     "production": {
+      /**
+       * `new-norven` is the staging hostname, deliberately serving in place of
+       * `norven.farulivan.com` rather than alongside it. Both routes active at
+       * once would be a live cutover by accident: the moment `norven` is
+       * proxied, its route fires and the old standalone site stops being
+       * reachable, which is exactly the event the staging host exists to
+       * rehearse instead of trigger.
+       *
+       * Swapping this back to `norven.farulivan.com/*` is the cutover, and it
+       * is not sufficient on its own — the workspace slug produces both the KV
+       * key and the SITE_URL baked into every canonical tag, so the slug has
+       * to change back and the site has to be republished in the same pass.
+       */
       "routes": [
         {
-          "pattern": "norven.farulivan.com/*",
+          "pattern": "new-norven.farulivan.com/*",
           "zone_name": "farulivan.com",
         },
       ],
