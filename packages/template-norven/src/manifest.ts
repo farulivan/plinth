@@ -153,6 +153,171 @@ export const projectIndexSection = defineSection(
   }),
 );
 
+/* -------------------------------------------------------------------------- */
+/* Interior pages                                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The masthead of a page that is not the landing page. `photoHero` carries a
+ * photograph and fills the viewport; this is type alone, so an interior page
+ * opens without asking an author to find an image for it.
+ *
+ * `title` breaks on newlines, the same convention `photoHero` uses.
+ */
+export const pageHeroSection = defineSection(
+  "pageHero",
+  z.object({
+    eyebrow: shortText,
+    title: longText,
+    subtitle: longText.optional(),
+  }),
+);
+
+/**
+ * A stack of short essays under one label — the studio's philosophy, and the
+ * shape any "here is how we think" block takes.
+ */
+export const principlesSection = defineSection(
+  "principles",
+  z.object({
+    eyebrow: shortText,
+    items: z
+      .array(z.object({ heading: shortText, body: longText }))
+      .min(1)
+      .max(8),
+  }),
+);
+
+/**
+ * What the practice offers. The icon is an enum rather than a free string
+ * because the drawings are inline SVG the template owns — a typo would render
+ * an empty box, and an author has no way to know which names exist.
+ */
+export const practiceSection = defineSection(
+  "practice",
+  z.object({
+    eyebrow: shortText,
+    /** Breaks on a newline; the second line renders muted. */
+    heading: longText,
+    intro: longText,
+    items: z
+      .array(
+        z.object({
+          title: shortText,
+          description: longText,
+          icon: z.enum(["compass", "rule", "leaf", "book"]),
+        }),
+      )
+      .min(1)
+      .max(6),
+  }),
+);
+
+/** How a project runs, phase by phase. */
+export const processSection = defineSection(
+  "process",
+  z.object({
+    eyebrow: shortText,
+    heading: longText,
+    items: z
+      .array(
+        z.object({
+          /** "01" — rendered as "Phase 01", so it is copy rather than an index. */
+          code: shortText,
+          title: shortText,
+          duration: shortText,
+          description: longText,
+        }),
+      )
+      .min(1)
+      .max(8),
+  }),
+);
+
+/** The people. Portraits are optional so the section is usable before anyone
+ * has been photographed, which is the state every new tenant starts in. */
+export const peopleSection = defineSection(
+  "people",
+  z.object({
+    eyebrow: shortText,
+    items: z
+      .array(
+        z.object({
+          name: shortText,
+          role: shortText,
+          base: shortText,
+          bio: longText,
+          portrait: mediaRef.optional(),
+        }),
+      )
+      .min(1)
+      .max(12),
+  }),
+);
+
+/** Awards and citations — a year, a name, and where it came from. */
+export const recognitionSection = defineSection(
+  "recognition",
+  z.object({
+    eyebrow: shortText,
+    items: z
+      .array(z.object({ year: shortText, title: shortText, detail: shortText }))
+      .min(1)
+      .max(20),
+  }),
+);
+
+/** Offices, on ink. */
+export const locationsSection = defineSection(
+  "locations",
+  z.object({
+    eyebrow: shortText,
+    items: z
+      .array(
+        z.object({
+          city: shortText,
+          address: shortText,
+          country: shortText,
+          hours: shortText.optional(),
+        }),
+      )
+      .min(1)
+      .max(6),
+  }),
+);
+
+/**
+ * A heading and its paragraphs. The plainest section there is, and the one
+ * the colophon is mostly made of — prose that needs no photograph, no grid
+ * and no list.
+ */
+export const proseSection = defineSection(
+  "prose",
+  z.object({
+    eyebrow: shortText,
+    heading: longText,
+    body: prose,
+    /** Tints the section, so consecutive prose blocks do not read as one. */
+    tone: z.enum(["bone", "bone2"]),
+  }),
+);
+
+/**
+ * A decisions table: one row per layer of the stack, what was chosen, and
+ * why. Three columns rather than prose because the value is in scanning it.
+ */
+export const stackSection = defineSection(
+  "stack",
+  z.object({
+    eyebrow: shortText,
+    heading: longText,
+    rows: z
+      .array(z.object({ layer: shortText, choice: shortText, note: longText }))
+      .min(1)
+      .max(24),
+  }),
+);
+
 export const norvenSection = z.discriminatedUnion("type", [
   photoHeroSection,
   statementSection,
@@ -162,6 +327,15 @@ export const norvenSection = z.discriminatedUnion("type", [
   contactSection,
   contactFormSection,
   projectIndexSection,
+  pageHeroSection,
+  principlesSection,
+  practiceSection,
+  processSection,
+  peopleSection,
+  recognitionSection,
+  locationsSection,
+  proseSection,
+  stackSection,
 ]);
 
 /**
@@ -212,3 +386,12 @@ export type StatsFields = z.infer<typeof statsSection>["fields"];
 export type TestimonialFields = z.infer<typeof testimonialSection>["fields"];
 export type ContactFields = z.infer<typeof contactSection>["fields"];
 export type ContactFormFields = z.infer<typeof contactFormSection>["fields"];
+export type PageHeroFields = z.infer<typeof pageHeroSection>["fields"];
+export type PrinciplesFields = z.infer<typeof principlesSection>["fields"];
+export type PracticeFields = z.infer<typeof practiceSection>["fields"];
+export type ProcessFields = z.infer<typeof processSection>["fields"];
+export type PeopleFields = z.infer<typeof peopleSection>["fields"];
+export type RecognitionFields = z.infer<typeof recognitionSection>["fields"];
+export type LocationsFields = z.infer<typeof locationsSection>["fields"];
+export type ProseFields = z.infer<typeof proseSection>["fields"];
+export type StackFields = z.infer<typeof stackSection>["fields"];

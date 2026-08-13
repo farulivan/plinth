@@ -7,6 +7,15 @@ export {
   contactSection,
   contactFormSection,
   projectIndexSection,
+  pageHeroSection,
+  principlesSection,
+  practiceSection,
+  processSection,
+  peopleSection,
+  recognitionSection,
+  locationsSection,
+  proseSection,
+  stackSection,
   norvenSection,
   projectEntryFields,
   norvenCollectionFields,
@@ -32,6 +41,15 @@ export { Testimonial } from "./sections/Testimonial";
 export { Contact } from "./sections/Contact";
 export { ContactForm } from "./sections/ContactForm";
 export { ProjectIndex } from "./sections/ProjectIndex";
+export { PageHero } from "./sections/PageHero";
+export { Principles } from "./sections/Principles";
+export { Practice } from "./sections/Practice";
+export { Process } from "./sections/Process";
+export { People } from "./sections/People";
+export { Recognition } from "./sections/Recognition";
+export { Locations } from "./sections/Locations";
+export { Prose } from "./sections/Prose";
+export { Stack } from "./sections/Stack";
 export { Frame } from "./media/Frame";
 export { norvenComponents } from "./sections";
 export { enhanceContactForms } from "./forms";
