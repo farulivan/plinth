@@ -71,8 +71,23 @@ export const draftEventsRoutes = new Hono<AppBindings>()
     const access = await checkDraftAccess(c.get("db"), c.get("workspaceId"), draftId.data);
     if (access !== "ok") return accessFailure(c, access);
 
+    // A reconnecting client says where it got to; a first connection says
+    // nothing, and `0` means "everything still buffered".
+    //
+    // Replaying on a FIRST connection is the point, not a nicety. The preview
+    // renders on the server, capturing the draft's hash, and only then does
+    // the browser open this stream. A save landing in that window used to be
+    // published to nobody: the page kept the pre-save hash, the event was
+    // gone, and the preview sat on stale content until someone reloaded by
+    // hand. The window is a few tens of milliseconds on a fast machine and
+    // was measured at over a second on CI, which is where it started failing.
+    //
+    // Replaying is safe because the client compares hashes — an event
+    // matching what it already rendered is a no-op, so the common case costs
+    // one ignored message. Which is exactly the subscriber-less window the
+    // ring buffer says it exists for.
     const lastEventId = c.req.header("last-event-id");
-    const afterId = lastEventId && /^\d+$/.test(lastEventId) ? Number(lastEventId) : undefined;
+    const afterId = lastEventId && /^\d+$/.test(lastEventId) ? Number(lastEventId) : 0;
 
     return streamSSE(c, async (stream) => {
       const unsubscribe = draftEventHub.subscribe(
