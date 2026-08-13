@@ -122,3 +122,28 @@
 [data-form-status][data-state="error"] {
   color: var(--color-ink);
 }
+
+/* The process cubes, ported from Process.astro's scoped style. Global here
+ * because the section is a React component with no scoped-style mechanism of
+ * its own — and the stylesheet is where a template's design lives anyway.
+ *
+ * The reduced-motion branch stops the rotation rather than hiding the cube:
+ * the shape is the visual, the spin is the flourish. */
+@keyframes cube-spin {
+  from {
+    transform: rotateX(-20deg) rotateY(0deg);
+  }
+  to {
+    transform: rotateX(-20deg) rotateY(360deg);
+  }
+}
+.process-cube {
+  transform-style: preserve-3d;
+  animation: cube-spin 14s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .process-cube {
+    animation: none;
+    transform: rotateX(-20deg);
+  }
+}

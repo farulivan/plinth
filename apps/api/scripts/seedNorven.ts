@@ -20,6 +20,7 @@ import { contentDrafts, users, workspaceMemberships, workspaces } from "@plinth/
 import type { MediaItem } from "@plinth/schema/api";
 import { parseContentDocument } from "@plinth/schema";
 import { norvenDocument } from "@plinth/template-norven/manifest";
+import { norvenContent, type MakeRef, type NorvenMedia } from "./norvenContent";
 import { eq } from "drizzle-orm";
 import { uploadMedia } from "../src/modules/media/service";
 
@@ -46,14 +47,16 @@ async function ingest(
   return result.item;
 }
 
-const ref = (item: MediaItem, alt: string) => ({
-  mediaId: item.id,
-  alt,
-  contentHash: item.contentHash,
-  width: item.width,
-  height: item.height,
-  ...(item.widths ? { widths: item.widths } : {}),
-});
+const makeRef =
+  (item: MediaItem): MakeRef =>
+  (alt: string) => ({
+    mediaId: item.id,
+    alt,
+    contentHash: item.contentHash,
+    width: item.width,
+    height: item.height,
+    ...(item.widths ? { widths: item.widths } : {}),
+  });
 
 async function main(): Promise<void> {
   const { db, pool } = createDb({ connectionString, max: 3 });
@@ -75,154 +78,26 @@ async function main(): Promise<void> {
     if (!owner) throw new Error('workspace "norven" has no member — run `pnpm seed` first');
 
     const assets = join(NORVEN_DIR, "src");
-    const hero = await ingest(db, workspace.id, owner.id, join(assets, "assets/hero.jpg"));
     const cover = (slug: string) =>
       ingest(db, workspace.id, owner.id, join(assets, `content/projects/${slug}/cover.jpg`));
-    const saltHouse = await cover("salt-house");
-    const obsidian = await cover("obsidian-pavilion");
-    const terraWorks = await cover("terra-works");
-    const holmChapel = await cover("holm-chapel");
-    const nordStrata = await cover("nord-strata-tower");
+    const ingested = {
+      hero: await ingest(db, workspace.id, owner.id, join(assets, "assets/hero.jpg")),
+      saltHouse: await cover("salt-house"),
+      obsidian: await cover("obsidian-pavilion"),
+      terraWorks: await cover("terra-works"),
+      holmChapel: await cover("holm-chapel"),
+      nordStrata: await cover("nord-strata-tower"),
+    };
 
-    // The landing page verbatim (norven's index.astro composition + data
-    // files), expressed as CMS content.
+    // Content comes from the shared module, so a real draft and the fixture
+    // the tenant gates audit cannot describe different sites.
     // Two schemas, two jobs: the template one rejects content the sections
     // would not render, then the stored envelope is what the column holds.
-    const document = parseContentDocument(
-      norvenDocument.parse({
-        site: {
-          name: "Norven",
-          description:
-            "An architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
-          nav: [],
-          social: [],
-        },
-        pages: [
-          {
-            id: "00000000-0000-4000-8000-000000000000",
-            path: "/",
-            navLabel: "Home",
-            seo: {
-              title: "Norven — Architecture of consequence",
-              description:
-                "An architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
-            },
-            sections: [
-              {
-                type: "photoHero",
-                fields: {
-                  eyebrow: "Norven · Est. 2009",
-                  title: "Architecture\nof consequence.",
-                  subtitle:
-                    "Norven is an architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
-                  photo: ref(hero, "Norven — architecture of consequence"),
-                },
-              },
-              {
-                type: "statement",
-                fields: {
-                  eyebrow: "The practice",
-                  body: "Norven is an architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
-                },
-              },
-              {
-                type: "featuredProjects",
-                fields: {
-                  heading: "Selected work",
-                  items: [
-                    {
-                      title: "Salt House",
-                      meta: "Residence · 2023 · Built",
-                      location: "Tjøme, Norway · 280 m²",
-                      brief:
-                        "A coastal residence cut into a granite shelf above the Skagerrak. Three volumes stepped down the slope, a single oak stair binding them.",
-                      image: ref(saltHouse, "Salt House — coastal residence above the Skagerrak"),
-                    },
-                    {
-                      title: "Obsidian Pavilion",
-                      meta: "Cultural · 2024 · Built",
-                      location: "Þingvellir, Iceland · 640 m²",
-                      brief:
-                        "A reading room and lava-field interpretive structure at the seam between the North American and Eurasian plates. Vertical, narrow, deliberately weightless.",
-                      image: ref(
-                        obsidian,
-                        "Obsidian Pavilion — interpretive structure at Þingvellir",
-                      ),
-                    },
-                    {
-                      title: "Terra Works",
-                      meta: "Commercial · 2025 · Built",
-                      location: "Marvila, Lisbon · 4,200 m²",
-                      brief:
-                        "Adaptive reuse of a 1937 ceramics warehouse into studio offices for nine creative tenants. Original shell retained; programme built as freestanding timber inserts.",
-                      image: ref(
-                        terraWorks,
-                        "Terra Works — adaptive reuse of a ceramics warehouse",
-                      ),
-                    },
-                    {
-                      title: "Holm Chapel",
-                      meta: "Civic · 2022 · Built",
-                      location: "Higashiyama, Kyoto · 180 m²",
-                      brief:
-                        "A non-denominational chapel for a small university campus. One room, one bench, one light cut down through three storeys of rammed earth.",
-                      image: ref(holmChapel, "Holm Chapel — rammed-earth chapel in Kyoto"),
-                    },
-                    {
-                      title: "Nord-Strata Tower",
-                      meta: "Cultural · 2026 · In Studio",
-                      location: "Reykjavík · 6,800 m²",
-                      brief:
-                        "A vertical archive and exhibition tower for the Nordic Council. Sixteen plates stacked around a central daylight void, sequenced by epoch.",
-                      image: ref(
-                        nordStrata,
-                        "Nord-Strata Tower — vertical archive for the Nordic Council",
-                      ),
-                    },
-                  ],
-                },
-              },
-              {
-                type: "stats",
-                fields: {
-                  items: [
-                    { value: "118", label: "Built" },
-                    { value: "26", label: "In studio" },
-                    { value: "42", label: "Awards & citations" },
-                    { value: "17", label: "Years continuous practice" },
-                  ],
-                },
-              },
-              {
-                type: "testimonial",
-                fields: {
-                  attribution: "Client, Salt House",
-                  context: "Tjøme · 2023",
-                  quote:
-                    "They drew our house the way you would a portrait of someone you had known for fifty years. Nothing was decorative, nothing was lazy. We have lived in it for three winters now and have not found a single thing we would change.",
-                  name: "Margrét Sól",
-                },
-              },
-              {
-                type: "contact",
-                fields: {
-                  eyebrow: "Bring us a site",
-                  heading: "Bring us a site,\na story,\na single hour of light.",
-                  email: "studio@norven.example",
-                  phone: "+47 22 00 00 00",
-                  studios: [
-                    { city: "Oslo", address: "Akersgata 12, 0158" },
-                    { city: "Lisbon", address: "Rua das Janelas Verdes 9" },
-                    { city: "Kyoto", address: "Higashiyama, Sanjō 3-15" },
-                  ],
-                },
-              },
-            ],
-          },
-        ],
-        collections: {},
-      }),
-    );
+    const media = Object.fromEntries(
+      Object.entries(ingested).map(([name, item]) => [name, makeRef(item)]),
+    ) as unknown as NorvenMedia;
+
+    const document = parseContentDocument(norvenDocument.parse(norvenContent(media)));
 
     await withWorkspace(db, workspace.id, (tx) =>
       tx

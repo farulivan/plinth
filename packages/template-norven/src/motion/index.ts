@@ -47,26 +47,36 @@ function bindReveals(): void {
     els.forEach((el) => el.classList.add("is-in"));
     return;
   }
+  // Opacity is a discrete transition on entry, not scrubbed against scroll
+  // position — the one deliberate departure from the ported original.
+  //
+  // Scrubbing opacity makes an element's legibility a function of how far the
+  // page happens to be scrolled: anything resting part-way through the scrub
+  // renders at part-way contrast and stays there. That is a real reading
+  // problem and `color-contrast` is right to fail it — it caught text at
+  // 1.4:1 on two of the five pages. The original passed only because its
+  // layout never left content in that band.
+  //
+  // `autoAlpha` still drives the entry, so before it fires the element is
+  // `visibility: hidden` rather than faint: absent from the accessibility
+  // tree instead of present and unreadable. The drift stays scrubbed, because
+  // position carries no legibility.
   els.forEach((el) => {
-    gsap.fromTo(
-      el,
-      { autoAlpha: 0, y: 40 },
-      {
-        autoAlpha: 1,
-        y: 0,
-        ease: "none",
-        scrollTrigger: {
-          trigger: el,
-          start: "top bottom",
-          end: "top 88%",
-          scrub: true,
-          onLeave: (self) => {
-            el.classList.add("is-in");
-            self.disable(false);
-          },
-        },
+    gsap.set(el, { autoAlpha: 0, y: 40 });
+    ScrollTrigger.create({
+      trigger: el,
+      start: "top 92%",
+      once: true,
+      onEnter: () => {
+        gsap.to(el, {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.6,
+          ease: "power2.out",
+          onComplete: () => el.classList.add("is-in"),
+        });
       },
-    );
+    });
   });
 }
 

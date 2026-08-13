@@ -2,7 +2,14 @@
   "ci": {
     "collect": {
       "staticDistDir": "./.tenant-fixture",
-      "url": ["http://localhost/index.html"],
+      "url": [
+        "http://localhost/index.html",
+        "http://localhost/projects/index.html",
+        "http://localhost/projects/salt-house/index.html",
+        "http://localhost/studio/index.html",
+        "http://localhost/contact/index.html",
+        "http://localhost/colophon/index.html"
+      ],
       "numberOfRuns": 3,
       "settings": {
         "preset": "desktop",
