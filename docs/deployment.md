@@ -63,9 +63,11 @@ pnpm worker:deploy
 
 The root script exists because `deploy` is a pnpm builtin: `pnpm --filter @plinth/worker-router deploy` never reaches wrangler, it asks pnpm to deploy the workspace package into a target directory and fails on the missing argument. `pnpm --filter @plinth/worker-router run deploy` also works — `run` is what disambiguates.
 
-Bind the SITES/MEDIA R2 buckets and the TENANT_HOSTS KV in `wrangler.jsonc`, and add a route for `*.farulivan.com` so tenant hostnames hit the worker.
+Bind the SITES/MEDIA R2 buckets and the TENANT_HOSTS KV in `wrangler.jsonc`, and add a route **per tenant hostname** so those requests hit the worker.
 
-**DNS** on `farulivan.com`: a wildcard `*` record (tenant subdomains) and an explicit `norven` record, both proxied through Cloudflare. Point `plinth` (dashboard) and `api` at their Fly apps.
+Not `*.farulivan.com/*`. A Worker route captures every matching request with no fall-through, `plinth` and `api` are Fly apps on the same zone, and this worker answers an unmapped hostname with a 404 — so a wildcard route takes the dashboard and the api offline. Adding a tenant therefore needs a route and a deploy today; that is the constraint [ADR-0004](./adr/0004-tenant-routing.md)'s Cloudflare-for-SaaS work removes.
+
+**DNS** on `farulivan.com`: an explicit record per tenant subdomain (`norven`), proxied through Cloudflare. A wildcard `*` record is fine and convenient, but it only makes a hostname resolve — what sends it to the worker is the route above. Point `plinth` (dashboard) and `api` at their Fly apps.
 
 **Headers**: nothing to configure at the edge for the dashboard — HSTS and the other non-CSP headers ship from `apps/dashboard/next.config.ts` and the CSP from its proxy, per ADR-0011. Tenant sites get theirs from the worker-router. Verify after a deploy with `curl -sI https://plinth.farulivan.com/login`, which should carry `strict-transport-security`, `x-content-type-options`, `referrer-policy`, `permissions-policy`, both `cross-origin-*` headers, and a `content-security-policy` whose nonce matches the inline scripts in the body.
 

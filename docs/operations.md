@@ -67,3 +67,82 @@ Run the above against a scratch project quarterly — a backup nobody has restor
 The api's Docker image installs `postgresql-client-17` (from the PGDG apt repo, not Debian's default v15 package) to match Neon's Postgres 17 — `pg_dump` refuses to dump from a server newer than itself, so this pin matters. If the database ever moves to a new Postgres major version, bump the client package in `apps/api/Dockerfile` alongside it.
 
 **Testing the backup job via `pnpm dev`:** the api runs on the host in dev mode, so it shells out to whatever `pg_dump` is on *your* `PATH`, not the one baked into the Docker image. macOS's Homebrew `postgresql` formula tracks an older major version by default, which fails against the v17 dev Postgres with `server version mismatch`. Install a matching client — `brew install postgresql@17` — and put it on `PATH` before running `pnpm dev` (the formula prints the exact line for your shell profile). This only affects local testing of this one job; the deployed image is unaffected.
+
+---
+
+## Cutting a site over from its own repository
+
+Written for Norven, the first tenant, but the shape is general: an existing
+site is already live on a hostname, Plinth can now publish the same site, and
+the flip has to be reversible for as long as anyone might want it reversed.
+
+**The whole plan in one line: rollback is a DNS change, so the old site keeps
+serving on its own hostname until nobody needs it.** Everything below exists to
+make that true before the flip rather than after.
+
+### Before the flip
+
+1. **Give the old site a hostname of its own.** Point `norvenv1.farulivan.com`
+   at the standalone build and confirm it serves. This is the rollback target,
+   and it has to be working *before* it is needed — a rollback plan first
+   exercised during an incident is a hypothesis.
+2. **Seed and publish the tenant workspace.**
+   ```sh
+   WEB3FORMS_ACCESS_KEY=<key> pnpm seed:norven   # writes the draft
+   ```
+   Then publish from the dashboard. Without the key the contact form is seeded
+   parked, because the publish gate refuses a form that would lose
+   submissions — set it and enable the section deliberately.
+3. **Add the tenant's route** to `env.production.routes` in
+   `apps/worker-router/wrangler.jsonc` and `pnpm worker:deploy`. One route per
+   hostname, never a wildcard: a Worker route captures every matching request
+   with no fall-through, and `plinth` and `api` are Fly apps on the same zone.
+4. **Verify against the tenant hostname while DNS still points at the old
+   site.** The worker answers on its route regardless, so this is a real check
+   of the new build before anything moves:
+   ```sh
+   pnpm verify:cutover norven.farulivan.com
+   ```
+   Every check must pass. It covers all eleven routes, the tenant 404, the
+   sitemap and robots, canonical and Open Graph and both JSON-LD blocks, the
+   seven-header contract with HSTS exactly once, the contact form's endpoint
+   and the CSP that permits it, and the caching split between hashed assets
+   and stable paths.
+
+### The flip
+
+5. **Repoint `norven.farulivan.com`** to be proxied through Cloudflare on the
+   zone, so the Worker route takes it. Keep the record proxied — an unproxied
+   record bypasses the worker entirely.
+6. **Re-run `pnpm verify:cutover norven.farulivan.com`.** HSTS is the one to
+   watch: it is a zone setting rather than a worker header (ADR-0011), so it
+   only appears once the request is actually going through Cloudflare, and
+   twice would mean something is emitting it as well.
+7. **Send a real enquiry through the contact form**, with JavaScript enabled
+   and then disabled. The two paths use different CSP directives —
+   `connect-src` and `form-action` — and a policy can permit one and block the
+   other.
+
+### The soak, and rolling back
+
+Keep `norvenv1` serving for at least a fortnight. Rolling back is repointing
+`norven.farulivan.com` back at it; nothing in Plinth needs to change, no
+version needs rebuilding, and the R2 objects stay where they are.
+
+Two things that are *not* rollbacks and will not help:
+
+- **A Plinth version rollback** moves between snapshots this platform
+  published. If the problem is the platform, it is not a way out.
+- **Deleting the Worker route** leaves the hostname resolving to Cloudflare
+  with nothing behind it. Move DNS, not the route.
+
+### After the soak
+
+Only once nobody has asked for the old site in weeks:
+
+1. Archive the `norven` repository, with a README line pointing at the live
+   site and at Plinth. Its decision records are the history of how the site was
+   built and are worth keeping readable.
+2. Decommission the S3 bucket, its IAM role, and the budget alarm — in that
+   order, so the alarm is the last thing to go and can still fire on the way.
+3. Retire the `norvenv1` hostname last of all.

@@ -15,6 +15,7 @@
   // No per-version preview URLs: this worker only ever answers real tenant
   // hostnames via a route, so the extra workers.dev surface is just noise.
   "preview_urls": false,
+
   "kv_namespaces": [
     {
       "binding": "TENANT_HOSTS",
@@ -33,4 +34,52 @@
       "bucket_name": "plinth-media",
     },
   ],
+  /**
+   * Routes live in a named environment, not at the top level, and that is not
+   * tidiness — putting them at the top level breaks `wrangler dev` outright.
+   * The dev server filters requests by the configured route, so with
+   * `norven.farulivan.com/*` there it stops answering `norven.localhost:8787`
+   * and the whole local publish loop 404s. Confirmed by adding it, watching
+   * every route fail, and removing it again.
+   *
+   * One route per tenant hostname, never `*.farulivan.com/*`: a Worker route
+   * captures every matching request with no fall-through, `plinth` and `api`
+   * are Fly apps on the same zone, and this worker answers an unmapped
+   * hostname with a 404 — so a wildcard would take the dashboard and the api
+   * offline. Adding a tenant therefore costs an entry here and a deploy,
+   * which is the constraint ADR-0004's Cloudflare-for-SaaS work removes.
+   *
+   * Bindings are repeated rather than inherited: wrangler does not pass
+   * top-level bindings down to a named environment, and a missing one fails
+   * at request time in production rather than at deploy.
+   */
+  "env": {
+    "production": {
+      "routes": [
+        {
+          "pattern": "norven.farulivan.com/*",
+          "zone_name": "farulivan.com",
+        },
+      ],
+      "observability": {
+        "enabled": true,
+      },
+      "kv_namespaces": [
+        {
+          "binding": "TENANT_HOSTS",
+          "id": "46689664ccf64928a8962d9c088d8cdd",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "SITES",
+          "bucket_name": "plinth-sites",
+        },
+        {
+          "binding": "MEDIA",
+          "bucket_name": "plinth-media",
+        },
+      ],
+    },
+  },
 }

@@ -37,7 +37,16 @@ const STUDIOS = [
   { city: "Kyoto", address: "Higashiyama, Sanjō 3-15", country: "Japan" },
 ];
 
-export function norvenContent(media: NorvenMedia): Record<string, unknown> {
+export interface ContentOptions {
+  /** Web3Forms access key. Absent leaves the contact form parked — see below. */
+  contactFormKey?: string;
+}
+
+export function norvenContent(
+  media: NorvenMedia,
+  options: ContentOptions = {},
+): Record<string, unknown> {
+  const contactFormKey = options.contactFormKey ?? "";
   return {
     site: {
       name: "Norven",
@@ -51,12 +60,13 @@ export function norvenContent(media: NorvenMedia): Record<string, unknown> {
       ],
       social: [],
       footerNote: "Norven is a fictional studio. See the colophon.",
-      // Non-deliverable by design, mirroring Norven's own posture: a real
-      // address rendered as a fictional studio's would invite mail nobody
-      // reads. The colophon says so in as many words.
-      contactFormKey: "",
+      ...(contactFormKey ? { contactFormKey } : {}),
+      // Every page falls back to this for Open Graph. Without it a shared
+      // link renders as a bare title card — which the standalone site did not
+      // do, and which the cutover parity check is what surfaced.
+      ogImage: media.hero("Norven — architecture of consequence"),
     },
-    pages: [home(media), projectsIndex(), studio(), contact(), colophon()],
+    pages: [home(media), projectsIndex(), studio(), contact(contactFormKey), colophon()],
     collections: { projects: { pathTemplate: "/projects/{slug}/", entries: projects(media) } },
   };
 }
@@ -370,7 +380,16 @@ function studio(): Record<string, unknown> {
   };
 }
 
-function contact(): Record<string, unknown> {
+/**
+ * `enabled` on the form follows the key, and the publish gate is why.
+ *
+ * A form with no delivery key is refused at publish, because submissions
+ * would be lost silently. Seeding one unconditionally would therefore hand
+ * an operator a draft that cannot be published and no obvious reason —
+ * so with no key the section is parked, the rest of the page still ships,
+ * and enabling it is a deliberate step after the key is set.
+ */
+function contact(contactFormKey: string): Record<string, unknown> {
   return {
     id: id(3),
     path: "/contact/",
@@ -392,6 +411,7 @@ function contact(): Record<string, unknown> {
       },
       {
         type: "contactForm",
+        enabled: contactFormKey !== "",
         fields: {
           eyebrow: "Enquiries",
           heading: "Send a brief.",
