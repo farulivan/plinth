@@ -4,9 +4,11 @@
 # audit: the same astro build the publish job runs (ADR-0013), against the same
 # renderer and template, with the same media bytes a real upload would produce.
 #
-# The media tree is copied in rather than living in site-builder/public/,
-# because public/ ships with every real tenant build — the fixture must never
-# leak into a customer's site.
+# The media tree is copied in rather than living in a public/ directory,
+# because publicDir ships verbatim with every real tenant build — the fixture
+# must never leak into a customer's site. That directory now belongs to the
+# template (it carries the brand icons), which makes the rule stricter, not
+# looser: fixture bytes there would ship to every tenant on that template.
 #
 #   ./scripts/build-tenant-fixture.sh [out-dir]
 

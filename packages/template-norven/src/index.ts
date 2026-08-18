@@ -33,6 +33,10 @@ export {
 
 export { norvenChrome, Nav, Footer, type NorvenChrome } from "./chrome";
 
+// Brand TOKENS only — `norvenPublicDir` stays out of the barrel on purpose,
+// see ./publicDir.ts.
+export { norvenBrand, type NorvenBrand } from "./brand";
+
 export { PhotoHero } from "./sections/PhotoHero";
 export { Statement } from "./sections/Statement";
 export { FeaturedProjects } from "./sections/FeaturedProjects";

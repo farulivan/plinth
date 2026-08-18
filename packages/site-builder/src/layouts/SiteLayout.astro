@@ -14,6 +14,7 @@ import { resolveImageUrl } from "@plinth/renderer";
 // goes through, including 404.astro, so a new route cannot forget it and ship
 // an unstyled page.
 import "@plinth/template-norven/styles.css";
+import { templateBrandFor } from "../lib/brand";
 import { siteUrl } from "../lib/snapshot";
 
 interface Props {
@@ -23,6 +24,8 @@ interface Props {
 }
 
 const { site, seo, path } = Astro.props;
+
+const { headIcons, themeColor } = templateBrandFor(process.env.TEMPLATE_ID).brand;
 
 const title = seo.title ?? site.name;
 const description = seo.description ?? site.description;
@@ -58,8 +61,12 @@ const organization = {
     {canonical ? <link rel="canonical" href={canonical} /> : null}
     {seo.noindex ? <meta name="robots" content="noindex, nofollow" /> : null}
 
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="theme-color" content="#f4f1ea" />
+    <link rel="icon" type="image/svg+xml" href={headIcons.svg} />
+    <link rel="icon" type="image/x-icon" href={headIcons.ico} sizes="32x32" />
+    <link rel="apple-touch-icon" sizes="180x180" href={headIcons.appleTouch} />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content={themeColor.light} />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content={themeColor.dark} />
 
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
