@@ -18,6 +18,9 @@ const CONTENT_TYPES: Record<string, string> = {
   ".ico": "image/x-icon",
   ".txt": "text/plain; charset=utf-8",
   ".xml": "application/xml",
+  // Browsers ignore a manifest served as octet-stream, so the install
+  // prompt and the maskable icons silently do nothing.
+  ".webmanifest": "application/manifest+json; charset=utf-8",
   ".woff2": "font/woff2",
 };
 

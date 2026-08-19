@@ -4,6 +4,7 @@ import sitemap from "@astrojs/sitemap";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 
+import { templateBrandFor } from "./src/lib/brand.js";
 import { noindexPaths } from "./src/lib/snapshot.js";
 
 // The publish job invokes `astro build` with SNAPSHOT_PATH/TEMPLATE_ID/OUT_DIR
@@ -23,9 +24,17 @@ const site = process.env.SITE_URL;
 // crawler two contradictory instructions.
 const excluded = new Set(noindexPaths());
 
+// Static files come from the ACTIVE TEMPLATE, not from this package. A
+// public/ directory here is shared by every tenant that ever builds, so the
+// scaffold favicon it shipped with was served as each of their brand marks;
+// icons belong to whoever owns the design. Astro copies publicDir verbatim,
+// so this is the whole mechanism.
+const { publicDir } = templateBrandFor(process.env.TEMPLATE_ID);
+
 export default defineConfig({
   ...(site ? { site } : {}),
   integrations: [react(), sitemap({ filter: (page) => !excluded.has(new URL(page).pathname) })],
   vite: { plugins: [tailwindcss()] },
+  publicDir,
   outDir: process.env.OUT_DIR ?? "./dist",
 });
