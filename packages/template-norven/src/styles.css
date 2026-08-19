@@ -82,6 +82,13 @@
   }
   /* Motion-hidden initial states apply only once the runtime marks html.js —
    * the preview iframe never loads the runtime, so content stays visible. */
+  /* Scroll lock while the mobile overlay is open. On the root element
+     rather than body: Lenis drives scroll through documentElement, so a body
+     lock leaves the page moving behind a menu that covers it. */
+  html.nav-open {
+    overflow: hidden;
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     html.js [data-reveal]:not(.is-in) {
       opacity: 0;

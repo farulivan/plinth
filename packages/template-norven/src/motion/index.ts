@@ -3,7 +3,7 @@
  * published site's page loads this module and calls boot(). The preview
  * iframe never imports it — content is visible without the runtime because
  * every hidden initial state in styles.css is gated on `html.js`, which only
- * boot() adds.
+ * the published layout sets.
  *
  * Reduced motion honors BOTH the OS preference and the dashboard's preview
  * guard attribute (`data-prefers-reduced-motion`, ADR-0007) — belt and
@@ -150,6 +150,24 @@ function bindParallax(): void {
   });
 }
 
+// --- [data-scroll-progress] the reading-progress hairline ---
+/** No stored handle: `teardown` kills every ScrollTrigger this runtime made,
+ * and this one is no exception. Width is written directly rather than tweened
+ * — the value already tracks scroll position, so animating it would add lag
+ * between the page and the thing reporting where the page is. */
+function bindScrollProgress(): void {
+  if (reducedMotion()) return;
+  const bar = document.querySelector<HTMLElement>("[data-scroll-progress]");
+  if (!bar) return;
+  ScrollTrigger.create({
+    start: 0,
+    end: "max",
+    onUpdate: (self) => {
+      bar.style.width = `${(self.progress * 100).toFixed(2)}%`;
+    },
+  });
+}
+
 // --- [data-hero-scale] slow zoom on the hero photo ---
 function bindHeroScale(): void {
   if (reducedMotion()) return;
@@ -195,8 +213,12 @@ function bindCounters(): void {
 }
 
 /**
- * Boot the runtime: mark html.js (activates the CSS hidden states), then bind
- * every effect.
+ * Boot the runtime: bind every effect, then mark the document ready.
+ *
+ * `html.js` is NOT set here. It gates the CSS hidden states, and setting it
+ * from a module that loads over the network meant content painted visible and
+ * was then snapped out of sight a moment later — a flash on every load. The
+ * layout sets it inline before first paint instead.
  *
  * Idempotent, because view transitions call it per navigation (ADR-0015) and
  * the first load calls it directly — so the two overlap on the initial page.
@@ -204,7 +226,6 @@ function bindCounters(): void {
  */
 export function boot(): void {
   teardown();
-  document.documentElement.classList.add("js");
   initLenis();
   bindReveals();
   bindLifts();
@@ -212,7 +233,14 @@ export function boot(): void {
   bindParallax();
   bindHeroScale();
   bindCounters();
+  bindScrollProgress();
   requestAnimationFrame(() => ScrollTrigger.refresh());
+
+  // Stands the layout's failsafe down. Set last, so it means "every effect is
+  // bound" rather than "the module started" — a boot that threw halfway
+  // through leaves this unset and the failsafe reveals the content it would
+  // otherwise have hidden.
+  document.documentElement.setAttribute("data-motion-ready", "");
 }
 
 /**
@@ -226,6 +254,11 @@ export function boot(): void {
  * alive.
  */
 export function teardown(): void {
+  // Cleared here, not just set in boot. `<html>` survives a view transition,
+  // so a flag left over from the previous page would tell the layout's
+  // failsafe that the NEW page was already bound — and a boot that failed
+  // after navigating would leave its content hidden with nothing to rescue it.
+  document.documentElement.removeAttribute("data-motion-ready");
   ScrollTrigger.getAll().forEach((trigger) => {
     trigger.kill();
   });

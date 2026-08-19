@@ -56,6 +56,53 @@ const organization = {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
 
+    {/*
+      Two jobs, both of which have to happen before anything else runs.
+
+      `html.js` gates every hidden initial state in the template stylesheet, so
+      a no-JS visitor sees the whole page rather than a blank one. It is set
+      inline, in the head, because setting it from the motion module meant
+      waiting on a network fetch: content painted at full opacity and was then
+      snapped out of sight when the module finally arrived — a flash on every
+      load, on the page a visitor looks at first.
+
+      The failsafe covers the case the gate creates. Content is now hidden from
+      first paint, so anything that stops the runtime finishing — a chunk that
+      404s, a throw partway through binding — would leave the page permanently
+      blank. `boot()` sets `data-motion-ready` only after every effect is
+      bound; if that has not appeared within 2.5 seconds, reveal everything and
+      accept the missing animation.
+
+      Inline is permitted by the tenant CSP (`script-src 'self' 'unsafe-inline'`),
+      and this is the one script that cannot be bundled without defeating its
+      own purpose.
+    */}
+    <script is:inline>
+      (function () {
+        const root = document.documentElement;
+        root.classList.add("js");
+
+        function revealAll() {
+          if (root.hasAttribute("data-motion-ready")) return;
+          document
+            .querySelectorAll("[data-reveal]:not(.is-in),[data-reveal-lift]:not(.is-in)")
+            .forEach(function (el) {
+              el.classList.add("is-in");
+            });
+          document.querySelectorAll("img.image-fade:not(.is-loaded)").forEach(function (img) {
+            img.classList.add("is-loaded");
+          });
+        }
+
+        function arm() {
+          setTimeout(revealAll, 2500);
+        }
+
+        arm();
+        document.addEventListener("astro:page-load", arm);
+      })();
+    </script>
+
     <title>{title}</title>
     <meta name="description" content={description} />
     {canonical ? <link rel="canonical" href={canonical} /> : null}
@@ -102,10 +149,12 @@ const organization = {
       // querySelectorAll and stops.
       import { boot, teardown } from "@plinth/template-norven/motion";
       import { enhanceContactForms } from "@plinth/template-norven/forms";
+      import { enhanceNav } from "@plinth/template-norven/nav";
 
       const start = () => {
         boot();
         enhanceContactForms();
+        enhanceNav();
       };
 
       start();
