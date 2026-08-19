@@ -121,7 +121,7 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
             >
               &ldquo;{project.testimonial.quote}&rdquo;
               <footer className="text-bone/70 mt-10 font-sans text-sm not-italic">
-                — {project.testimonial.author}, {project.testimonial.role}
+                {project.testimonial.author} · {project.testimonial.role}
               </footer>
             </blockquote>
           </div>
@@ -134,13 +134,13 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
         <nav className="bg-bone border-line-2 border-t py-12" aria-label="Projects">
           <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-6 px-6 lg:px-10">
             <a href={prev.path} className="group block max-w-[45%]" rel="prev">
-              <span className="eyebrow text-ink-3 mb-2 block">Previous</span>
+              <span className="eyebrow text-ink-3 mb-2 block">← Previous</span>
               <span className="font-display text-ink group-hover:text-brass-2 text-xl transition-colors">
                 {titleOf(prev.entry)}
               </span>
             </a>
             <a href={next.path} className="group block max-w-[45%] text-right" rel="next">
-              <span className="eyebrow text-ink-3 mb-2 block">Next</span>
+              <span className="eyebrow text-ink-3 mb-2 block">Next →</span>
               <span className="font-display text-ink group-hover:text-brass-2 text-xl transition-colors">
                 {titleOf(next.entry)}
               </span>

@@ -224,14 +224,23 @@ function projectsIndex(): Record<string, unknown> {
     path: "/projects/",
     navLabel: "Projects",
     seo: {
-      title: "Projects — Norven",
+      title: "Selected work — Norven",
       description:
-        "Residences, cultural buildings, and landscapes across Northern Europe and beyond.",
+        "A selection of residences, cultural buildings, and landscapes built and in studio by Norven.",
     },
     sections: [
       {
+        type: "pageHero",
+        fields: {
+          eyebrow: "Index · 05 / 118 built",
+          title: "Selected\nwork.",
+          subtitle:
+            "Five projects below stand for the wider practice. Each entry includes a brief, the full project narrative, and key dimensions. The studio has built one hundred eighteen buildings since founding; another twenty-six are in current development.",
+        },
+      },
+      {
         type: "projectIndex",
-        fields: { eyebrow: "Selected work", heading: "Projects", collection: "projects" },
+        fields: { heading: "Selected projects", collection: "projects" },
       },
       contactSpread(),
     ],

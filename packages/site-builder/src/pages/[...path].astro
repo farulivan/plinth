@@ -71,16 +71,18 @@ const template = templateFor(process.env.TEMPLATE_ID);
 const { Nav, Footer } = template.chrome;
 const { site } = document;
 
-// An entry has no SEO of its own until an author writes one, and falling back
-// to the site name would title every project page identically. The template
-// summarises the entry instead — the one thing that can read its fields.
+// An entry has no SEO of its own until an author writes one. The template
+// summarises it — the one thing that can read its fields — and the site name
+// is appended rather than substituted: a tab reading "Salt House" alone says
+// nothing about whose it is, and every other page on the site is titled this
+// way.
 const seo =
   props.kind === "entry"
     ? (() => {
         const summary = template.collections[props.collection]!.summarize(props.entry);
         return {
           ...props.entry.seo,
-          title: props.entry.seo.title ?? summary.title,
+          title: props.entry.seo.title ?? `${summary.title} — ${site.name}`,
           description: props.entry.seo.description ?? summary.description,
         };
       })()

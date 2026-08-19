@@ -153,7 +153,12 @@ export const contactFormSection = defineSection(
 export const projectIndexSection = defineSection(
   "projectIndex",
   z.object({
-    eyebrow: shortText.optional(),
+    /**
+     * Names the grid for assistive technology and is not drawn. The page's
+     * own hero carries the visible title, and rendering a second one here
+     * would state it twice on every page that pairs them — which is every
+     * page this section belongs on.
+     */
     heading: shortText,
     /** The collection to list. A union of one today, and a union rather than a
      * free string so the editor offers a picker instead of asking an author to
