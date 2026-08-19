@@ -29,7 +29,7 @@ const seo = {
 ---
 
 <SiteLayout site={site} seo={seo} path="/404">
-  <Nav siteName={site.name} items={site.nav} currentPath="/404" />
+  <Nav siteName={site.name} items={site.nav} currentPath="/404" cta={site.cta} />
   <main id="main" class="mx-auto max-w-2xl px-6 py-32">
     <p class="eyebrow text-muted">404</p>
     <h1 class="font-display text-display-3 text-ink mt-4">This page doesn’t exist.</h1>
@@ -43,5 +43,16 @@ const seo = {
       Back to the start
     </a>
   </main>
-  <Footer siteName={site.name} note={site.footerNote} social={site.social} />
+  <Footer
+    siteName={site.name}
+    note={site.footerNote}
+    social={site.social}
+    links={site.footerLinks}
+    locations={site.locations}
+    contactEmail={site.contactEmail}
+    cta={site.cta}
+    ctaBlurb={site.ctaBlurb}
+    noteLink={site.footerNoteLink}
+    credit={site.footerCredit}
+  />
 </SiteLayout>

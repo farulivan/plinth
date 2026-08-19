@@ -45,12 +45,26 @@ export function FeaturedProjects({ section }: SectionComponentProps) {
                     className="font-display text-ink leading-[0.98]"
                     style={{ fontSize: "var(--text-display-3)" }}
                   >
-                    {item.title}
+                    {item.href ? (
+                      <a href={item.href} className="hover:text-brass transition-colors">
+                        {item.title}
+                      </a>
+                    ) : (
+                      item.title
+                    )}
                   </h3>
                   <p className="text-ink-3 mt-4 font-mono text-xs tracking-[0.14em] uppercase">
                     {item.location}
                   </p>
                   <p className="text-ink-3 mt-8 max-w-md text-base leading-relaxed">{item.brief}</p>
+                  {item.href ? (
+                    <a
+                      href={item.href}
+                      className="text-ink hover:text-brass mt-10 inline-block border-b border-current pb-1 font-mono text-[11px] tracking-[0.18em] uppercase transition-colors"
+                    >
+                      View project →
+                    </a>
+                  ) : null}
                 </div>
               </article>
             );

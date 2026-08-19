@@ -2,10 +2,17 @@ import type { SectionComponentProps } from "@plinth/renderer";
 import { contactSection } from "../manifest";
 import { lines } from "./lines";
 
-/** The closing contact spread. The original's "Submit a brief" button linked
- * a /contact subpage — single-page tenant sites drop it; email and phone are
- * the live channels. The heading's last line renders muted, as designed. */
-export function Contact({ section }: SectionComponentProps) {
+/**
+ * The closing contact spread. The heading's last line renders muted, as
+ * designed.
+ *
+ * The call to action reads from site settings rather than from this section's
+ * own fields, so the header, the mobile menu, the footer and this all name the
+ * same destination — four places to keep in step by hand is three too many.
+ * It was dropped when a tenant site was a single page and there was nowhere
+ * for it to point; there are eleven pages now.
+ */
+export function Contact({ section, site }: SectionComponentProps) {
   const { fields } = contactSection.parse(section);
   const headingLines = fields.heading.split("\n");
   const leading = headingLines.slice(0, -1);
@@ -34,6 +41,15 @@ export function Contact({ section }: SectionComponentProps) {
                 last
               )}
             </h2>
+            {site?.cta ? (
+              <a
+                href={site.cta.href}
+                className="border-ink text-ink hover:bg-ink hover:text-bone mt-14 inline-block border px-8 py-4 font-mono text-xs tracking-[0.18em] uppercase transition-colors"
+                data-reveal
+              >
+                {site.cta.label} →
+              </a>
+            ) : null}
           </div>
 
           <div className="space-y-10">

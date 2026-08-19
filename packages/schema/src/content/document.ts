@@ -90,7 +90,18 @@ export type LooseContentDocumentV1 = z.infer<typeof looseContentDocumentV1>;
 export function upgradeV1toV2(document: LooseContentDocumentV1): LooseContentDocumentV2 {
   return {
     schemaVersion: 2,
-    site: { name: "", description: "", nav: [], social: [] },
+    // Every list is present and empty rather than absent. The schema
+    // defaults them on parse, but this literal is the parsed shape, and a
+    // v1 snapshot is rebuilt years after it was written — a missing key here
+    // surfaces as a crash inside a footer, not as a validation message.
+    site: {
+      name: "",
+      description: "",
+      nav: [],
+      social: [],
+      footerLinks: [],
+      locations: [],
+    },
     pages: [
       {
         id: HOME_PAGE_ID,

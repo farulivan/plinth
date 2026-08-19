@@ -49,6 +49,13 @@ export const featuredProjectsSection = defineSection(
           location: shortText,
           brief: longText,
           image: mediaRef,
+          /**
+           * Where the card leads. Optional, and authored rather than derived
+           * from the projects collection: a featured card can point at a
+           * case study, an external write-up, or nothing at all, and matching
+           * on title to find an entry would break the moment one is renamed.
+           */
+          href: z.union([z.url(), z.string().startsWith("/")]).optional(),
         }),
       )
       .min(1)
