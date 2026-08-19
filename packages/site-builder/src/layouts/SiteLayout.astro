@@ -45,6 +45,9 @@ const organization = {
   name: site.name,
   ...(origin ? { url: origin } : {}),
   description: site.description,
+  ...(site.contactEmail ? { email: site.contactEmail } : {}),
+  ...(site.contactPhone ? { telephone: site.contactPhone } : {}),
+  ...(site.founded ? { foundingDate: String(site.founded) } : {}),
   ...(site.social.length > 0 ? { sameAs: site.social.map((link) => link.href) } : {}),
 };
 ---

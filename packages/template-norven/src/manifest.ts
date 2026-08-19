@@ -97,7 +97,9 @@ export const contactSection = defineSection(
   z.object({
     eyebrow: shortText,
     heading: longText,
-    email: shortText,
+    /** Both fall back to the site-wide contact details when unset, so a site
+     * with one address does not restate it per section. */
+    email: shortText.optional(),
     phone: shortText.optional(),
     studios: z
       .array(

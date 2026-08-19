@@ -96,7 +96,14 @@ async function main(): Promise<void> {
   ) as unknown as NorvenMedia;
 
   const document = norvenDocument.parse(
-    norvenContent(media, { contactFormKey: process.env.WEB3FORMS_ACCESS_KEY ?? "" }),
+    norvenContent(media, {
+      // A placeholder rather than an empty string. The form only renders when
+      // a key is present, so without one the fixture audited a contact page
+      // that had no form on it — Lighthouse and axe never saw the labels, the
+      // select, or the live region. The fixture is never published, and the
+      // key is public by design even when real.
+      contactFormKey: process.env.WEB3FORMS_ACCESS_KEY ?? "example-content-placeholder-key",
+    }),
   );
 
   await writeFile(join(OUT_DIR, "norven.json"), JSON.stringify(document, null, 2) + "\n");

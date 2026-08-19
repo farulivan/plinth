@@ -61,6 +61,8 @@
     },
     "ctaBlurb": "Bring us a site, a story, a single hour of light.",
     "contactEmail": "studio@norven.example",
+    "contactPhone": "+47 22 00 00 00",
+    "founded": 2009,
     "locations": [
       {
         "city": "Oslo",
@@ -85,7 +87,8 @@
       "width": 6240,
       "height": 3510,
       "widths": [400, 640, 800, 1200, 1366, 1600, 1920]
-    }
+    },
+    "contactFormKey": "example-content-placeholder-key"
   },
   "pages": [
     {
@@ -247,8 +250,6 @@
           "fields": {
             "eyebrow": "Bring us a site",
             "heading": "Bring us a site,\na story,\na single hour of light.",
-            "email": "studio@norven.example",
-            "phone": "+47 22 00 00 00",
             "studios": [
               {
                 "city": "Oslo",
@@ -293,8 +294,6 @@
           "fields": {
             "eyebrow": "Bring us a site",
             "heading": "Bring us a site,\na story,\na single hour of light.",
-            "email": "studio@norven.example",
-            "phone": "+47 22 00 00 00",
             "studios": [
               {
                 "city": "Oslo",
@@ -518,8 +517,6 @@
           "fields": {
             "eyebrow": "Bring us a site",
             "heading": "Bring us a site,\na story,\na single hour of light.",
-            "email": "studio@norven.example",
-            "phone": "+47 22 00 00 00",
             "studios": [
               {
                 "city": "Oslo",
@@ -553,18 +550,18 @@
           "type": "pageHero",
           "enabled": true,
           "fields": {
-            "eyebrow": "Bring us a site",
-            "title": "Tell us what\nyou are building.",
-            "subtitle": "A short brief is enough to start. We reply to every enquiry within fourteen days, whether or not the project is one we can take."
+            "eyebrow": "Brief",
+            "title": "Bring us\na site.",
+            "subtitle": "We accept three to five new commissions per year and read every brief carefully. Expect a personal response within fourteen days, usually sooner. Briefs from outside our usual region are welcome — distance is not a barrier; lack of intent is."
           }
         },
         {
           "type": "contactForm",
-          "enabled": false,
+          "enabled": true,
           "fields": {
             "eyebrow": "Enquiries",
             "heading": "Send a brief.",
-            "note": "Norven is a fictional studio built for a portfolio. Submissions reach its author, not an architecture firm.",
+            "note": "Portfolio note — I built Norven as a fictional studio for this portfolio. Submissions reach me (Farul Ivan), not a real architecture firm.",
             "fallbackEmail": "studio@norven.example",
             "projectTypes": [
               {

@@ -23,25 +23,55 @@ const { site } = document;
 // terms, and there is nothing here worth a search result.
 const seo = {
   title: `Page not found — ${site.name}`,
-  description: "This page does not exist.",
+  description: "The page you were looking for has moved, or was never drawn.",
   noindex: true,
 } as const;
+
+// The secondary way out is the tenant's own first navigation entry rather than
+// a hardcoded path: this page ships with every site built from the template,
+// and a link to /projects/ would be a dead end on a tenant that has no such
+// page — a 404 offering a second 404.
+const [firstNav] = site.nav;
 ---
 
 <SiteLayout site={site} seo={seo} path="/404">
   <Nav siteName={site.name} items={site.nav} currentPath="/404" cta={site.cta} />
-  <main id="main" class="mx-auto max-w-2xl px-6 py-32">
-    <p class="eyebrow text-muted">404</p>
-    <h1 class="font-display text-display-3 text-ink mt-4">This page doesn’t exist.</h1>
-    <p class="text-ink-3 mt-6 max-w-prose">
-      The link may be out of date, or the page may have moved.
-    </p>
-    <a
-      href="/"
-      class="text-ink border-ink mt-10 inline-block border-b font-mono text-xs tracking-widest uppercase"
+  <main id="main">
+    <section
+      class="bg-bone relative flex min-h-[78vh] items-center pt-32 pb-20 lg:pt-44 lg:pb-28"
     >
-      Back to the start
-    </a>
+      <div class="mx-auto w-full max-w-[1400px] px-6 lg:px-10">
+        <p class="eyebrow text-brass-2 mb-10" data-reveal-lift>Error 404</p>
+        <h1
+          class="font-display text-ink leading-[0.92]"
+          style="font-size: var(--text-display-1)"
+          data-reveal-lift
+        >
+          Not on<br />the plans.
+        </h1>
+        <p class="text-ink-3 mt-12 max-w-2xl text-lg leading-relaxed lg:text-xl" data-reveal-lift>
+          This page has moved, or was never drawn. Let us walk you back to solid ground.
+        </p>
+        <nav class="mt-14 flex flex-wrap items-center gap-4" aria-label="Recovery" data-reveal>
+          <a
+            href="/"
+            class="border-ink text-ink hover:bg-ink hover:text-bone border px-8 py-4 font-mono text-xs tracking-[0.18em] uppercase transition-colors"
+          >
+            Return home
+          </a>
+          {
+            firstNav && (
+              <a
+                href={firstNav.href}
+                class="text-ink-3 hover:text-ink px-6 py-4 font-mono text-xs tracking-[0.18em] uppercase transition-colors"
+              >
+                View {firstNav.label.toLowerCase()} →
+              </a>
+            )
+          }
+        </nav>
+      </div>
+    </section>
   </main>
   <Footer
     siteName={site.name}

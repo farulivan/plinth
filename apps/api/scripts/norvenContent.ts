@@ -73,6 +73,8 @@ export function norvenContent(
       // The studio's in-fiction address, not the author's. The colophon is
       // where a reader is told who actually receives what they send.
       contactEmail: "studio@norven.example",
+      contactPhone: "+47 22 00 00 00",
+      founded: 2009,
       locations: [
         { city: "Oslo", address: "Akersgata 12, 0158", country: "Norway" },
         { city: "Lisbon", address: "Rua das Janelas Verdes 9", country: "Portugal" },
@@ -211,8 +213,6 @@ function contactSpread(): Record<string, unknown> {
     fields: {
       eyebrow: "Bring us a site",
       heading: "Bring us a site,\na story,\na single hour of light.",
-      email: "studio@norven.example",
-      phone: "+47 22 00 00 00",
       studios: STUDIOS.map(({ city, address }) => ({ city, address })),
     },
   };
@@ -437,10 +437,10 @@ function contact(contactFormKey: string): Record<string, unknown> {
       {
         type: "pageHero",
         fields: {
-          eyebrow: "Bring us a site",
-          title: "Tell us what\nyou are building.",
+          eyebrow: "Brief",
+          title: "Bring us\na site.",
           subtitle:
-            "A short brief is enough to start. We reply to every enquiry within fourteen days, whether or not the project is one we can take.",
+            "We accept three to five new commissions per year and read every brief carefully. Expect a personal response within fourteen days, usually sooner. Briefs from outside our usual region are welcome — distance is not a barrier; lack of intent is.",
         },
       },
       {
@@ -449,7 +449,7 @@ function contact(contactFormKey: string): Record<string, unknown> {
         fields: {
           eyebrow: "Enquiries",
           heading: "Send a brief.",
-          note: "Norven is a fictional studio built for a portfolio. Submissions reach its author, not an architecture firm.",
+          note: "Portfolio note — I built Norven as a fictional studio for this portfolio. Submissions reach me (Farul Ivan), not a real architecture firm.",
           fallbackEmail: "studio@norven.example",
           projectTypes: [
             { label: "Residence" },
