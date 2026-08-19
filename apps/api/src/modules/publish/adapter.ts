@@ -98,6 +98,23 @@ export async function removeBuildDir(workDir: string): Promise<void> {
   }
 }
 
+/**
+ * How many objects go up at once.
+ *
+ * Serial uploads were the original shape and they do not scale with the page
+ * count: a tenant site is ~40 objects today and every page an author adds is
+ * another handful, at 50–150 ms of round trip each. That time is spent inside
+ * the single build-and-upload step, so it competes with ADR-0003's budget —
+ * and because building and uploading deliberately share a step, running out
+ * of time re-runs the Astro build as well as the upload.
+ *
+ * Eight rather than the highest number R2 tolerates. The bound that matters
+ * is not the bucket, which would not notice ten times this; it is the 512 MB
+ * machine holding one file buffer per worker while `astro build`'s memory has
+ * only just been released.
+ */
+const UPLOAD_CONCURRENCY = 8;
+
 /** Uploads a built site to `tenants/{workspaceId}/v{N}/…` (ADR-0003's
  * content-addressed layout — new versions never overwrite old paths, so the
  * CDN needs no invalidation). Returns the object count. */
@@ -108,7 +125,8 @@ export async function uploadSiteDir(input: {
 }): Promise<{ files: number }> {
   const entries = await readdir(input.dir, { recursive: true, withFileTypes: true });
   const files = entries.filter((entry) => entry.isFile());
-  for (const entry of files) {
+
+  const put = async (entry: (typeof files)[number]): Promise<void> => {
     const absolute = join(entry.parentPath, entry.name);
     const key = [
       "tenants",
@@ -124,6 +142,35 @@ export async function uploadSiteDir(input: {
         ContentType: contentTypeFor(entry.name),
       }),
     );
-  }
+  };
+
+  // A shared cursor rather than fixed-size batches: batching waits for its
+  // slowest member before starting the next group, and these files range from
+  // a 200-byte robots.txt to a 150 KB script, so a batch is only as fast as
+  // whichever large file it happened to contain. This keeps exactly
+  // UPLOAD_CONCURRENCY requests in flight until the work runs out.
+  let cursor = 0;
+  let failed = false;
+
+  const worker = async (): Promise<void> => {
+    while (!failed) {
+      const index = cursor++;
+      if (index >= files.length) return;
+      try {
+        await put(files[index]!);
+      } catch (error) {
+        // Stop drawing new work. The step retries and re-PUTs everything —
+        // paths are per-version, so a partial upload is overwritten rather
+        // than merged — but there is no reason to spend the rest of the
+        // budget on an attempt already known to be failing.
+        failed = true;
+        throw error;
+      }
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(UPLOAD_CONCURRENCY, files.length) }, () => worker()),
+  );
   return { files: files.length };
 }
