@@ -11,7 +11,8 @@
     "./public-dir": "./src/publicDir.ts",
     "./motion": "./src/motion/index.ts",
     "./styles.css": "./src/styles.css",
-    "./forms": "./src/forms/index.ts"
+    "./forms": "./src/forms/index.ts",
+    "./nav": "./src/nav/index.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

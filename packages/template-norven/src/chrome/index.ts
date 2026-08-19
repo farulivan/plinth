@@ -11,3 +11,4 @@ export const norvenChrome = { Nav, Footer };
 export type NorvenChrome = typeof norvenChrome;
 
 export { Nav, Footer };
+export { ScrollHud } from "./ScrollHud";
