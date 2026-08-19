@@ -114,16 +114,23 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
       {project.testimonial ? (
         <section className="bg-ink text-bone py-28 lg:py-36" data-section="projectTestimonial">
           <div className="mx-auto max-w-[1400px] px-6 lg:px-10">
+            {/* Straight marks, and the attribution outside the quote. A
+                blockquote's `<footer>` is read as part of the quotation by
+                some assistive technology, which attributes the speaker's own
+                name to the speaker. */}
             <blockquote
-              className="font-display text-bone max-w-[24ch] leading-[1.15] italic"
+              className="font-display leading-[1.15]"
               style={{ fontSize: "var(--text-display-3)" }}
-              data-reveal-lift
+              data-reveal
             >
-              &ldquo;{project.testimonial.quote}&rdquo;
-              <footer className="text-bone/70 mt-10 font-sans text-sm not-italic">
-                {project.testimonial.author} · {project.testimonial.role}
-              </footer>
+              &quot;{project.testimonial.quote}&quot;
             </blockquote>
+            <p
+              className="text-bone/70 mt-8 font-mono text-xs tracking-[0.16em] uppercase"
+              data-reveal
+            >
+              {project.testimonial.author} · {project.testimonial.role}
+            </p>
           </div>
         </section>
       ) : null}

@@ -95,6 +95,20 @@ async function main(): Promise<void> {
     Object.entries(ingested).map(([name, item], index) => [name, makeRef(item, index)]),
   ) as unknown as NorvenMedia;
 
+  // One project's photographs, not all five. The gates need a gallery to
+  // audit — without one, the component's captions, its figure markup and its
+  // lazy-loading are never measured on any page — but twenty photographs
+  // through the encoder would add tens of megabytes to a fixture that is
+  // committed, and the twenty-first would prove nothing the fourth did not.
+  const galleryDir = join(assets, "content/projects/salt-house");
+  const saltHouseGallery = [];
+  for (const file of ["photo-1.jpg", "photo-2.jpg", "photo-3.jpg", "photo-4.jpg"]) {
+    saltHouseGallery.push(await ingest(join(galleryDir, file)));
+  }
+  media.gallery = {
+    "salt-house": saltHouseGallery.map((item, index) => makeRef(item, 100 + index)),
+  };
+
   const document = norvenDocument.parse(
     norvenContent(media, {
       // A placeholder rather than an empty string. The form only renders when

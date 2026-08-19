@@ -89,6 +89,31 @@ async function main(): Promise<void> {
       nordStrata: await cover("nord-strata-tower"),
     };
 
+    // Every project's photographs. A real seed ingests all of them — the
+    // committed fixture takes one set to keep its size sane, but a published
+    // site with four empty project galleries is the visible half of this.
+    const galleries: Record<string, MediaItem[]> = {};
+    for (const slug of [
+      "salt-house",
+      "obsidian-pavilion",
+      "terra-works",
+      "holm-chapel",
+      "nord-strata-tower",
+    ]) {
+      const photos: MediaItem[] = [];
+      for (const file of ["photo-1.jpg", "photo-2.jpg", "photo-3.jpg", "photo-4.jpg"]) {
+        photos.push(
+          await ingest(
+            db,
+            workspace.id,
+            owner.id,
+            join(assets, `content/projects/${slug}/${file}`),
+          ),
+        );
+      }
+      galleries[slug] = photos;
+    }
+
     // Content comes from the shared module, so a real draft and the fixture
     // the tenant gates audit cannot describe different sites.
     // Two schemas, two jobs: the template one rejects content the sections
@@ -96,6 +121,9 @@ async function main(): Promise<void> {
     const media = Object.fromEntries(
       Object.entries(ingested).map(([name, item]) => [name, makeRef(item)]),
     ) as unknown as NorvenMedia;
+    media.gallery = Object.fromEntries(
+      Object.entries(galleries).map(([slug, items]) => [slug, items.map(makeRef)]),
+    );
 
     const document = parseContentDocument(
       norvenDocument.parse(

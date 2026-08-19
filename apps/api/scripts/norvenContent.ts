@@ -25,6 +25,14 @@ export interface NorvenMedia {
   terraWorks: MakeRef;
   holmChapel: MakeRef;
   nordStrata: MakeRef;
+  /**
+   * Gallery photographs per project slug, in order. Optional per project on
+   * purpose: the committed fixture carries one project's set so the quality
+   * gates have a gallery to audit, while a real seed ingests all of them.
+   * A project whose photographs are absent renders without a gallery rather
+   * than with empty frames.
+   */
+  gallery?: Partial<Record<string, MakeRef[]>>;
 }
 
 /** Stable ids, so regenerating the fixture produces byte-identical output and
@@ -524,7 +532,7 @@ function colophon(): Record<string, unknown> {
               tone: "bone",
               body: [
                 "The studio, its three offices in Oslo, Lisbon, and Kyoto, the one hundred eighteen built projects, the team, the testimonials, the awards — all invented, end to end. The fiction exists to give the architecture serious enough subject matter that the craft of the build is visible against it.",
-                "The contact details rendered as the studio's — studio@norven.example, a Norwegian dialling code — are deliberate non-deliverable placeholders, so nobody is misled into writing to a real-looking address. The enquiry form posts to a real endpoint; submissions reach the author, not a fictional studio inbox.",
+                "The contact details rendered as the studio’s — studio@norven.example, a Norwegian dialling code — are deliberate non-deliverable placeholders, so nobody is misled into writing to a real-looking address. The enquiry form posts to a real endpoint; submissions reach the author, not a fictional studio inbox.",
               ],
             },
             {
@@ -534,7 +542,7 @@ function colophon(): Record<string, unknown> {
               body: [
                 "Until recently Norven was a standalone Astro site. Its content lived in the repository as markdown and TypeScript data files, a commit triggered a build, and the output went to an S3 bucket behind Cloudflare. Editing a project meant opening an editor, changing a file, and pushing. That worked, and for a site with one author it was the right shape.",
                 "It is now published by Plinth — a small multi-tenant CMS built for exactly this purpose. The content lives in Postgres instead of in files. Editing happens in a browser. Publishing takes an immutable snapshot of the document, runs the same Astro build against it, and uploads the result to Cloudflare R2; an edge worker then points the hostname at the new version by swapping a single pointer.",
-                "The reason for the move is narrow and worth stating plainly: adding a sixth project should not require a deploy. Under the old shape, every content change was a code change, which meant every content change carried a build's risk and a developer's availability. Under the new one, the content and the code have separate release cycles — and the site can be handed to somebody who does not write code at all.",
+                "The reason for the move is narrow and worth stating plainly: adding a sixth project should not require a deploy. Under the old shape, every content change was a code change, which meant every content change carried a build’s risk and a developer’s availability. Under the new one, the content and the code have separate release cycles — and the site can be handed to somebody who does not write code at all.",
                 "What did not change is the output. The same renderer draws the same sections, the pages are still fully static HTML with no client-side framework, and the performance and accessibility budgets the old site held itself to are enforced against the new one on every pull request.",
               ],
             },
@@ -615,6 +623,97 @@ function colophon(): Record<string, unknown> {
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Gallery captions and alt text, in the order the photographs are ingested.
+ * Separate from the refs because a caption is content and a ref is a pointer
+ * at bytes — and because the fixture supplies fewer refs than there are
+ * captions, so the two lists are zipped rather than assumed equal.
+ */
+const GALLERY: Record<string, { alt: string; caption: string }[]> = {
+  "salt-house": [
+    {
+      alt: "Salt House — exterior, approach from the fishermen's path",
+      caption: "Exterior · approach",
+    },
+    { alt: "Salt House — primary interior volume, oak stair", caption: "Interior · main volume" },
+    { alt: "Salt House — cedar rainscreen and copper roof detail", caption: "Detail · materials" },
+    { alt: "Salt House — site above the Skagerrak, Tjøme", caption: "Site · context" },
+  ],
+  "obsidian-pavilion": [
+    {
+      alt: "Obsidian Pavilion — exterior, cast-basalt stack at Þingvellir",
+      caption: "Exterior · approach",
+    },
+    {
+      alt: "Obsidian Pavilion — interior shaft, ash reading bench",
+      caption: "Interior · main volume",
+    },
+    {
+      alt: "Obsidian Pavilion — light slot detail, winter solstice angle",
+      caption: "Detail · materials",
+    },
+    { alt: "Obsidian Pavilion — site at the Almannagjá fault, Iceland", caption: "Site · context" },
+  ],
+  "terra-works": [
+    {
+      alt: "Terra Works — exterior, south facade of the 1937 ceramic warehouse, Marvila",
+      caption: "Exterior · approach",
+    },
+    {
+      alt: "Terra Works — interior CLT armature, exposed oiled glulam beams",
+      caption: "Interior · main volume",
+    },
+    {
+      alt: "Terra Works — air gap between timber insert and historic brick wall",
+      caption: "Detail · materials",
+    },
+    {
+      alt: "Terra Works — courtyard shallow pool and covered ground-floor corridor",
+      caption: "Site · context",
+    },
+  ],
+  "holm-chapel": [
+    {
+      alt: "Holm Chapel — exterior, rammed earth mass at Higashiyama",
+      caption: "Exterior · approach",
+    },
+    {
+      alt: "Holm Chapel — interior, zelkova bench under the oculus light cut",
+      caption: "Interior · main volume",
+    },
+    {
+      alt: "Holm Chapel — rammed earth striations, 38 horizontal lifts in detail",
+      caption: "Detail · materials",
+    },
+    { alt: "Holm Chapel — site within the university campus, Kyoto", caption: "Site · context" },
+  ],
+  "nord-strata-tower": [
+    {
+      alt: "Nord-Strata Tower — exterior render, sixteen cantilevered plates, Reykjavík",
+      caption: "Exterior · approach",
+    },
+    {
+      alt: "Nord-Strata Tower — interior central daylight void, exhibition floor",
+      caption: "Interior · main volume",
+    },
+    {
+      alt: "Nord-Strata Tower — chamfered concrete plate edge and laitance aggregate detail",
+      caption: "Detail · materials",
+    },
+    { alt: "Nord-Strata Tower — site model, Reykjavík harbour context", caption: "Site · context" },
+  ],
+};
+
+/** Zip a project's photograph refs with its captions. */
+function galleryFor(media: NorvenMedia, slug: string): Record<string, unknown>[] {
+  const refs = media.gallery?.[slug] ?? [];
+  const meta = GALLERY[slug] ?? [];
+  return refs.flatMap((ref, index) => {
+    const item = meta[index];
+    return item ? [{ image: ref(item.alt), caption: item.caption }] : [];
+  });
+}
+
 function projects(media: NorvenMedia): Record<string, unknown>[] {
   const entry = (
     n: number,
@@ -643,11 +742,11 @@ function projects(media: NorvenMedia): Record<string, unknown>[] {
       brief:
         "A coastal residence cut into a granite shelf above the Skagerrak. Three volumes stepped down the slope, a single oak stair binding them.",
       body: [
-        "The site is a granite shelf 14 metres above the Skagerrak, exposed to prevailing south-west wind and the salt spray that follows it. A fishermen's path cuts diagonally across the rock, bending around a jutting boss at mid-slope. The building does not interrupt the path. It settles below it, into three cuts in the shelf, each volume occupying the natural terrace the rock already offered.",
-        "Section drives everything. The uppermost volume holds the living and kitchen spaces at the elevation of the path; below it, a sleeping block cantilevered 1.2 metres over the granite; below that, a single hearth room at the water's edge. An oak stair threads through all three, its treads left rough-sawn and untreated.",
-        "The plinth is board-marked concrete struck directly from rough-sawn shuttering, the grain of the timber pressed into the surface. Above it, a cedar rainscreen of 90 mm vertical boards, already greying at the south corners. The roof is copper standing-seam: red-brown now, expected to reach a near-black patina in twelve winters.",
+        "The site is a granite shelf 14 metres above the Skagerrak, exposed to prevailing south-west wind and the salt spray that follows it. A fishermen’s path cuts diagonally across the rock, bending around a jutting boss at mid-slope. The building does not interrupt the path. It settles below it, into three cuts in the shelf, each volume occupying the natural terrace the rock already offered.",
+        "Section drives everything. The uppermost volume holds the living and kitchen spaces at the elevation of the path; below it, a sleeping block cantilevered 1.2 metres over the granite; below that, a single hearth room at the water’s edge. An oak stair threads through all three, its treads left rough-sawn and untreated. Salt-air drying screens of stainless mesh span between the sleeping block and the rock face, framing a utility recess sheltered from the prevailing direction.",
+        "The plinth is board-marked concrete struck directly from rough-sawn shuttering, the grain of the timber pressed into the surface. Above it, a cedar rainscreen of 90 mm vertical boards, already greying at the south corners. The roof is copper standing-seam: red-brown now, expected to reach a near-black patina in twelve winters, reading against the granite shelf as a continuous dark surface when seen from the approach by water.",
       ],
-      gallery: [],
+      gallery: galleryFor(media, "salt-house"),
       testimonial: {
         quote:
           "We asked for a house that would earn its place on the rock, and they gave us one that seems to have always been there. Every season it looks more itself.",
@@ -665,11 +764,11 @@ function projects(media: NorvenMedia): Record<string, unknown>[] {
       brief:
         "A reading room and lava-field interpretive structure at the seam between the North American and Eurasian plates. Vertical, narrow, deliberately weightless.",
       body: [
-        "The pavilion stands where two continental plates pull apart at roughly two centimetres a year. Building on a moving seam is a structural problem before it is an architectural one: the foundation is a single raft, deliberately undersized in plan, so the structure sits on one side of the rift rather than bridging it.",
-        "Above the raft the building is as light as the programme allows. A steel frame carries basalt-aggregate panels cast on site; the glazing is a single continuous band at reading height, oriented north so the light never moves across a page.",
-        "The interpretive route runs the long axis and ends outdoors, on a platform cantilevered over the fissure itself. The last thing a visitor reads is a line cut into the handrail giving the width of the gap in the year the building opened.",
+        "Þingvellir is a rift valley: two tectonic plates separating at 2.5 cm per year, the ground literally tearing in slow time. The Icelandic Heritage Council commissioned a structure that would register this condition without explaining it, placed at the edge of the Almannagjá fault. Silence is the primary material at the site; wind from the north comes across open water and arrives unchanged. The brief asked for a reading room and an orientation space, nothing more.",
+        "Twelve cast-basalt slabs stack vertically around a narrow central shaft. Each slab rotates 3° on plan relative to the one below, so the stack accumulates a total rotation of 33° between plinth and crown. This rotation generates a vertical compression effect: the interior reads as progressively taller toward the top, adding a perceived half-metre of height beyond the structural 5.4 m. Slabs four and eight are cast in a lighter aggregate, marking the two moments where the rift fault lines cross the building’s footprint.",
+        "Inside, a single reading bench in waxed ash runs the length of the north wall at 380 mm height. A light slot 220 mm wide and 4.1 m tall cuts the north face at 14° from vertical, calculated to admit direct sunlight to the bench surface between 11:12 and 11:54 on the winter solstice. The Heritage Council brief excluded artificial lighting in perpetuity. After dusk the structure is closed.",
       ],
-      gallery: [],
+      gallery: galleryFor(media, "obsidian-pavilion"),
     }),
     entry(3, "terra-works", media.terraWorks, {
       title: "Terra Works",
@@ -681,11 +780,11 @@ function projects(media: NorvenMedia): Record<string, unknown>[] {
       brief:
         "Adaptive reuse of a 1937 ceramics warehouse into studio offices for nine creative tenants. Original shell retained; programme built as freestanding timber inserts.",
       body: [
-        "The warehouse was structurally sound and thermally hopeless: single-skin brick, a sawtooth roof glazed with wired glass, and no insulation of any kind. Rather than line the shell and lose it, the new programme is nine freestanding timber volumes standing clear of the walls.",
-        "Each insert is a building in itself, insulated and serviced independently, so the shell becomes a covered street rather than an envelope. Heating loads fell by roughly two thirds against a conventional line-and-seal retrofit, and every original surface stays visible.",
-        "The sawtooth glazing was replaced in kind, not upgraded: the wired glass was reproduced by a Portuguese manufacturer working from a surviving pane. It is the one part of the project where performance lost to continuity, and the argument for it is written into the client's brief.",
+        "The warehouse was built in 1937 for a tile manufacturer and stood dormant for 24 years following the factory’s closure in 2001. The Lisbon city authority placed a preservation order on the brick shell; the client required 4,200 m² of leasable creative studios without suspended ceilings, without the warehouse’s proportions being domesticated. The brief also asked that the intervention be structurally reversible: the building should be returnable to its original condition within a defined number of decades.",
+        "A cross-laminated timber armature was designed as a freestanding structure inserted 3 metres clear of the original brick walls on all four sides. The timber frame carries its own loads independently; no fixings penetrate the historic masonry at a structural level. Floor plates are 200 mm CLT on glulam beams, the underside left exposed and oiled. Nine studio units are arranged across three levels, each with 4.8-metre clear internal height. The armature can be disassembled in sequence without damaging the shell.",
+        "The air gap between timber insert and brick wall reads at ground level as a covered public corridor, open on the south face and shaded by the original wall mass on the north. Rainwater from the warehouse roof is collected in two 40,000-litre tanks beneath the courtyard and feeds a shallow pool at the centre of the ground-floor plan. The pool is owned collectively by all nine tenants; access is governed by a shared maintenance agreement written into the lease.",
       ],
-      gallery: [],
+      gallery: galleryFor(media, "terra-works"),
     }),
     entry(4, "holm-chapel", media.holmChapel, {
       title: "Holm Chapel",
@@ -697,11 +796,11 @@ function projects(media: NorvenMedia): Record<string, unknown>[] {
       brief:
         "A non-denominational chapel for a small university campus. One room, one bench, one light cut down through three storeys of rammed earth.",
       body: [
-        "The brief asked for a room that would not belong to any faith and would not feel empty of one. The answer is a single volume of rammed earth, three storeys tall and four metres square in plan, entered at the base through a passage cut on the diagonal.",
-        "The earth was taken from the campus's own excavation for the adjoining building and stabilised at four per cent cement — low enough that the strata read clearly, high enough to survive Kyoto's rainfall. Each lift is 120 mm; there are ninety-one of them.",
-        "A single aperture at the top of the south wall admits a shaft of light that crosses the floor over the course of a day and leaves the room entirely between November and February. The absence was designed for, and is described on a plaque at the entrance.",
+        "The commission came from the chaplaincy of a private university after a five-year selection process. The brief stipulated non-denominational use, a maximum footprint of 12 × 15 metres, and no objects, fixtures, or iconography that would resolve the room toward a specific tradition. The building was to be one room. The client’s words were: a place to sit and not be asked anything.",
+        "The walls are rammed earth built in 38 horizontal lifts. The soil came from the previous structure on the site, a concrete caretaker’s pavilion demolished to make way for the chapel: its aggregate is now in the walls as visible striations, one lift every 180 mm. Wall thickness is 650 mm throughout, reducing to 400 mm at the single window aperture on the west face. Construction took eleven months, the earthwork completed before the roof structure was placed.",
+        "A single oculus 220 mm wide and 4 m long is cut vertically through the roof plane, offset 1.8 m from the north wall. Its orientation is fixed to admit direct sunlight to the bench surface for sixteen minutes each day, between 11:32 and 11:48, year-round. Outside those minutes the room receives only reflected and diffused light. One bench of unjointed zelkova timber, 9 m long, 420 mm wide. Nothing else is built in.",
       ],
-      gallery: [],
+      gallery: galleryFor(media, "holm-chapel"),
     }),
     entry(5, "nord-strata-tower", media.nordStrata, {
       title: "Nord-Strata Tower",
@@ -713,11 +812,11 @@ function projects(media: NorvenMedia): Record<string, unknown>[] {
       brief:
         "A vertical archive and exhibition tower for the Nordic Council. Sixteen plates stacked around a central daylight void, sequenced by epoch.",
       body: [
-        "An archive that is also a route. Sixteen floor plates spiral around a central void, each holding one epoch of the collection, so a visitor walking from the ground to the roof passes through the material in chronological order.",
-        "The void is the building's environmental strategy as much as its organising idea: daylight reaches the centre of every plate, and stack ventilation through the shaft carries the summer load without mechanical cooling on twelve of the sixteen floors.",
-        "Construction begins in 2026. The structure is cross-laminated timber above a concrete podium, which at this height required a fire-engineering case rather than a code compliance path; that case is now the reference precedent for two other Nordic projects.",
+        "The Nordic Council commissioned a vertical archive for material culture spanning the ninth century to the present, one storey per century, accessed via a continuous external ramp that winds the full height of the building. Each floor is a single room exhibiting a curated selection of objects, textiles, tools, and documents from one hundred years of Nordic life. The programme requires 6,800 m² of conditioned floor area, a conservation storage sub-level, and a public observation room at the crown.",
+        "The structure is a board-marked concrete core 9.6 metres in diameter with sixteen pre-stressed concrete plates cantilevering 2.4 metres beyond the core perimeter on all sides. Each plate is 380 mm thick and cast with a chamfered lower edge to minimise its visual weight from below. The cantilever on all four faces creates a perimeter gap at floor level; glazing set into this gap draws reflected daylight from the central void down to the colonnade at ground. Plates three, seven, eleven, and fifteen are cast with a pale laitance aggregate drawn from a coastal basalt quarry in the Westfjords, marking the century boundaries between the medieval, early modern, industrial, and contemporary epochs.",
+        "Planning consent is under review with the Reykjavík city authority. The project is at detailed design stage pending consent; structural tender has been prepared and will be issued upon approval. Site preparation is scheduled for early 2027, with targeted practical completion in the third quarter of 2029.",
       ],
-      gallery: [],
+      gallery: galleryFor(media, "nord-strata-tower"),
     }),
   ];
 }
