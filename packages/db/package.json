@@ -16,7 +16,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:preflight": "tsx scripts/preflight.ts"
   },
   "dependencies": {
     "@plinth/schema": "workspace:*",
@@ -30,6 +31,7 @@
     "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.1",
+    "tsx": "^4.22.4",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
   }

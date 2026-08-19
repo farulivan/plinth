@@ -35,6 +35,14 @@ jobs:
       # ADR-0011: migrations land before the new image takes traffic. This
       # step gates the deploy job below — a failed migration never reaches
       # `flyctl deploy`, so the old version keeps serving.
+      # drizzle-kit renders a spinner and exits 1 with no message, so a failed
+      # deploy reports "applying migrations..." and nothing else — a refused
+      # connection, a rotated password and a broken migration all look
+      # identical. This step reads nothing but `select 1` and says which of
+      # those it is; if it passes and the next step fails, the fault is the SQL.
+      - run: pnpm --filter @plinth/db db:preflight
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - run: pnpm --filter @plinth/db db:migrate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
