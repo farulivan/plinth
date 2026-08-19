@@ -106,7 +106,7 @@ export default async function PreviewPage({
   return (
     <>
       <PreviewClient draftId={id.data} initialHash={contentHash(preview.document)} />
-      <Nav siteName={site.name} items={site.nav} currentPath={requested} />
+      <Nav siteName={site.name} items={site.nav} currentPath={requested} cta={site.cta} />
       <main id="main">
         {page ? (
           <Sections
@@ -123,7 +123,16 @@ export default async function PreviewPage({
           })
         ) : null}
       </main>
-      <Footer siteName={site.name} note={site.footerNote} social={site.social} />
+      <Footer
+        siteName={site.name}
+        note={site.footerNote}
+        social={site.social}
+        links={site.footerLinks}
+        locations={site.locations}
+        contactEmail={site.contactEmail}
+        cta={site.cta}
+        ctaBlurb={site.ctaBlurb}
+      />
     </>
   );
 }

@@ -52,7 +52,14 @@ const VERSION = "00000000-0000-0000-0000-000000000003";
 const docWith = (sections: unknown[], pageOverrides = {}): LooseContentDocumentV2 =>
   ({
     schemaVersion: 2,
-    site: { name: "Norven", description: "An architecture practice", nav: [], social: [] },
+    site: {
+      name: "Norven",
+      description: "An architecture practice",
+      nav: [],
+      social: [],
+      footerLinks: [],
+      locations: [],
+    },
     pages: [
       {
         id: "00000000-0000-4000-8000-000000000000",
@@ -210,7 +217,14 @@ describe("requestPublish", () => {
   // workspace is asked once instead of publishing a title nobody chose.
   it("asks for site settings the v1 upgrade could not supply", async () => {
     const draft = docWith([validSection]);
-    draft.site = { name: "", description: "", nav: [], social: [] };
+    draft.site = {
+      name: "",
+      description: "",
+      nav: [],
+      social: [],
+      footerLinks: [],
+      locations: [],
+    };
     vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
 
     const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });

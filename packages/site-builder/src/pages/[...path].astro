@@ -90,7 +90,7 @@ const Detail = props.kind === "entry" ? template.collections[props.collection]!.
 ---
 
 <SiteLayout site={site} seo={seo} path={props.path}>
-  <Nav siteName={site.name} items={site.nav} currentPath={props.path} />
+  <Nav siteName={site.name} items={site.nav} currentPath={props.path} cta={site.cta} />
   <main id="main">
     {
       props.kind === "page" ? (
@@ -105,5 +105,14 @@ const Detail = props.kind === "entry" ? template.collections[props.collection]!.
       ) : null
     }
   </main>
-  <Footer siteName={site.name} note={site.footerNote} social={site.social} />
+  <Footer
+    siteName={site.name}
+    note={site.footerNote}
+    social={site.social}
+    links={site.footerLinks}
+    locations={site.locations}
+    contactEmail={site.contactEmail}
+    cta={site.cta}
+    ctaBlurb={site.ctaBlurb}
+  />
 </SiteLayout>

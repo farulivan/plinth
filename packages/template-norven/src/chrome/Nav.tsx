@@ -1,4 +1,5 @@
 import type { Link } from "@plinth/schema/content";
+import { Emblem, Wordmark } from "./Logo";
 import { ScrollHud } from "./ScrollHud";
 
 interface NavProps {
@@ -6,6 +7,8 @@ interface NavProps {
   items: Link[];
   /** The page being rendered, so the current entry can say so. */
   currentPath: string;
+  /** The standing call to action, if the site has one. */
+  cta?: Link | undefined;
 }
 
 /**
@@ -37,14 +40,23 @@ function covers(href: string, path: string): boolean {
  * `md` and up, rather than being conditional on viewport — there is no
  * viewport at render time, and a server-rendered site cannot ask.
  */
-export function Nav({ siteName, items, currentPath }: NavProps) {
+export function Nav({ siteName, items, currentPath, cta }: NavProps) {
   return (
     <>
       <ScrollHud />
       <header className="border-line-2 bg-bone/85 sticky top-0 z-40 border-b backdrop-blur">
         <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-6 lg:px-10">
-          <a href="/" className="font-display text-ink text-xl tracking-tight">
-            {siteName}
+          <a
+            href="/"
+            aria-label={`${siteName} — home`}
+            className="text-ink inline-flex items-center"
+          >
+            <Emblem className="block h-8 w-auto md:hidden" />
+            <Wordmark className="hidden h-6 w-auto md:block lg:hidden" />
+            <span className="hidden lg:inline-flex lg:items-center lg:gap-3">
+              <Emblem className="h-8 w-auto" />
+              <Wordmark className="h-6 w-auto" />
+            </span>
           </a>
 
           <nav aria-label="Primary" className="hidden md:flex md:items-center md:gap-10">
@@ -70,7 +82,16 @@ export function Nav({ siteName, items, currentPath }: NavProps) {
             </ul>
           </nav>
 
-          {/* Holds the slot the fixed toggle sits over, so the wordmark does not
+          {cta ? (
+            <a
+              href={cta.href}
+              className="border-ink text-ink hover:bg-ink hover:text-bone hidden border px-4 py-2 font-mono text-[11px] tracking-[0.18em] uppercase transition-colors md:inline-block"
+            >
+              {cta.label}
+            </a>
+          ) : null}
+
+          {/* Holds the slot the fixed toggle sits over, so the mark does not
               centre itself into the space the button occupies. */}
           <span className="block h-10 w-10 md:hidden" aria-hidden="true" />
         </div>
@@ -117,6 +138,14 @@ export function Nav({ siteName, items, currentPath }: NavProps) {
             </a>
           );
         })}
+        {cta ? (
+          <a
+            href={cta.href}
+            className="border-ink text-ink mt-8 border px-6 py-3 font-mono text-xs tracking-[0.18em] uppercase"
+          >
+            {cta.label}
+          </a>
+        ) : null}
       </div>
     </>
   );

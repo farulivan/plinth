@@ -22,7 +22,57 @@
       }
     ],
     "footerNote": "Norven is a fictional studio. See the colophon.",
-    "social": [],
+    "social": [
+      {
+        "label": "Instagram · norven.studio",
+        "href": "https://instagram.com/norven.studio"
+      },
+      {
+        "label": "LinkedIn · norven",
+        "href": "https://www.linkedin.com/company/norven"
+      }
+    ],
+    "footerLinks": [
+      {
+        "label": "All projects",
+        "href": "/projects/"
+      },
+      {
+        "label": "The studio",
+        "href": "/studio/"
+      },
+      {
+        "label": "Practice",
+        "href": "/#practice"
+      },
+      {
+        "label": "Process",
+        "href": "/#process"
+      }
+    ],
+    "cta": {
+      "label": "Submit a brief",
+      "href": "/contact/"
+    },
+    "ctaBlurb": "Bring us a site, a story, a single hour of light.",
+    "contactEmail": "studio@norven.example",
+    "locations": [
+      {
+        "city": "Oslo",
+        "address": "Akersgata 12, 0158",
+        "country": "Norway"
+      },
+      {
+        "city": "Lisbon",
+        "address": "Rua das Janelas Verdes 9",
+        "country": "Portugal"
+      },
+      {
+        "city": "Kyoto",
+        "address": "Higashiyama, Sanjō 3-15",
+        "country": "Japan"
+      }
+    ],
     "ogImage": {
       "mediaId": "00000000-0000-4000-8000-000000000001",
       "alt": "Norven — architecture of consequence",

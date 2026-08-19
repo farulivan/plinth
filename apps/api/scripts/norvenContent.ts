@@ -58,7 +58,26 @@ export function norvenContent(
         { label: "Contact", href: "/contact/" },
         { label: "Colophon", href: "/colophon/" },
       ],
-      social: [],
+      social: [
+        { label: "Instagram · norven.studio", href: "https://instagram.com/norven.studio" },
+        { label: "LinkedIn · norven", href: "https://www.linkedin.com/company/norven" },
+      ],
+      footerLinks: [
+        { label: "All projects", href: "/projects/" },
+        { label: "The studio", href: "/studio/" },
+        { label: "Practice", href: "/#practice" },
+        { label: "Process", href: "/#process" },
+      ],
+      cta: { label: "Submit a brief", href: "/contact/" },
+      ctaBlurb: "Bring us a site, a story, a single hour of light.",
+      // The studio's in-fiction address, not the author's. The colophon is
+      // where a reader is told who actually receives what they send.
+      contactEmail: "studio@norven.example",
+      locations: [
+        { city: "Oslo", address: "Akersgata 12, 0158", country: "Norway" },
+        { city: "Lisbon", address: "Rua das Janelas Verdes 9", country: "Portugal" },
+        { city: "Kyoto", address: "Higashiyama, Sanjō 3-15", country: "Japan" },
+      ],
       footerNote: "Norven is a fictional studio. See the colophon.",
       ...(contactFormKey ? { contactFormKey } : {}),
       // Every page falls back to this for Open Graph. Without it a shared

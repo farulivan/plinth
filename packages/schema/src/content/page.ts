@@ -82,6 +82,45 @@ export const siteSettings = z.object({
   nav: z.array(link).max(8).default([]),
   footerNote: z.string().trim().min(1).max(300).optional(),
   social: z.array(link).max(8).default([]),
+  /**
+   * The footer's own link list, separate from `nav` on purpose. A footer
+   * points at things a header cannot afford to — a section anchor partway
+   * down a page, an entry that matters without being top-level — and merging
+   * the two would force every addition here into the primary navigation.
+   */
+  footerLinks: z.array(link).max(8).default([]),
+  /**
+   * A standing call to action, rendered in the header and again at the foot
+   * of the page. Optional because a site that is not soliciting anything
+   * should not be made to invent a button.
+   */
+  cta: link.optional(),
+  /** One line of copy above that call to action. */
+  ctaBlurb: shortText.optional(),
+  /**
+   * Where enquiries reach a person when the form is not the route — the
+   * footer links it directly, and it is the address a visitor falls back to
+   * if a submission fails. Separate from `contactFormKey` below: one is who
+   * receives, the other is how the service is addressed.
+   */
+  contactEmail: z.email().optional(),
+  /**
+   * The addresses the footer lists. Deliberately the same shape as the
+   * `locations` section rather than a reference to it: a section belongs to
+   * one page and can be parked, while the footer is on every page, so
+   * pointing at one would make the whole site's footer depend on whether an
+   * author had finished editing the studio page.
+   */
+  locations: z
+    .array(
+      z.object({
+        city: shortText,
+        address: shortText,
+        country: shortText,
+      }),
+    )
+    .max(6)
+    .default([]),
   /** Site-wide share image, used by any page whose SEO sets none. */
   ogImage: mediaRef.optional(),
   /**
