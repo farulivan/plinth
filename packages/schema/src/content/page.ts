@@ -81,6 +81,19 @@ export const siteSettings = z.object({
   description: z.string().trim().max(160),
   nav: z.array(link).max(8).default([]),
   footerNote: z.string().trim().min(1).max(300).optional(),
+  /**
+   * A link closing the footer note, so the sentence can end somewhere rather
+   * than merely mentioning somewhere. Separate from the note because a link
+   * inside free text would mean parsing markup out of a plain string, and the
+   * whole point of prose-as-data here is that there is no markup to parse.
+   */
+  footerNoteLink: link.optional(),
+  /**
+   * Prepended to the studio cities on the closing line — "Built in Astro" and
+   * the like. Its own field rather than more note, because it sits on the
+   * opposite side of the footer and wraps independently.
+   */
+  footerCredit: shortText.optional(),
   social: z.array(link).max(8).default([]),
   /**
    * The footer's own link list, separate from `nav` on purpose. A footer

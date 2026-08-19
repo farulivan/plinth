@@ -53,7 +53,7 @@ export function norvenContent(
       description:
         "An architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
       nav: [
-        { label: "Projects", href: "/projects/" },
+        { label: "Work", href: "/projects/" },
         { label: "Studio", href: "/studio/" },
         { label: "Contact", href: "/contact/" },
         { label: "Colophon", href: "/colophon/" },
@@ -63,9 +63,9 @@ export function norvenContent(
         { label: "LinkedIn · norven", href: "https://www.linkedin.com/company/norven" },
       ],
       footerLinks: [
-        { label: "All projects", href: "/projects/" },
-        { label: "The studio", href: "/studio/" },
-        { label: "Practice", href: "/#practice" },
+        { label: "Selected projects", href: "/projects/" },
+        { label: "Studio", href: "/studio/" },
+        { label: "Practice areas", href: "/#practice" },
         { label: "Process", href: "/#process" },
       ],
       cta: { label: "Submit a brief", href: "/contact/" },
@@ -78,7 +78,9 @@ export function norvenContent(
         { city: "Lisbon", address: "Rua das Janelas Verdes 9", country: "Portugal" },
         { city: "Kyoto", address: "Higashiyama, Sanjō 3-15", country: "Japan" },
       ],
-      footerNote: "Norven is a fictional studio. See the colophon.",
+      footerNote: "Established MMIX · Norven is a fictional studio",
+      footerNoteLink: { label: "See the colophon", href: "/colophon/" },
+      footerCredit: "Built in Astro",
       ...(contactFormKey ? { contactFormKey } : {}),
       // Every page falls back to this for Open Graph. Without it a shared
       // link renders as a bare title card — which the standalone site did not
@@ -98,7 +100,7 @@ function home(media: NorvenMedia): Record<string, unknown> {
     path: "/",
     navLabel: "Home",
     seo: {
-      title: "Norven — Architecture of consequence",
+      title: "Norven — Architecture of consequence.",
       description:
         "An architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
     },
@@ -127,6 +129,7 @@ function home(media: NorvenMedia): Record<string, unknown> {
           items: [
             {
               title: "Salt House",
+              href: "/projects/salt-house/",
               meta: "Residence · 2023 · Built",
               location: "Tjøme, Norway · 280 m²",
               brief:
@@ -135,6 +138,7 @@ function home(media: NorvenMedia): Record<string, unknown> {
             },
             {
               title: "Obsidian Pavilion",
+              href: "/projects/obsidian-pavilion/",
               meta: "Cultural · 2024 · Built",
               location: "Þingvellir, Iceland · 640 m²",
               brief:
@@ -143,6 +147,7 @@ function home(media: NorvenMedia): Record<string, unknown> {
             },
             {
               title: "Terra Works",
+              href: "/projects/terra-works/",
               meta: "Commercial · 2025 · Built",
               location: "Marvila, Lisbon · 4,200 m²",
               brief:
@@ -151,6 +156,7 @@ function home(media: NorvenMedia): Record<string, unknown> {
             },
             {
               title: "Holm Chapel",
+              href: "/projects/holm-chapel/",
               meta: "Civic · 2022 · Built",
               location: "Higashiyama, Kyoto · 180 m²",
               brief:
@@ -191,17 +197,24 @@ function home(media: NorvenMedia): Record<string, unknown> {
           name: "Margrét Sól",
         },
       },
-      {
-        type: "contact",
-        fields: {
-          eyebrow: "Bring us a site",
-          heading: "Bring us a site,\na story,\na single hour of light.",
-          email: "studio@norven.example",
-          phone: "+47 22 00 00 00",
-          studios: STUDIOS.map(({ city, address }) => ({ city, address })),
-        },
-      },
+      contactSpread(),
     ],
+  };
+}
+
+/** The closing contact spread, shared by the three pages that end with it.
+ * A function rather than a constant because a section instance is mutable
+ * content — two pages holding the same object would alias each other. */
+function contactSpread(): Record<string, unknown> {
+  return {
+    type: "contact",
+    fields: {
+      eyebrow: "Bring us a site",
+      heading: "Bring us a site,\na story,\na single hour of light.",
+      email: "studio@norven.example",
+      phone: "+47 22 00 00 00",
+      studios: STUDIOS.map(({ city, address }) => ({ city, address })),
+    },
   };
 }
 
@@ -220,6 +233,7 @@ function projectsIndex(): Record<string, unknown> {
         type: "projectIndex",
         fields: { eyebrow: "Selected work", heading: "Projects", collection: "projects" },
       },
+      contactSpread(),
     ],
   };
 }
@@ -395,6 +409,7 @@ function studio(): Record<string, unknown> {
           items: STUDIOS.map((studio) => ({ ...studio, hours: "Mon–Fri · By appointment" })),
         },
       },
+      contactSpread(),
     ],
   };
 }

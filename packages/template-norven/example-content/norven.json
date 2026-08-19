@@ -5,7 +5,7 @@
     "description": "An architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
     "nav": [
       {
-        "label": "Projects",
+        "label": "Work",
         "href": "/projects/"
       },
       {
@@ -21,7 +21,12 @@
         "href": "/colophon/"
       }
     ],
-    "footerNote": "Norven is a fictional studio. See the colophon.",
+    "footerNote": "Established MMIX · Norven is a fictional studio",
+    "footerNoteLink": {
+      "label": "See the colophon",
+      "href": "/colophon/"
+    },
+    "footerCredit": "Built in Astro",
     "social": [
       {
         "label": "Instagram · norven.studio",
@@ -34,15 +39,15 @@
     ],
     "footerLinks": [
       {
-        "label": "All projects",
+        "label": "Selected projects",
         "href": "/projects/"
       },
       {
-        "label": "The studio",
+        "label": "Studio",
         "href": "/studio/"
       },
       {
-        "label": "Practice",
+        "label": "Practice areas",
         "href": "/#practice"
       },
       {
@@ -89,7 +94,7 @@
       "navLabel": "Home",
       "enabled": true,
       "seo": {
-        "title": "Norven — Architecture of consequence",
+        "title": "Norven — Architecture of consequence.",
         "description": "An architecture practice working on residences, cultural buildings, and landscapes across Northern Europe and beyond.",
         "noindex": false
       },
@@ -137,7 +142,8 @@
                   "width": 5301,
                   "height": 2982,
                   "widths": [400, 640, 800, 1200, 1366, 1600, 1920]
-                }
+                },
+                "href": "/projects/salt-house/"
               },
               {
                 "title": "Obsidian Pavilion",
@@ -151,7 +157,8 @@
                   "width": 6000,
                   "height": 3375,
                   "widths": [400, 640, 800, 1200, 1366, 1600, 1920]
-                }
+                },
+                "href": "/projects/obsidian-pavilion/"
               },
               {
                 "title": "Terra Works",
@@ -165,7 +172,8 @@
                   "width": 5406,
                   "height": 3041,
                   "widths": [400, 640, 800, 1200, 1366, 1600, 1920]
-                }
+                },
+                "href": "/projects/terra-works/"
               },
               {
                 "title": "Holm Chapel",
@@ -179,7 +187,8 @@
                   "width": 5792,
                   "height": 3258,
                   "widths": [400, 640, 800, 1200, 1366, 1600, 1920]
-                }
+                },
+                "href": "/projects/holm-chapel/"
               },
               {
                 "title": "Nord-Strata Tower",
@@ -276,6 +285,30 @@
             "eyebrow": "Selected work",
             "heading": "Projects",
             "collection": "projects"
+          }
+        },
+        {
+          "type": "contact",
+          "enabled": true,
+          "fields": {
+            "eyebrow": "Bring us a site",
+            "heading": "Bring us a site,\na story,\na single hour of light.",
+            "email": "studio@norven.example",
+            "phone": "+47 22 00 00 00",
+            "studios": [
+              {
+                "city": "Oslo",
+                "address": "Akersgata 12, 0158"
+              },
+              {
+                "city": "Lisbon",
+                "address": "Rua das Janelas Verdes 9"
+              },
+              {
+                "city": "Kyoto",
+                "address": "Higashiyama, Sanjō 3-15"
+              }
+            ]
           }
         }
       ]
@@ -475,6 +508,30 @@
                 "address": "Higashiyama, Sanjō 3-15",
                 "country": "Japan",
                 "hours": "Mon–Fri · By appointment"
+              }
+            ]
+          }
+        },
+        {
+          "type": "contact",
+          "enabled": true,
+          "fields": {
+            "eyebrow": "Bring us a site",
+            "heading": "Bring us a site,\na story,\na single hour of light.",
+            "email": "studio@norven.example",
+            "phone": "+47 22 00 00 00",
+            "studios": [
+              {
+                "city": "Oslo",
+                "address": "Akersgata 12, 0158"
+              },
+              {
+                "city": "Lisbon",
+                "address": "Rua das Janelas Verdes 9"
+              },
+              {
+                "city": "Kyoto",
+                "address": "Higashiyama, Sanjō 3-15"
               }
             ]
           }

@@ -10,6 +10,8 @@ interface FooterProps {
   contactEmail?: string | undefined;
   cta?: Link | undefined;
   ctaBlurb?: string | undefined;
+  noteLink?: Link | undefined;
+  credit?: string | undefined;
 }
 
 /**
@@ -35,6 +37,8 @@ export function Footer({
   contactEmail,
   cta,
   ctaBlurb,
+  noteLink,
+  credit,
 }: FooterProps) {
   const columns =
     (locations.length > 0 ? 1 : 0) +
@@ -139,10 +143,24 @@ export function Footer({
             <p className="text-ink-3 font-mono text-[11px] tracking-[0.14em]">
               © {new Date().getFullYear()} {siteName}
               {note ? ` · ${note}` : null}
+              {noteLink ? (
+                <>
+                  {" · "}
+                  <a
+                    href={noteLink.href}
+                    className="text-ink-3 hover:text-ink underline-offset-4 transition-colors hover:underline"
+                  >
+                    {/* The arrow is the template's, not the label's — every
+                        outward link in this design carries one, and baking it
+                        into the text would make each author retype it. */}
+                    {noteLink.label} →
+                  </a>
+                </>
+              ) : null}
             </p>
-            {locations.length > 0 ? (
+            {credit || locations.length > 0 ? (
               <p className="text-ink-3 font-mono text-[11px] tracking-[0.14em]">
-                {locations.map((studio) => studio.city).join(" · ")}
+                {[credit, ...locations.map((studio) => studio.city)].filter(Boolean).join(" · ")}
               </p>
             ) : null}
           </div>

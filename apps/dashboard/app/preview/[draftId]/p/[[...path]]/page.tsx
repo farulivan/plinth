@@ -132,6 +132,8 @@ export default async function PreviewPage({
         contactEmail={site.contactEmail}
         cta={site.cta}
         ctaBlurb={site.ctaBlurb}
+        noteLink={site.footerNoteLink}
+        credit={site.footerCredit}
       />
     </>
   );
