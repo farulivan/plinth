@@ -86,6 +86,18 @@ overrides:
   # 4.3.1 satisfies both ^4.1.1 and ^4.3.0 — where overriding the helper would
   # step past an exact pin. It also dedupes the tree to one copy.
   js-yaml: "^4.3.1"
+  # nanoid (GHSA-2v37-7h3g-55p8): a custom alphabet plus a size of zero spins
+  # forever. Reached only through postcss, which is itself only reached by
+  # Tailwind at build time, and nothing here calls nanoid at all — but the
+  # patch is a patch release inside the range postcss already declares
+  # (^3.3.16), so there is nothing to weigh up.
+  #
+  # Pinned rather than resolved by `pnpm update`, which is the tempting fix
+  # and the wrong one: bumping the leaf re-resolves every parent that depends
+  # on it, and here that cascaded into vite, vitest, astro, better-auth and
+  # the whole lightningcss platform set — 53 packages moved to patch one. An
+  # override touches the single entry it names.
+  nanoid: "^3.3.18"
 
 # `pnpm audit --prod` runs as a CI gate (.github/workflows/ci.yml). These are
 # the advisories standing at the time the gate landed, each accepted with a
