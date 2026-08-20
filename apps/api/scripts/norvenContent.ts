@@ -470,8 +470,7 @@ function contact(contactFormKey: string): Record<string, unknown> {
         type: "contactForm",
         enabled: contactFormKey !== "",
         fields: {
-          eyebrow: "Enquiries",
-          heading: "Send a brief.",
+          heading: "Send a brief",
           note: "Portfolio note — I built Norven as a fictional studio for this portfolio. Submissions reach me (Farul Ivan), not a real architecture firm.",
           fallbackEmail: "studio@norven.example",
           projectTypes: [
@@ -487,10 +486,15 @@ function contact(contactFormKey: string): Record<string, unknown> {
         },
       },
       {
-        type: "locations",
+        type: "dotMap",
         fields: {
-          eyebrow: "Studios",
-          items: STUDIOS.map((studio) => ({ ...studio, hours: "Mon–Fri · By appointment" })),
+          eyebrow: "Three latitudes",
+          label: "Map of three studios",
+          items: [
+            { city: "Oslo", x: 105, y: 30 },
+            { city: "Lisbon", x: 91, y: 50 },
+            { city: "Kyoto", x: 165, y: 48 },
+          ],
         },
       },
     ],

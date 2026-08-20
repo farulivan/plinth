@@ -9,6 +9,7 @@ import { PhotoHero } from "./PhotoHero";
 import { Practice } from "./Practice";
 import { Principles } from "./Principles";
 import { Process } from "./Process";
+import { DotMap } from "./DotMap";
 import { ProjectIndex } from "./ProjectIndex";
 import { Prose } from "./Prose";
 import { Recognition } from "./Recognition";
@@ -31,6 +32,7 @@ export const norvenComponents: ComponentMap = {
   contact: Contact,
   contactForm: ContactForm,
   projectIndex: ProjectIndex,
+  dotMap: DotMap,
   pageHero: PageHero,
   principles: Principles,
   practice: Practice,

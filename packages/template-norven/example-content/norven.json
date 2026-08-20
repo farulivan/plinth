@@ -567,8 +567,7 @@
           "type": "contactForm",
           "enabled": true,
           "fields": {
-            "eyebrow": "Enquiries",
-            "heading": "Send a brief.",
+            "heading": "Send a brief",
             "note": "Portfolio note — I built Norven as a fictional studio for this portfolio. Submissions reach me (Farul Ivan), not a real architecture firm.",
             "fallbackEmail": "studio@norven.example",
             "projectTypes": [
@@ -596,28 +595,26 @@
           }
         },
         {
-          "type": "locations",
+          "type": "dotMap",
           "enabled": true,
           "fields": {
-            "eyebrow": "Studios",
+            "eyebrow": "Three latitudes",
+            "label": "Map of three studios",
             "items": [
               {
                 "city": "Oslo",
-                "address": "Akersgata 12, 0158",
-                "country": "Norway",
-                "hours": "Mon–Fri · By appointment"
+                "x": 105,
+                "y": 30
               },
               {
                 "city": "Lisbon",
-                "address": "Rua das Janelas Verdes 9",
-                "country": "Portugal",
-                "hours": "Mon–Fri · By appointment"
+                "x": 91,
+                "y": 50
               },
               {
                 "city": "Kyoto",
-                "address": "Higashiyama, Sanjō 3-15",
-                "country": "Japan",
-                "hours": "Mon–Fri · By appointment"
+                "x": 165,
+                "y": 48
               }
             ]
           }
