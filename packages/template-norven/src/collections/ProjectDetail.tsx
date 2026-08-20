@@ -59,6 +59,17 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
             {project.title}
           </h1>
 
+          {/* The brief, at display size, before the specification table.
+              It is the one sentence that says what the project is, and a
+              reader who stops after it should still have been told. */}
+          <p
+            className="font-display text-ink mt-10 leading-[1.18]"
+            style={{ fontSize: "var(--text-display-3)" }}
+            data-reveal
+          >
+            {project.brief}
+          </p>
+
           <dl
             className="border-line-2 mt-12 grid grid-cols-2 gap-y-6 border-t pt-8 lg:grid-cols-3"
             data-reveal
@@ -90,6 +101,11 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
       {project.gallery.length > 0 ? (
         <section className="bg-bone-2 py-20 lg:py-28" data-section="projectGallery">
           <div className="mx-auto max-w-[1400px] px-6 lg:px-10">
+            {/* A heading, so the photographs are a named region rather than a
+                run of unlabelled figures between two blocks of prose. */}
+            <h2 className="eyebrow mb-12" data-reveal-lift>
+              Photographs
+            </h2>
             <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
               {project.gallery.map((slide, index) => (
                 <figure key={index} className="m-0" data-reveal>
@@ -97,7 +113,9 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
                     media={slide.image}
                     ratio="4/3"
                     seed={index + 1}
-                    sizes="(min-width: 768px) 50vw, 100vw"
+                    sizes={
+                      "(min-width: 1400px) 640px, (min-width: 1024px) calc((100vw - 120px) / 2), (min-width: 768px) calc((100vw - 88px) / 2), calc(100vw - 48px)"
+                    }
                   />
                   {slide.caption ? (
                     <figcaption className="text-ink-3 mt-4 font-mono text-xs tracking-[0.14em] uppercase">
@@ -141,13 +159,15 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
         <nav className="bg-bone border-line-2 border-t py-12" aria-label="Projects">
           <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-6 px-6 lg:px-10">
             <a href={prev.path} className="group block max-w-[45%]" rel="prev">
-              <span className="eyebrow text-ink-3 mb-2 block">← Previous</span>
+              <p className="text-ink-3 font-mono text-[10px] tracking-[0.18em] uppercase">
+                ← Previous
+              </p>
               <span className="font-display text-ink group-hover:text-brass-2 text-xl transition-colors">
                 {titleOf(prev.entry)}
               </span>
             </a>
             <a href={next.path} className="group block max-w-[45%] text-right" rel="next">
-              <span className="eyebrow text-ink-3 mb-2 block">Next →</span>
+              <p className="text-ink-3 font-mono text-[10px] tracking-[0.18em] uppercase">Next →</p>
               <span className="font-display text-ink group-hover:text-brass-2 text-xl transition-colors">
                 {titleOf(next.entry)}
               </span>

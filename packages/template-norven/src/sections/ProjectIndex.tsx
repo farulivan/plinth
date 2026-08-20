@@ -46,10 +46,16 @@ export function ProjectIndex({ section, collections }: SectionComponentProps) {
                     // and the browser deprioritises the one image the score
                     // is measured on.
                     priority={index === 0}
-                    // Three columns above lg, two above sm. Stated per
-                    // breakpoint so the browser picks against the slot it
-                    // will actually occupy rather than the widest one.
-                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    // The slot arithmetic, not a rounded fraction. A card
+                    // is not 33vw: the container caps at 1400, carries 40px of
+                    // padding either side and 48px between columns, so at a
+                    // desktop viewport the slot is ~391px and 33vw claims 445.
+                    // The browser believes the claim, reaches a rung higher up
+                    // the ladder than it needs, and half the bytes it decodes
+                    // are thrown away.
+                    sizes={
+                      "(min-width: 1400px) 408px, (min-width: 1024px) calc((100vw - 176px) / 3), (min-width: 640px) calc((100vw - 88px) / 2), calc(100vw - 48px)"
+                    }
                   />
                   {/* Kind and year only. Status and area belong to the
                       project's own page — an index is a way in, and every

@@ -98,7 +98,13 @@ export function norvenContent(
       ogImage: media.hero("Norven — architecture of consequence"),
     },
     pages: [home(media), projectsIndex(), studio(), contact(contactFormKey), colophon()],
-    collections: { projects: { pathTemplate: "/projects/{slug}/", entries: projects(media) } },
+    collections: {
+      projects: {
+        pathTemplate: "/projects/{slug}/",
+        closingSections: [contactSpread()],
+        entries: projects(media),
+      },
+    },
   };
 }
 
@@ -801,6 +807,12 @@ function projects(media: NorvenMedia): Record<string, unknown>[] {
         "A single oculus 220 mm wide and 4 m long is cut vertically through the roof plane, offset 1.8 m from the north wall. Its orientation is fixed to admit direct sunlight to the bench surface for sixteen minutes each day, between 11:32 and 11:48, year-round. Outside those minutes the room receives only reflected and diffused light. One bench of unjointed zelkova timber, 9 m long, 420 mm wide. Nothing else is built in.",
       ],
       gallery: galleryFor(media, "holm-chapel"),
+      testimonial: {
+        quote:
+          "It is the quietest room I have ever entered. Students walk past it all week and then, one day, they come inside. That is exactly what we hoped for.",
+        author: "Akiko Tanabe",
+        role: "Owner, Holm Chapel",
+      },
     }),
     entry(5, "nord-strata-tower", media.nordStrata, {
       title: "Nord-Strata Tower",

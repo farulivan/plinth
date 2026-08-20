@@ -919,7 +919,12 @@
               "The walls are rammed earth built in 38 horizontal lifts. The soil came from the previous structure on the site, a concrete caretaker’s pavilion demolished to make way for the chapel: its aggregate is now in the walls as visible striations, one lift every 180 mm. Wall thickness is 650 mm throughout, reducing to 400 mm at the single window aperture on the west face. Construction took eleven months, the earthwork completed before the roof structure was placed.",
               "A single oculus 220 mm wide and 4 m long is cut vertically through the roof plane, offset 1.8 m from the north wall. Its orientation is fixed to admit direct sunlight to the bench surface for sixteen minutes each day, between 11:32 and 11:48, year-round. Outside those minutes the room receives only reflected and diffused light. One bench of unjointed zelkova timber, 9 m long, 420 mm wide. Nothing else is built in."
             ],
-            "gallery": []
+            "gallery": [],
+            "testimonial": {
+              "quote": "It is the quietest room I have ever entered. Students walk past it all week and then, one day, they come inside. That is exactly what we hoped for.",
+              "author": "Akiko Tanabe",
+              "role": "Owner, Holm Chapel"
+            }
           }
         },
         {
@@ -951,6 +956,30 @@
               "Planning consent is under review with the Reykjavík city authority. The project is at detailed design stage pending consent; structural tender has been prepared and will be issued upon approval. Site preparation is scheduled for early 2027, with targeted practical completion in the third quarter of 2029."
             ],
             "gallery": []
+          }
+        }
+      ],
+      "closingSections": [
+        {
+          "type": "contact",
+          "enabled": true,
+          "fields": {
+            "eyebrow": "Bring us a site",
+            "heading": "Bring us a site,\na story,\na single hour of light.",
+            "studios": [
+              {
+                "city": "Oslo",
+                "address": "Akersgata 12, 0158"
+              },
+              {
+                "city": "Lisbon",
+                "address": "Rua das Janelas Verdes 9"
+              },
+              {
+                "city": "Kyoto",
+                "address": "Higashiyama, Sanjō 3-15"
+              }
+            ]
           }
         }
       ]

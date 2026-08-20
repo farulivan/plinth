@@ -294,6 +294,9 @@ export function Editor({
               // The template owns the path template; a document that has never
               // held this collection has none to reuse.
               pathTemplate: existing?.pathTemplate ?? spec.pathTemplate,
+              // Preserved rather than reset: adding an entry must not silently
+              // strip the spread every detail page in the collection ends on.
+              closingSections: existing?.closingSections ?? [],
               entries: [
                 ...entries,
                 {

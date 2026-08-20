@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import { slug } from "./fieldTypes";
+// `uniqueByType` comes from page.ts, which does not import this module —
+// the dependency runs one way only.
+import { uniqueByType } from "./page";
+import { sectionInstance } from "./section";
 import { pageSeo } from "./seo";
 
 /**
@@ -69,6 +73,20 @@ export function collectionInstanceFor<TFields extends z.ZodType>(fields: TFields
   return z.object({
     pathTemplate,
     entries: z.array(entryInstanceFor(fields)).max(200).default([]).superRefine(uniqueBySlug),
+    /**
+     * Sections rendered below every entry in this collection — the closing
+     * spread a detail page ends on.
+     *
+     * Declared on the collection rather than repeated on each entry, because
+     * it is a fact about how this kind of page ends rather than about any one
+     * project, and an author editing the twelfth project should not be able to
+     * give it a different ending from the other eleven by accident.
+     *
+     * Unique by type like a page's sections, and for the same reason: two of
+     * the same section on one page render as duplicates the editor cannot tell
+     * apart.
+     */
+    closingSections: z.array(sectionInstance).max(4).default([]).superRefine(uniqueByType),
   });
 }
 

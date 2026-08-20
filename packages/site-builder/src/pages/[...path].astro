@@ -89,6 +89,12 @@ const seo =
     : props.page.seo;
 
 const Detail = props.kind === "entry" ? template.collections[props.collection]!.Detail : null;
+
+// The spread a detail page closes on, declared once on the collection rather
+// than repeated per entry. Rendered through the same `Sections` dispatch a
+// page uses, so a section behaves identically wherever it is placed.
+const closing =
+  props.kind === "entry" ? (document.collections[props.collection]?.closingSections ?? []) : [];
 ---
 
 <SiteLayout site={site} seo={seo} path={props.path}>
@@ -105,6 +111,16 @@ const Detail = props.kind === "entry" ? template.collections[props.collection]!.
       ) : Detail ? (
         <Detail entry={props.entry} prev={props.prev} next={props.next} />
       ) : null
+    }
+    {
+      closing.length > 0 && (
+        <Sections
+          sections={closing}
+          components={template.components}
+          collections={resolvedCollections(document)}
+          site={site}
+        />
+      )
     }
   </main>
   <Footer

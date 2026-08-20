@@ -116,11 +116,22 @@ export default async function PreviewPage({
             site={site}
           />
         ) : entryMatch ? (
-          renderGuardedEntry(template, entryMatch.collection, {
-            entry: entryMatch.entry,
-            prev: entryMatch.prev,
-            next: entryMatch.next,
-          })
+          <>
+            {renderGuardedEntry(template, entryMatch.collection, {
+              entry: entryMatch.entry,
+              prev: entryMatch.prev,
+              next: entryMatch.next,
+            })}
+            {/* The published page closes on these, so the preview must too —
+                a preview missing the last thing on the page is a preview that
+                lies about where the page ends (ADR-0007). */}
+            <Sections
+              sections={preview.document.collections[entryMatch.collection]?.closingSections ?? []}
+              components={guardedComponents(template)}
+              collections={resolvedCollections(preview.document)}
+              site={site}
+            />
+          </>
         ) : null}
       </main>
       <Footer
