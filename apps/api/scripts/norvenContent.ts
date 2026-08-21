@@ -33,6 +33,12 @@ export interface NorvenMedia {
    * than with empty frames.
    */
   gallery?: Partial<Record<string, MakeRef[]>>;
+  /**
+   * Team portraits by person slug. Optional like the galleries, and for the
+   * same reason: a section renders the people it has portraits for and simply
+   * omits the frame for anyone it does not.
+   */
+  portraits?: Partial<Record<string, MakeRef>>;
 }
 
 /** Stable ids, so regenerating the fixture produces byte-identical output and
@@ -97,7 +103,7 @@ export function norvenContent(
       // do, and which the cutover parity check is what surfaced.
       ogImage: media.hero("Norven — architecture of consequence"),
     },
-    pages: [home(media), projectsIndex(), studio(), contact(contactFormKey), colophon()],
+    pages: [home(media), projectsIndex(), studio(media), contact(contactFormKey), colophon()],
     collections: {
       projects: {
         pathTemplate: "/projects/{slug}/",
@@ -261,7 +267,7 @@ function projectsIndex(): Record<string, unknown> {
   };
 }
 
-function studio(): Record<string, unknown> {
+function studio(media: NorvenMedia): Record<string, unknown> {
   return {
     id: id(2),
     path: "/studio/",
@@ -380,18 +386,21 @@ function studio(): Record<string, unknown> {
           items: [
             {
               name: "Anders Lien",
+              ...portrait(media, "anders-lien", "Anders Lien"),
               role: "Founding Partner",
               base: "Oslo",
               bio: "Trained at AHO and the ETH Zürich. Founded the practice in 2009 after seven years at Snøhetta. Carries every Norven project from first site visit to handover.",
             },
             {
               name: "Pedro Carvalho",
+              ...portrait(media, "pedro-carvalho", "Pedro Carvalho"),
               role: "Partner, Practice Director",
               base: "Lisbon",
               bio: "Joined in 2014, partner since 2018. Leads the Iberian and southern-European practice. Background in adaptive reuse with Aires Mateus, FAUP graduate 2008.",
             },
             {
               name: "Yuki Sato",
+              ...portrait(media, "yuki-sato", "Yuki Sato"),
               role: "Partner, Research & Publication",
               base: "Kyoto",
               bio: "Joined in 2017, partner since 2022. Runs the Kyoto studio and the studio's three published monographs. Doctorate in tectonic theory from Kyoto University.",
@@ -714,6 +723,17 @@ const GALLERY: Record<string, { alt: string; caption: string }[]> = {
   ],
 };
 
+/** A person's portrait, or nothing — spread into the item so an absent one
+ * leaves the key off entirely rather than setting it to undefined. */
+function portrait(
+  media: NorvenMedia,
+  slug: string,
+  name: string,
+): { portrait?: Record<string, unknown> } {
+  const ref = media.portraits?.[slug];
+  return ref ? { portrait: ref(name) } : {};
+}
+
 /** Zip a project's photograph refs with its captions. */
 function galleryFor(media: NorvenMedia, slug: string): Record<string, unknown>[] {
   const refs = media.gallery?.[slug] ?? [];
@@ -737,7 +757,11 @@ function projects(media: NorvenMedia): Record<string, unknown>[] {
     seo: { noindex: false },
     fields: {
       ...fields,
-      cover: cover(`${String(fields["title"])} — ${String(fields["brief"])}`.slice(0, 300)),
+      // The title alone. Alt text names the picture for someone who
+      // cannot see it; appending the brief restated a paragraph that is
+      // already on the page in text, which a screen reader then reads
+      // twice — once as the image and once as prose.
+      cover: cover(String(fields["title"])),
     },
   });
 

@@ -1,6 +1,7 @@
 import type { EntryComponentProps } from "@plinth/renderer";
 import { projectEntryFields } from "../manifest";
 import { Frame } from "../media/Frame";
+import { mediaRef } from "@plinth/schema/content";
 import { summarizeProject } from "./summarize";
 
 /**
@@ -156,21 +157,54 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
       {/* Omitted entirely for a collection of one, where both links would point
           at the page they are on (ADR-0015). */}
       {prev && next ? (
-        <nav className="bg-bone border-line-2 border-t py-12" aria-label="Projects">
-          <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-6 px-6 lg:px-10">
-            <a href={prev.path} className="group block max-w-[45%]" rel="prev">
-              <p className="text-ink-3 font-mono text-[10px] tracking-[0.18em] uppercase">
-                ← Previous
-              </p>
-              <span className="font-display text-ink group-hover:text-brass-2 text-xl transition-colors">
-                {titleOf(prev.entry)}
-              </span>
+        <nav className="bg-bone border-line-2 border-t py-16" aria-label="Project navigation">
+          <div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-8 px-6 lg:px-10">
+            <a href={prev.path} className="group flex items-center gap-5" rel="prev">
+              {coverOf(prev.entry) ? (
+                <div className="w-24 shrink-0 lg:w-32">
+                  <Frame
+                    media={coverOf(prev.entry)!}
+                    ratio="4/3"
+                    seed={1}
+                    // A thumbnail is 96px, 128px above lg — a fixed size
+                    // rather than a viewport fraction, because it does not
+                    // grow with the window.
+                    sizes="(min-width: 1024px) 128px, 96px"
+                  />
+                </div>
+              ) : null}
+              <div>
+                <p className="text-ink-3 font-mono text-[10px] tracking-[0.18em] uppercase">
+                  ← Previous
+                </p>
+                <p className="font-display text-ink group-hover:text-brass mt-2 text-2xl transition-colors">
+                  {titleOf(prev.entry)}
+                </p>
+              </div>
             </a>
-            <a href={next.path} className="group block max-w-[45%] text-right" rel="next">
-              <p className="text-ink-3 font-mono text-[10px] tracking-[0.18em] uppercase">Next →</p>
-              <span className="font-display text-ink group-hover:text-brass-2 text-xl transition-colors">
-                {titleOf(next.entry)}
-              </span>
+            <a
+              href={next.path}
+              className="group flex items-center justify-end gap-5 text-right"
+              rel="next"
+            >
+              <div>
+                <p className="text-ink-3 font-mono text-[10px] tracking-[0.18em] uppercase">
+                  Next →
+                </p>
+                <p className="font-display text-ink group-hover:text-brass mt-2 text-2xl transition-colors">
+                  {titleOf(next.entry)}
+                </p>
+              </div>
+              {coverOf(next.entry) ? (
+                <div className="w-24 shrink-0 lg:w-32">
+                  <Frame
+                    media={coverOf(next.entry)!}
+                    ratio="4/3"
+                    seed={2}
+                    sizes="(min-width: 1024px) 128px, 96px"
+                  />
+                </div>
+              ) : null}
             </a>
           </div>
         </nav>
@@ -183,4 +217,15 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
  * and the page it points at can never disagree about a project's name. */
 function titleOf(entry: EntryComponentProps["entry"]): string {
   return summarizeProject(entry).title;
+}
+
+/**
+ * A neighbour's cover, read leniently for the same reason its title is: this
+ * runs for the entries either side of the one being rendered, and those are
+ * savable half-written (ADR-0007). Narrowing with the full schema would mean a
+ * finished project fails to build because the next one along has no cover yet.
+ */
+function coverOf(entry: EntryComponentProps["entry"]) {
+  const parsed = mediaRef.safeParse((entry.fields as { cover?: unknown }).cover);
+  return parsed.success ? parsed.data : null;
 }

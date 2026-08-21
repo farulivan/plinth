@@ -436,19 +436,43 @@
                 "name": "Anders Lien",
                 "role": "Founding Partner",
                 "base": "Oslo",
-                "bio": "Trained at AHO and the ETH Zürich. Founded the practice in 2009 after seven years at Snøhetta. Carries every Norven project from first site visit to handover."
+                "bio": "Trained at AHO and the ETH Zürich. Founded the practice in 2009 after seven years at Snøhetta. Carries every Norven project from first site visit to handover.",
+                "portrait": {
+                  "mediaId": "00000000-0000-4000-8000-000000000201",
+                  "alt": "Anders Lien",
+                  "contentHash": "422079fd8caae0ade1ee11aa378ff6e6ec272287cf8538a464a3668c12956527",
+                  "width": 3573,
+                  "height": 4764,
+                  "widths": [400, 640, 800, 1200, 1366, 1600, 1920]
+                }
               },
               {
                 "name": "Pedro Carvalho",
                 "role": "Partner, Practice Director",
                 "base": "Lisbon",
-                "bio": "Joined in 2014, partner since 2018. Leads the Iberian and southern-European practice. Background in adaptive reuse with Aires Mateus, FAUP graduate 2008."
+                "bio": "Joined in 2014, partner since 2018. Leads the Iberian and southern-European practice. Background in adaptive reuse with Aires Mateus, FAUP graduate 2008.",
+                "portrait": {
+                  "mediaId": "00000000-0000-4000-8000-000000000202",
+                  "alt": "Pedro Carvalho",
+                  "contentHash": "45d4950cb4a3a93755d84d098201005d30918138bb25c3f5ac0f65c3b8e4fc94",
+                  "width": 2531,
+                  "height": 3375,
+                  "widths": [400, 640, 800, 1200, 1366, 1600, 1920]
+                }
               },
               {
                 "name": "Yuki Sato",
                 "role": "Partner, Research & Publication",
                 "base": "Kyoto",
-                "bio": "Joined in 2017, partner since 2022. Runs the Kyoto studio and the studio's three published monographs. Doctorate in tectonic theory from Kyoto University."
+                "bio": "Joined in 2017, partner since 2022. Runs the Kyoto studio and the studio's three published monographs. Doctorate in tectonic theory from Kyoto University.",
+                "portrait": {
+                  "mediaId": "00000000-0000-4000-8000-000000000203",
+                  "alt": "Yuki Sato",
+                  "contentHash": "fcc2c97e3d6249640345ec0c320d9e60cefc45d9c0017d911860b41f20b202ad",
+                  "width": 3456,
+                  "height": 4608,
+                  "widths": [400, 640, 800, 1200, 1366, 1600, 1920]
+                }
               }
             ]
           }
@@ -762,7 +786,7 @@
             "brief": "A coastal residence cut into a granite shelf above the Skagerrak. Three volumes stepped down the slope, a single oak stair binding them.",
             "cover": {
               "mediaId": "00000000-0000-4000-8000-000000000002",
-              "alt": "Salt House — A coastal residence cut into a granite shelf above the Skagerrak. Three volumes stepped down the slope, a single oak stair binding them.",
+              "alt": "Salt House",
               "contentHash": "24b8af6ff72f55506fcbdb3b211c789d52028791450057207e62057008cad571",
               "width": 5301,
               "height": 2982,
@@ -843,7 +867,7 @@
             "brief": "A reading room and lava-field interpretive structure at the seam between the North American and Eurasian plates. Vertical, narrow, deliberately weightless.",
             "cover": {
               "mediaId": "00000000-0000-4000-8000-000000000003",
-              "alt": "Obsidian Pavilion — A reading room and lava-field interpretive structure at the seam between the North American and Eurasian plates. Vertical, narrow, deliberately weightless.",
+              "alt": "Obsidian Pavilion",
               "contentHash": "fb9bcbe80312f73aed6186363118cd99bd49d0b4c8579c4b0f611fb7b7a3e217",
               "width": 6000,
               "height": 3375,
@@ -874,7 +898,7 @@
             "brief": "Adaptive reuse of a 1937 ceramics warehouse into studio offices for nine creative tenants. Original shell retained; programme built as freestanding timber inserts.",
             "cover": {
               "mediaId": "00000000-0000-4000-8000-000000000004",
-              "alt": "Terra Works — Adaptive reuse of a 1937 ceramics warehouse into studio offices for nine creative tenants. Original shell retained; programme built as freestanding timber inserts.",
+              "alt": "Terra Works",
               "contentHash": "7841ed3978d19747476c17f903cbc1f267b535b2cfb92dff4b387a9db489fd10",
               "width": 5406,
               "height": 3041,
@@ -905,7 +929,7 @@
             "brief": "A non-denominational chapel for a small university campus. One room, one bench, one light cut down through three storeys of rammed earth.",
             "cover": {
               "mediaId": "00000000-0000-4000-8000-000000000005",
-              "alt": "Holm Chapel — A non-denominational chapel for a small university campus. One room, one bench, one light cut down through three storeys of rammed earth.",
+              "alt": "Holm Chapel",
               "contentHash": "9e808338414b805589c8d28c87f0d9cfc480e94170dcfd5cffda158608159a66",
               "width": 5792,
               "height": 3258,
@@ -941,7 +965,7 @@
             "brief": "A vertical archive and exhibition tower for the Nordic Council. Sixteen plates stacked around a central daylight void, sequenced by epoch.",
             "cover": {
               "mediaId": "00000000-0000-4000-8000-000000000006",
-              "alt": "Nord-Strata Tower — A vertical archive and exhibition tower for the Nordic Council. Sixteen plates stacked around a central daylight void, sequenced by epoch.",
+              "alt": "Nord-Strata Tower",
               "contentHash": "258a20b5dd06c1e7a56623ce875c163349458f9b538456e7c696813b80241445",
               "width": 2833,
               "height": 1594,

@@ -114,6 +114,18 @@ async function main(): Promise<void> {
       galleries[slug] = photos;
     }
 
+    // The principals' portraits. The section renders a person without one,
+    // but the studio page then shows three names and no faces.
+    const portraits: Record<string, MediaItem> = {};
+    for (const slug of ["anders-lien", "pedro-carvalho", "yuki-sato"]) {
+      portraits[slug] = await ingest(
+        db,
+        workspace.id,
+        owner.id,
+        join(assets, `content/team/${slug}/portrait.jpg`),
+      );
+    }
+
     // Content comes from the shared module, so a real draft and the fixture
     // the tenant gates audit cannot describe different sites.
     // Two schemas, two jobs: the template one rejects content the sections
@@ -123,6 +135,9 @@ async function main(): Promise<void> {
     ) as unknown as NorvenMedia;
     media.gallery = Object.fromEntries(
       Object.entries(galleries).map(([slug, items]) => [slug, items.map(makeRef)]),
+    );
+    media.portraits = Object.fromEntries(
+      Object.entries(portraits).map(([slug, item]) => [slug, makeRef(item)]),
     );
 
     const document = parseContentDocument(

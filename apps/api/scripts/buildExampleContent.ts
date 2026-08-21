@@ -109,6 +109,18 @@ async function main(): Promise<void> {
     "salt-house": saltHouseGallery.map((item, index) => makeRef(item, 100 + index)),
   };
 
+  // All three portraits, unlike the galleries. They are one image per person
+  // rather than four per project, and the section they sit in renders nothing
+  // at all without them — a principals list with two of three faces would
+  // audit a layout the site never shows.
+  const portraits: Record<string, Ingested> = {};
+  for (const slug of ["anders-lien", "pedro-carvalho", "yuki-sato"]) {
+    portraits[slug] = await ingest(join(assets, `content/team/${slug}/portrait.jpg`));
+  }
+  media.portraits = Object.fromEntries(
+    Object.entries(portraits).map(([slug, item], index) => [slug, makeRef(item, 200 + index)]),
+  );
+
   const document = norvenDocument.parse(
     norvenContent(media, {
       // A placeholder rather than an empty string. The form only renders when
