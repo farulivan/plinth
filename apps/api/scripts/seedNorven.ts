@@ -29,6 +29,18 @@ const NORVEN_DIR = resolve(import.meta.dirname, process.env.NORVEN_DIR ?? "../..
 const connectionString =
   process.env.DATABASE_URL ?? "postgres://plinth:plinth@localhost:5433/plinth";
 
+/**
+ * Which workspace to seed.
+ *
+ * Overridable because the slug is not a constant in a real deployment: it
+ * composes the tenant's hostname through `hostnameFor`, so renaming the
+ * workspace is how a site moves between hostnames — and production is on
+ * `new-norven` while the cutover is rehearsed. Hardcoding "norven" meant the
+ * production seed failed with "workspace not found" on a database where the
+ * workspace was plainly there under another name.
+ */
+const WORKSPACE_SLUG = process.env.SEED_WORKSPACE_SLUG ?? "norven";
+
 async function ingest(
   db: Db,
   workspaceId: string,
@@ -64,8 +76,18 @@ async function main(): Promise<void> {
     const [workspace] = await db
       .select({ id: workspaces.id })
       .from(workspaces)
-      .where(eq(workspaces.slug, "norven"));
-    if (!workspace) throw new Error('workspace "norven" not found — run `pnpm seed` first');
+      .where(eq(workspaces.slug, WORKSPACE_SLUG));
+    if (!workspace) {
+      const all = await db.select({ slug: workspaces.slug }).from(workspaces);
+      // List what IS there. "Not found" on a database that holds exactly one
+      // workspace under a different name is a naming problem, and saying so
+      // costs one query the failure path can well afford.
+      throw new Error(
+        `workspace "${WORKSPACE_SLUG}" not found. This database has: ` +
+          `${all.map((w) => w.slug).join(", ") || "(none — run `pnpm seed` first)"}. ` +
+          "Set SEED_WORKSPACE_SLUG to pick one.",
+      );
+    }
 
     // uploadMedia writes an audit row, which wants a real actor. The seed's
     // owner is that actor: attributing the ingest to nobody left the column
@@ -75,7 +97,8 @@ async function main(): Promise<void> {
       .from(workspaceMemberships)
       .innerJoin(users, eq(workspaceMemberships.userId, users.id))
       .where(eq(workspaceMemberships.workspaceId, workspace.id));
-    if (!owner) throw new Error('workspace "norven" has no member — run `pnpm seed` first');
+    if (!owner)
+      throw new Error(`workspace "${WORKSPACE_SLUG}" has no member — run \`pnpm seed\` first`);
 
     const assets = join(NORVEN_DIR, "src");
     const cover = (slug: string) =>
