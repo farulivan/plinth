@@ -71,22 +71,30 @@ const template = templateFor(process.env.TEMPLATE_ID);
 const { Nav, Footer } = template.chrome;
 const { site } = document;
 
-// An entry has no SEO of its own until an author writes one, and falling back
-// to the site name would title every project page identically. The template
-// summarises the entry instead — the one thing that can read its fields.
+// An entry has no SEO of its own until an author writes one. The template
+// summarises it — the one thing that can read its fields — and the site name
+// is appended rather than substituted: a tab reading "Salt House" alone says
+// nothing about whose it is, and every other page on the site is titled this
+// way.
 const seo =
   props.kind === "entry"
     ? (() => {
         const summary = template.collections[props.collection]!.summarize(props.entry);
         return {
           ...props.entry.seo,
-          title: props.entry.seo.title ?? summary.title,
+          title: props.entry.seo.title ?? `${summary.title} — ${site.name}`,
           description: props.entry.seo.description ?? summary.description,
         };
       })()
     : props.page.seo;
 
 const Detail = props.kind === "entry" ? template.collections[props.collection]!.Detail : null;
+
+// The spread a detail page closes on, declared once on the collection rather
+// than repeated per entry. Rendered through the same `Sections` dispatch a
+// page uses, so a section behaves identically wherever it is placed.
+const closing =
+  props.kind === "entry" ? (document.collections[props.collection]?.closingSections ?? []) : [];
 ---
 
 <SiteLayout site={site} seo={seo} path={props.path}>
@@ -103,6 +111,16 @@ const Detail = props.kind === "entry" ? template.collections[props.collection]!.
       ) : Detail ? (
         <Detail entry={props.entry} prev={props.prev} next={props.next} />
       ) : null
+    }
+    {
+      closing.length > 0 && (
+        <Sections
+          sections={closing}
+          components={template.components}
+          collections={resolvedCollections(document)}
+          site={site}
+        />
+      )
     }
   </main>
   <Footer

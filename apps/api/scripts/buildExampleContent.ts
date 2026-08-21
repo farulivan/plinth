@@ -95,8 +95,41 @@ async function main(): Promise<void> {
     Object.entries(ingested).map(([name, item], index) => [name, makeRef(item, index)]),
   ) as unknown as NorvenMedia;
 
+  // One project's photographs, not all five. The gates need a gallery to
+  // audit — without one, the component's captions, its figure markup and its
+  // lazy-loading are never measured on any page — but twenty photographs
+  // through the encoder would add tens of megabytes to a fixture that is
+  // committed, and the twenty-first would prove nothing the fourth did not.
+  const galleryDir = join(assets, "content/projects/salt-house");
+  const saltHouseGallery = [];
+  for (const file of ["photo-1.jpg", "photo-2.jpg", "photo-3.jpg", "photo-4.jpg"]) {
+    saltHouseGallery.push(await ingest(join(galleryDir, file)));
+  }
+  media.gallery = {
+    "salt-house": saltHouseGallery.map((item, index) => makeRef(item, 100 + index)),
+  };
+
+  // All three portraits, unlike the galleries. They are one image per person
+  // rather than four per project, and the section they sit in renders nothing
+  // at all without them — a principals list with two of three faces would
+  // audit a layout the site never shows.
+  const portraits: Record<string, Ingested> = {};
+  for (const slug of ["anders-lien", "pedro-carvalho", "yuki-sato"]) {
+    portraits[slug] = await ingest(join(assets, `content/team/${slug}/portrait.jpg`));
+  }
+  media.portraits = Object.fromEntries(
+    Object.entries(portraits).map(([slug, item], index) => [slug, makeRef(item, 200 + index)]),
+  );
+
   const document = norvenDocument.parse(
-    norvenContent(media, { contactFormKey: process.env.WEB3FORMS_ACCESS_KEY ?? "" }),
+    norvenContent(media, {
+      // A placeholder rather than an empty string. The form only renders when
+      // a key is present, so without one the fixture audited a contact page
+      // that had no form on it — Lighthouse and axe never saw the labels, the
+      // select, or the live region. The fixture is never published, and the
+      // key is public by design even when real.
+      contactFormKey: process.env.WEB3FORMS_ACCESS_KEY ?? "example-content-placeholder-key",
+    }),
   );
 
   await writeFile(join(OUT_DIR, "norven.json"), JSON.stringify(document, null, 2) + "\n");

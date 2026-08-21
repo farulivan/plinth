@@ -97,7 +97,9 @@ export const contactSection = defineSection(
   z.object({
     eyebrow: shortText,
     heading: longText,
-    email: shortText,
+    /** Both fall back to the site-wide contact details when unset, so a site
+     * with one address does not restate it per section. */
+    email: shortText.optional(),
     phone: shortText.optional(),
     studios: z
       .array(
@@ -148,10 +150,39 @@ export const contactFormSection = defineSection(
  * that can carry an intro above it. `collection` names which one; the builder
  * resolves the entries and the component only draws links.
  */
+/**
+ * Studios plotted on a dotted world map. Coordinates are authored rather than
+ * geocoded: the map is 200×100 units of gesture, not a projection, so a city
+ * is placed by eye against the dot field and stays put.
+ */
+export const dotMapSection = defineSection(
+  "dotMap",
+  z.object({
+    eyebrow: shortText,
+    /** The map's accessible name — what it is, for anyone not seeing it. */
+    label: shortText,
+    items: z
+      .array(
+        z.object({
+          city: shortText,
+          x: z.number().min(0).max(200),
+          y: z.number().min(0).max(100),
+        }),
+      )
+      .min(1)
+      .max(6),
+  }),
+);
+
 export const projectIndexSection = defineSection(
   "projectIndex",
   z.object({
-    eyebrow: shortText.optional(),
+    /**
+     * Names the grid for assistive technology and is not drawn. The page's
+     * own hero carries the visible title, and rendering a second one here
+     * would state it twice on every page that pairs them — which is every
+     * page this section belongs on.
+     */
     heading: shortText,
     /** The collection to list. A union of one today, and a union rather than a
      * free string so the editor offers a picker instead of asking an author to
@@ -346,6 +377,7 @@ export const norvenSection = z.discriminatedUnion("type", [
   contactSection,
   contactFormSection,
   projectIndexSection,
+  dotMapSection,
   pageHeroSection,
   principlesSection,
   practiceSection,

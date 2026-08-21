@@ -293,7 +293,9 @@ describe("requestPublish", () => {
 
   it("refuses a collection the template does not declare", async () => {
     const draft = docWith([validSection]);
-    draft.collections = { journal: { pathTemplate: "/journal/{slug}/", entries: [] } };
+    draft.collections = {
+      journal: { pathTemplate: "/journal/{slug}/", closingSections: [], entries: [] },
+    };
     vi.mocked(dbFns.getDraftDocument).mockResolvedValue(draft);
 
     const result = await requestPublish(db, { workspaceId: WORKSPACE, userId: USER });
@@ -308,6 +310,7 @@ describe("requestPublish", () => {
     draft.collections = {
       projects: {
         pathTemplate: "/projects/{slug}/",
+        closingSections: [],
         entries: [entry("salt-house", { title: "Salt House" })],
       },
     };
@@ -330,6 +333,7 @@ describe("requestPublish", () => {
     draft.collections = {
       projects: {
         pathTemplate: "/projects/{slug}/",
+        closingSections: [],
         entries: [{ ...entry("draft-project", {}), enabled: false }],
       },
     };
@@ -357,6 +361,7 @@ describe("requestPublish", () => {
     draft.collections = {
       projects: {
         pathTemplate: "/projects/{slug}/",
+        closingSections: [],
         entries: [entry("salt-house", completeProject)],
       },
     };
@@ -438,6 +443,7 @@ describe("requestPublish", () => {
     draft.collections = {
       projects: {
         pathTemplate: "/projects/{slug}/",
+        closingSections: [],
         entries: [entry("salt-house", completeProject)],
       },
     };

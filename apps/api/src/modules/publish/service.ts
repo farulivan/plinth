@@ -181,6 +181,25 @@ function validateForPublish(
     for (const entry of collection.entries.filter((candidate) => candidate.enabled)) {
       collect(`${name}.${entry.slug}`, entrySchema, entry.fields);
     }
+
+    // Closing sections publish on every entry page in the collection, so they
+    // are held to exactly what a page's sections are held to. Skipping them
+    // would let one unfinished section ship on however many detail pages the
+    // collection has — the widest blast radius any single section on this
+    // site can have.
+    for (const section of collection.closingSections.filter((candidate) => candidate.enabled)) {
+      const schema = sectionSchemas[section.type];
+      if (!schema) {
+        errors[`${name}.${section.type}`] = ["This section is not part of the template."];
+        continue;
+      }
+      collect(`${name}.${section.type}`, schema, section);
+      if (formSections.includes(section.type) && !draft.site.contactFormKey) {
+        errors["site.contactFormKey"] = [
+          "This site has a contact form but no delivery key — submissions would be lost.",
+        ];
+      }
+    }
   }
 
   return Object.keys(errors).length > 0 ? errors : null;

@@ -14,6 +14,8 @@ import { lines } from "./lines";
  */
 export function Contact({ section, site }: SectionComponentProps) {
   const { fields } = contactSection.parse(section);
+  const email = fields.email ?? site?.contactEmail;
+  const phone = fields.phone ?? site?.contactPhone;
   const headingLines = fields.heading.split("\n");
   const leading = headingLines.slice(0, -1);
   const last = headingLines.at(-1);
@@ -56,17 +58,17 @@ export function Contact({ section, site }: SectionComponentProps) {
             <div data-reveal>
               <p className="eyebrow mb-3">Direct</p>
               <a
-                href={`mailto:${fields.email}`}
+                href={`mailto:${email}`}
                 className="font-display text-ink hover:text-brass block text-xl transition-colors"
               >
-                {fields.email}
+                {email}
               </a>
-              {fields.phone ? (
+              {phone ? (
                 <a
-                  href={`tel:${fields.phone.replaceAll(" ", "")}`}
+                  href={`tel:${phone.replaceAll(" ", "")}`}
                   className="text-ink-3 mt-2 block font-mono text-sm"
                 >
-                  {fields.phone}
+                  {phone}
                 </a>
               ) : null}
             </div>

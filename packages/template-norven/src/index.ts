@@ -7,6 +7,7 @@ export {
   contactSection,
   contactFormSection,
   projectIndexSection,
+  dotMapSection,
   pageHeroSection,
   principlesSection,
   practiceSection,
@@ -45,6 +46,7 @@ export { Testimonial } from "./sections/Testimonial";
 export { Contact } from "./sections/Contact";
 export { ContactForm } from "./sections/ContactForm";
 export { ProjectIndex } from "./sections/ProjectIndex";
+export { DotMap } from "./sections/DotMap";
 export { PageHero } from "./sections/PageHero";
 export { Principles } from "./sections/Principles";
 export { Practice } from "./sections/Practice";

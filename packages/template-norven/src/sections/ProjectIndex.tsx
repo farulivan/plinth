@@ -26,25 +26,14 @@ export function ProjectIndex({ section, collections }: SectionComponentProps) {
   });
 
   return (
-    <section className="bg-bone py-24 lg:py-32" data-section="projectIndex">
+    <section className="bg-bone py-16 lg:py-24" data-section="projectIndex">
       <div className="mx-auto max-w-[1400px] px-6 lg:px-10">
-        {fields.eyebrow ? (
-          <p className="eyebrow text-brass-2 mb-5" data-reveal>
-            {fields.eyebrow}
-          </p>
-        ) : null}
-        <h2
-          className="font-display text-ink mb-16 leading-[0.98]"
-          style={{ fontSize: "var(--text-display-2)" }}
-          data-reveal-lift
-        >
-          {fields.heading}
-        </h2>
+        <h2 className="sr-only">{fields.heading}</h2>
 
         {cards.length === 0 ? (
           <p className="text-ink-3 text-base">No projects published yet.</p>
         ) : (
-          <ul className="grid grid-cols-1 gap-x-10 gap-y-16 md:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-12">
             {cards.map(({ path, fields: project }, index) => (
               <li key={path} data-reveal>
                 <a href={path} className="group block">
@@ -57,27 +46,29 @@ export function ProjectIndex({ section, collections }: SectionComponentProps) {
                     // and the browser deprioritises the one image the score
                     // is measured on.
                     priority={index === 0}
-                    // 46vw, not 50vw: two columns inside a 1400px container
-                    // with 40px of side padding and a 40px gap leaves each
-                    // slot narrower than half the viewport. Overstating it
-                    // makes the browser reach for a wider variant than the
-                    // slot can use.
-                    sizes="(min-width: 768px) 46vw, 100vw"
+                    // The slot arithmetic, not a rounded fraction. A card
+                    // is not 33vw: the container caps at 1400, carries 40px of
+                    // padding either side and 48px between columns, so at a
+                    // desktop viewport the slot is ~391px and 33vw claims 445.
+                    // The browser believes the claim, reaches a rung higher up
+                    // the ladder than it needs, and half the bytes it decodes
+                    // are thrown away.
+                    sizes={
+                      "(min-width: 1400px) 408px, (min-width: 1024px) calc((100vw - 176px) / 3), (min-width: 640px) calc((100vw - 88px) / 2), calc(100vw - 48px)"
+                    }
                   />
-                  <p className="eyebrow text-brass-2 mt-6 mb-3">
-                    {project.kind} · {project.year} · {project.status}
+                  {/* Kind and year only. Status and area belong to the
+                      project's own page — an index is a way in, and every
+                      extra clause here is one more thing to read before
+                      choosing which project to open. */}
+                  <p className="eyebrow text-brass-2 mt-5">
+                    {project.kind} · {project.year}
                   </p>
-                  <h3
-                    className="font-display text-ink group-hover:text-brass-2 leading-[0.98] transition-colors"
-                    style={{ fontSize: "var(--text-display-3)" }}
-                  >
+                  <h3 className="font-display text-ink group-hover:text-brass mt-1 text-2xl transition-colors">
                     {project.title}
                   </h3>
-                  <p className="text-ink-3 mt-3 font-mono text-xs tracking-[0.14em] uppercase">
-                    {project.location} · {project.area}
-                  </p>
-                  <p className="text-ink-3 mt-5 max-w-md text-base leading-relaxed">
-                    {project.brief}
+                  <p className="text-ink-3 mt-1 font-mono text-xs tracking-[0.14em] uppercase">
+                    {project.location}
                   </p>
                 </a>
               </li>

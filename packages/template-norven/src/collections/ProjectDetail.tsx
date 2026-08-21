@@ -1,6 +1,7 @@
 import type { EntryComponentProps } from "@plinth/renderer";
 import { projectEntryFields } from "../manifest";
 import { Frame } from "../media/Frame";
+import { mediaRef } from "@plinth/schema/content";
 import { summarizeProject } from "./summarize";
 
 /**
@@ -59,6 +60,17 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
             {project.title}
           </h1>
 
+          {/* The brief, at display size, before the specification table.
+              It is the one sentence that says what the project is, and a
+              reader who stops after it should still have been told. */}
+          <p
+            className="font-display text-ink mt-10 leading-[1.18]"
+            style={{ fontSize: "var(--text-display-3)" }}
+            data-reveal
+          >
+            {project.brief}
+          </p>
+
           <dl
             className="border-line-2 mt-12 grid grid-cols-2 gap-y-6 border-t pt-8 lg:grid-cols-3"
             data-reveal
@@ -90,6 +102,11 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
       {project.gallery.length > 0 ? (
         <section className="bg-bone-2 py-20 lg:py-28" data-section="projectGallery">
           <div className="mx-auto max-w-[1400px] px-6 lg:px-10">
+            {/* A heading, so the photographs are a named region rather than a
+                run of unlabelled figures between two blocks of prose. */}
+            <h2 className="eyebrow mb-12" data-reveal-lift>
+              Photographs
+            </h2>
             <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
               {project.gallery.map((slide, index) => (
                 <figure key={index} className="m-0" data-reveal>
@@ -97,7 +114,9 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
                     media={slide.image}
                     ratio="4/3"
                     seed={index + 1}
-                    sizes="(min-width: 768px) 50vw, 100vw"
+                    sizes={
+                      "(min-width: 1400px) 640px, (min-width: 1024px) calc((100vw - 120px) / 2), (min-width: 768px) calc((100vw - 88px) / 2), calc(100vw - 48px)"
+                    }
                   />
                   {slide.caption ? (
                     <figcaption className="text-ink-3 mt-4 font-mono text-xs tracking-[0.14em] uppercase">
@@ -114,16 +133,23 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
       {project.testimonial ? (
         <section className="bg-ink text-bone py-28 lg:py-36" data-section="projectTestimonial">
           <div className="mx-auto max-w-[1400px] px-6 lg:px-10">
+            {/* Straight marks, and the attribution outside the quote. A
+                blockquote's `<footer>` is read as part of the quotation by
+                some assistive technology, which attributes the speaker's own
+                name to the speaker. */}
             <blockquote
-              className="font-display text-bone max-w-[24ch] leading-[1.15] italic"
+              className="font-display leading-[1.15]"
               style={{ fontSize: "var(--text-display-3)" }}
-              data-reveal-lift
+              data-reveal
             >
-              &ldquo;{project.testimonial.quote}&rdquo;
-              <footer className="text-bone/70 mt-10 font-sans text-sm not-italic">
-                — {project.testimonial.author}, {project.testimonial.role}
-              </footer>
+              &quot;{project.testimonial.quote}&quot;
             </blockquote>
+            <p
+              className="text-bone/70 mt-8 font-mono text-xs tracking-[0.16em] uppercase"
+              data-reveal
+            >
+              {project.testimonial.author} · {project.testimonial.role}
+            </p>
           </div>
         </section>
       ) : null}
@@ -131,19 +157,54 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
       {/* Omitted entirely for a collection of one, where both links would point
           at the page they are on (ADR-0015). */}
       {prev && next ? (
-        <nav className="bg-bone border-line-2 border-t py-12" aria-label="Projects">
-          <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-6 px-6 lg:px-10">
-            <a href={prev.path} className="group block max-w-[45%]" rel="prev">
-              <span className="eyebrow text-ink-3 mb-2 block">Previous</span>
-              <span className="font-display text-ink group-hover:text-brass-2 text-xl transition-colors">
-                {titleOf(prev.entry)}
-              </span>
+        <nav className="bg-bone border-line-2 border-t py-16" aria-label="Project navigation">
+          <div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-8 px-6 lg:px-10">
+            <a href={prev.path} className="group flex items-center gap-5" rel="prev">
+              {coverOf(prev.entry) ? (
+                <div className="w-24 shrink-0 lg:w-32">
+                  <Frame
+                    media={coverOf(prev.entry)!}
+                    ratio="4/3"
+                    seed={1}
+                    // A thumbnail is 96px, 128px above lg — a fixed size
+                    // rather than a viewport fraction, because it does not
+                    // grow with the window.
+                    sizes="(min-width: 1024px) 128px, 96px"
+                  />
+                </div>
+              ) : null}
+              <div>
+                <p className="text-ink-3 font-mono text-[10px] tracking-[0.18em] uppercase">
+                  ← Previous
+                </p>
+                <p className="font-display text-ink group-hover:text-brass mt-2 text-2xl transition-colors">
+                  {titleOf(prev.entry)}
+                </p>
+              </div>
             </a>
-            <a href={next.path} className="group block max-w-[45%] text-right" rel="next">
-              <span className="eyebrow text-ink-3 mb-2 block">Next</span>
-              <span className="font-display text-ink group-hover:text-brass-2 text-xl transition-colors">
-                {titleOf(next.entry)}
-              </span>
+            <a
+              href={next.path}
+              className="group flex items-center justify-end gap-5 text-right"
+              rel="next"
+            >
+              <div>
+                <p className="text-ink-3 font-mono text-[10px] tracking-[0.18em] uppercase">
+                  Next →
+                </p>
+                <p className="font-display text-ink group-hover:text-brass mt-2 text-2xl transition-colors">
+                  {titleOf(next.entry)}
+                </p>
+              </div>
+              {coverOf(next.entry) ? (
+                <div className="w-24 shrink-0 lg:w-32">
+                  <Frame
+                    media={coverOf(next.entry)!}
+                    ratio="4/3"
+                    seed={2}
+                    sizes="(min-width: 1024px) 128px, 96px"
+                  />
+                </div>
+              ) : null}
             </a>
           </div>
         </nav>
@@ -156,4 +217,15 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
  * and the page it points at can never disagree about a project's name. */
 function titleOf(entry: EntryComponentProps["entry"]): string {
   return summarizeProject(entry).title;
+}
+
+/**
+ * A neighbour's cover, read leniently for the same reason its title is: this
+ * runs for the entries either side of the one being rendered, and those are
+ * savable half-written (ADR-0007). Narrowing with the full schema would mean a
+ * finished project fails to build because the next one along has no cover yet.
+ */
+function coverOf(entry: EntryComponentProps["entry"]) {
+  const parsed = mediaRef.safeParse((entry.fields as { cover?: unknown }).cover);
+  return parsed.success ? parsed.data : null;
 }

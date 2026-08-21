@@ -117,6 +117,15 @@ export const siteSettings = z.object({
    * receives, the other is how the service is addressed.
    */
   contactEmail: z.email().optional(),
+  /** Displayed beside the address, and the organisation's `telephone` in
+   * structured data. */
+  contactPhone: shortText.optional(),
+  /**
+   * The year the organisation began, for structured data's `foundingDate`.
+   * A number rather than a date because that is the granularity anyone
+   * actually knows, and a fabricated month would be a fact nobody chose.
+   */
+  founded: z.number().int().min(1000).max(9999).optional(),
   /**
    * The addresses the footer lists. Deliberately the same shape as the
    * `locations` section rather than a reference to it: a section belongs to
