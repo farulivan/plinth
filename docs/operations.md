@@ -115,6 +115,17 @@ make that true before the flip rather than after.
    WEB3FORMS_ACCESS_KEY=<key> pnpm seed:norven:prod
    ```
 
+   The script seeds the workspace whose slug is `norven`. If the tenant has
+   been renamed — which is how it moves between hostnames, since the slug
+   composes the host — name it explicitly:
+
+   ```sh
+   SEED_WORKSPACE_SLUG=new-norven WEB3FORMS_ACCESS_KEY=<key> pnpm seed:norven:prod
+   ```
+
+   Running it against the wrong name is not destructive; it fails before
+   touching anything and lists the slugs the database actually holds.
+
    It is idempotent on media — re-running dedupes on content hash and uploads
    nothing the second time — but it is *not* idempotent on the draft: it
    overwrites whatever is there. Restoring from the file above is a single
