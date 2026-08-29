@@ -18,7 +18,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emptyFieldsFor, emptyItemFor, templateFor, type TemplateSpec } from "@/lib/templates";
 import { saveDraft } from "@/server/actions/drafts";
 import { EntryCard } from "./entry-card";
-import { RouteBar, type Selection } from "./route-bar";
+import { OutlineRail, SITE_SETTINGS_ID, sectionAnchorId } from "./outline-rail";
+import { RouteSettings, type Selection } from "./route-settings";
 import { SectionCard } from "./section-card";
 import { SiteSettingsCard } from "./site-settings-card";
 
@@ -412,103 +413,130 @@ export function Editor({
   const entrySpec = activeEntry
     ? template.collections.find((spec) => spec.name === activeEntry.collection)
     : undefined;
+  const activeSections = (activePage?.sections ?? []).map((section) => ({
+    type: section.type,
+    label:
+      template.sections.find((candidate) => candidate.type === section.type)?.label ?? section.type,
+    enabled: section.enabled,
+  }));
+  const activeTitle = activeEntry
+    ? activeEntry.entry.slug
+    : (activePage?.navLabel ?? activePage?.path ?? "Home");
 
   return (
-    <div className="space-y-4">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Content</h1>
-          <p className="text-muted-foreground text-sm">
-            Changes save automatically. Order here is the order on the site.
-          </p>
+    <>
+      {/* The outline rail: what the site is made of. Selecting here is what
+          the center column edits and the preview shows. */}
+      <aside className="hidden min-w-0 lg:block">
+        <div className="sticky top-8 max-h-[calc(100vh-6rem)] overflow-y-auto pb-4">
+          <OutlineRail
+            pages={document.pages}
+            collections={collections}
+            selection={activeSelection}
+            activeSections={activeSections}
+            onSelect={setSelection}
+            onToggle={toggleRoute}
+            onAddPage={addPage}
+            onAddEntry={addEntry}
+          />
         </div>
-        <SaveStatus save={save} />
-      </header>
+      </aside>
 
-      <SiteSettingsCard site={document.site} onChange={updateSite} />
+      <div className="min-w-0 space-y-4">
+        <header className="flex items-baseline justify-between gap-4">
+          <h1 className="truncate text-lg font-semibold">{activeTitle}</h1>
+          <SaveStatus save={save} />
+        </header>
 
-      <RouteBar
-        pages={document.pages}
-        collections={collections}
-        selection={activeSelection}
-        onSelect={setSelection}
-        onSeoChange={updateSeo}
-        onToggle={toggleRoute}
-        onAddPage={addPage}
-        onRemovePage={removePage}
-        onAddEntry={addEntry}
-        onRemoveEntry={removeEntry}
-        onMoveEntry={moveEntry}
-      />
+        <div id={SITE_SETTINGS_ID} className="scroll-mt-6">
+          <SiteSettingsCard site={document.site} onChange={updateSite} />
+        </div>
 
-      {activeEntry && entrySpec ? (
-        <EntryCard
-          // Keyed on the entry for the reason every form here is keyed: it
-          // seeds react-hook-form at mount and is uncontrolled after, so
-          // switching entries without remounting would show the previous
-          // project's values and stream them over the new one's.
-          key={activeEntry.entry.id}
-          spec={entrySpec}
-          slug={activeEntry.entry.slug}
-          fields={(activeEntry.entry.fields ?? {}) as Record<string, unknown>}
-          onSlugChange={(slug) =>
-            updateEntry(activeEntry.collection, activeEntry.entry.id, { slug })
-          }
-          onFieldsChange={(fields) =>
-            updateEntry(activeEntry.collection, activeEntry.entry.id, { fields })
-          }
+        <RouteSettings
+          pages={document.pages}
+          collections={collections}
+          selection={activeSelection}
+          onSeoChange={updateSeo}
+          onRemovePage={removePage}
+          onRemoveEntry={removeEntry}
+          onMoveEntry={moveEntry}
         />
-      ) : null}
 
-      {(activePage?.sections ?? []).map((section, index) => {
-        const spec = template.sections.find((candidate) => candidate.type === section.type);
-        if (!spec) {
+        {activeEntry && entrySpec ? (
+          <EntryCard
+            // Keyed on the entry for the reason every form here is keyed: it
+            // seeds react-hook-form at mount and is uncontrolled after, so
+            // switching entries without remounting would show the previous
+            // project's values and stream them over the new one's.
+            key={activeEntry.entry.id}
+            spec={entrySpec}
+            slug={activeEntry.entry.slug}
+            fields={(activeEntry.entry.fields ?? {}) as Record<string, unknown>}
+            onSlugChange={(slug) =>
+              updateEntry(activeEntry.collection, activeEntry.entry.id, { slug })
+            }
+            onFieldsChange={(fields) =>
+              updateEntry(activeEntry.collection, activeEntry.entry.id, { fields })
+            }
+          />
+        ) : null}
+
+        {(activePage?.sections ?? []).map((section, index) => {
+          const spec = template.sections.find((candidate) => candidate.type === section.type);
+          if (!spec) {
+            return (
+              <div
+                key={`${activePageId}:${section.type}`}
+                className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm"
+              >
+                “{section.type}” is not part of this template anymore; it will be ignored at
+                publish.
+              </div>
+            );
+          }
           return (
             <div
               key={`${activePageId}:${section.type}`}
-              className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm"
+              id={sectionAnchorId(section.type)}
+              className="scroll-mt-6"
             >
-              “{section.type}” is not part of this template anymore; it will be ignored at publish.
+              <SectionCard
+                // Keyed by page as well as type: SectionCard seeds react-hook-form
+                // from `fields` at mount and is uncontrolled after, so swapping
+                // pages without remounting would show the previous page's values
+                // and immediately stream them upward over the new page's.
+                spec={spec}
+                fields={(section.fields ?? {}) as Record<string, unknown>}
+                enabled={section.enabled}
+                canMoveUp={index > 0}
+                canMoveDown={index < (activePage?.sections.length ?? 0) - 1}
+                onFieldsChange={(fields) => updateFields(activePageId, section.type, fields)}
+                onToggle={(enabled) => toggleSection(activePageId, section.type, enabled)}
+                onMove={(direction) => moveSection(activePageId, section.type, direction)}
+              />
             </div>
           );
-        }
-        return (
-          <SectionCard
-            // Keyed by page as well as type: SectionCard seeds react-hook-form
-            // from `fields` at mount and is uncontrolled after, so swapping
-            // pages without remounting would show the previous page's values
-            // and immediately stream them upward over the new page's.
-            key={`${activePageId}:${section.type}`}
-            spec={spec}
-            fields={(section.fields ?? {}) as Record<string, unknown>}
-            enabled={section.enabled}
-            canMoveUp={index > 0}
-            canMoveDown={index < (activePage?.sections.length ?? 0) - 1}
-            onFieldsChange={(fields) => updateFields(activePageId, section.type, fields)}
-            onToggle={(enabled) => toggleSection(activePageId, section.type, enabled)}
-            onMove={(direction) => moveSection(activePageId, section.type, direction)}
-          />
-        );
-      })}
+        })}
 
-      {activePage && addableSections.length > 0 ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">Add section</Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            {addableSections.map((spec) => (
-              <DropdownMenuItem
-                key={spec.type}
-                onSelect={() => addSection(activePageId, spec.type)}
-              >
-                {spec.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : null}
-    </div>
+        {activePage && addableSections.length > 0 ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">Add section</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {addableSections.map((spec) => (
+                <DropdownMenuItem
+                  key={spec.type}
+                  onSelect={() => addSection(activePageId, spec.type)}
+                >
+                  {spec.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
+      </div>
+    </>
   );
 }
 

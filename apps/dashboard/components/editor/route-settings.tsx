@@ -15,16 +15,7 @@ import {
   CollapsibleTrigger,
 } from "@plinth/ui/components/collapsible";
 import { Form } from "@plinth/ui/components/form";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@plinth/ui/components/select";
-import { Switch } from "@plinth/ui/components/switch";
+import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useForm, type FieldValues } from "react-hook-form";
 import { FieldControl } from "./field-controls";
@@ -42,55 +33,32 @@ export type Selection =
   | { kind: "page"; id: string }
   | { kind: "entry"; collection: string; id: string };
 
-/** A selection encoded for one <Select>, which only speaks strings. */
-export function selectionValue(selection: Selection): string {
-  return selection.kind === "page"
-    ? `page:${selection.id}`
-    : `entry:${selection.collection}:${selection.id}`;
-}
-
-function parseSelection(value: string): Selection | null {
-  const [kind, ...rest] = value.split(":");
-  if (kind === "page" && rest[0]) return { kind: "page", id: rest[0] };
-  if (kind === "entry" && rest[0] && rest[1]) {
-    return { kind: "entry", collection: rest[0], id: rest[1] };
-  }
-  return null;
-}
-
 const seoDescriptors = describeObjectFields(pageSeo);
 
 /**
- * Route selection and per-route settings: what the editor is editing, its
- * discovery metadata, and whether it is published at all.
+ * Settings for the open route: the path the build will emit, ordering and
+ * removal, and the discovery metadata form. Selection and the published
+ * switch live in the outline rail now — this bar is what remains.
  *
  * The SEO form is keyed on the route id by its caller, for the same reason
  * SectionCard is: it seeds react-hook-form at mount and is uncontrolled after,
  * so a switch that reused a mounted form would show the previous route's
  * values and stream them back over the new one's.
  */
-export function RouteBar({
+export function RouteSettings({
   pages,
   collections,
   selection,
-  onSelect,
   onSeoChange,
-  onToggle,
-  onAddPage,
   onRemovePage,
-  onAddEntry,
   onRemoveEntry,
   onMoveEntry,
 }: {
   pages: Page[];
   collections: Record<string, { pathTemplate: string; entries: EntryInstance[] }>;
   selection: Selection;
-  onSelect: (selection: Selection) => void;
   onSeoChange: (selection: Selection, seo: Seo) => void;
-  onToggle: (selection: Selection, enabled: boolean) => void;
-  onAddPage: () => void;
   onRemovePage: (pageId: string) => void;
-  onAddEntry: (collection: string) => void;
   onRemoveEntry: (collection: string, entryId: string) => void;
   onMoveEntry: (collection: string, entryId: string, direction: -1 | 1) => void;
 }) {
@@ -99,114 +67,55 @@ export function RouteBar({
   return (
     <div className="space-y-3 rounded-lg border p-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Select
-          value={selectionValue(active.selection)}
-          onValueChange={(value) => {
-            const next = parseSelection(value);
-            if (next) onSelect(next);
-          }}
-        >
-          <SelectTrigger className="w-72" aria-label="Page">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Pages</SelectLabel>
-              {pages.map((page) => (
-                <SelectItem key={page.id} value={selectionValue({ kind: "page", id: page.id })}>
-                  {page.navLabel ?? page.path}
-                  {page.enabled ? "" : " (hidden)"}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-            {Object.entries(collections).map(([name, collection]) => (
-              <SelectGroup key={name}>
-                <SelectLabel className="capitalize">{name}</SelectLabel>
-                {collection.entries.map((entry) => (
-                  <SelectItem
-                    key={entry.id}
-                    value={selectionValue({ kind: "entry", collection: name, id: entry.id })}
-                  >
-                    {entry.slug}
-                    {entry.enabled ? "" : " (hidden)"}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            ))}
-          </SelectContent>
-        </Select>
-
         <span className="text-muted-foreground font-mono text-xs">{active.path}</span>
-
-        <label className="ml-auto flex items-center gap-2 text-sm">
-          <Switch
-            checked={active.enabled}
-            onCheckedChange={(enabled) => onToggle(active.selection, enabled)}
-            aria-label="Published"
-          />
-          Published
-        </label>
 
         {/* Reorder is a first-class control, not a nicety: array order is what
             prev/next walks and what an index renders (ADR-0015), so it is the
             only way to move a project in the sequence. */}
         {active.selection.kind === "entry" ? (
-          <>
+          <div className="ml-auto flex items-center gap-1">
             <Button
               type="button"
               variant="ghost"
-              size="sm"
+              size="icon"
+              className="size-7"
               disabled={active.index <= 0}
               onClick={() => onMoveEntry(collectionOf(active.selection), active.selection.id, -1)}
               aria-label="Move earlier in the sequence"
             >
-              ↑
+              <ArrowUp />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              disabled={active.index >= active.count - 1}
+              onClick={() => onMoveEntry(collectionOf(active.selection), active.selection.id, 1)}
+              aria-label="Move later in the sequence"
+            >
+              <ArrowDown />
             </Button>
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              disabled={active.index >= active.count - 1}
-              onClick={() => onMoveEntry(collectionOf(active.selection), active.selection.id, 1)}
-              aria-label="Move later in the sequence"
+              onClick={() => onRemoveEntry(collectionOf(active.selection), active.selection.id)}
             >
-              ↓
+              <Trash2 />
+              Remove {singular(collectionOf(active.selection))}
             </Button>
-          </>
-        ) : null}
-
-        <Button type="button" variant="outline" size="sm" onClick={onAddPage}>
-          Add page
-        </Button>
-        {Object.keys(collections).map((name) => (
-          <Button
-            key={name}
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => onAddEntry(name)}
-          >
-            Add {singular(name)}
-          </Button>
-        ))}
-
-        {active.selection.kind === "entry" ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onRemoveEntry(collectionOf(active.selection), active.selection.id)}
-          >
-            Remove {singular(collectionOf(active.selection))}
-          </Button>
+          </div>
         ) : /* The home page has no replacement: the site would have no root. */
         active.path !== "/" ? (
           <Button
             type="button"
             variant="ghost"
             size="sm"
+            className="ml-auto"
             onClick={() => onRemovePage(active.selection.id)}
           >
+            <Trash2 />
             Remove page
           </Button>
         ) : null}
@@ -224,6 +133,13 @@ export function RouteBar({
 
 function singular(collection: string): string {
   return collection.replace(/s$/, "");
+}
+
+/** A selection encoded as one string, for keying forms on the open route. */
+function selectionValue(selection: Selection): string {
+  return selection.kind === "page"
+    ? `page:${selection.id}`
+    : `entry:${selection.collection}:${selection.id}`;
 }
 
 /** Narrowing helper — the entry branch always has a collection. */
