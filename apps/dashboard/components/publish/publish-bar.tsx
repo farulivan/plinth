@@ -1,14 +1,18 @@
 "use client";
 
 import type { PublishStatus, VersionSummary } from "@plinth/schema/api";
+import { Badge } from "@plinth/ui/components/badge";
 import { Button } from "@plinth/ui/components/button";
+import { Separator } from "@plinth/ui/components/separator";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@plinth/ui/components/dropdown-menu";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@plinth/ui/components/sheet";
+import { History } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   getPublishStatus,
@@ -106,7 +110,7 @@ export function PublishBar({
   }
 
   async function onHistoryOpen(open: boolean) {
-    if (!open || history !== null) return;
+    if (!open) return;
     const result = await getVersionHistory();
     if (result.ok) {
       setHistory(result.data.versions);
@@ -128,13 +132,13 @@ export function PublishBar({
   }
 
   return (
-    <div className="flex items-center justify-end gap-3">
+    <div className="flex items-center gap-2">
       {error ? (
-        <span className="text-destructive max-w-xl truncate text-sm" role="status" title={error}>
+        <span className="text-destructive max-w-xs truncate text-sm" role="status" title={error}>
           {error}
         </span>
       ) : (
-        <span className="text-muted-foreground text-sm" role="status">
+        <span className="text-muted-foreground hidden text-sm md:inline" role="status">
           <StatusText
             latest={latest}
             currentVersionId={currentVersionId}
@@ -143,35 +147,62 @@ export function PublishBar({
           {hasUnpublished ? <span className="text-foreground"> · unpublished changes</span> : null}
         </span>
       )}
-      <DropdownMenu onOpenChange={(open) => void onHistoryOpen(open)}>
-        <DropdownMenuTrigger asChild>
+      <Sheet onOpenChange={(open) => void onHistoryOpen(open)}>
+        <SheetTrigger asChild>
           <Button type="button" variant="ghost" size="sm">
-            History
+            <History />
+            <span className="hidden sm:inline">History</span>
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-72">
-          <DropdownMenuLabel>Versions (click a built one to make it live)</DropdownMenuLabel>
-          {history === null ? (
-            <DropdownMenuItem disabled>Loading…</DropdownMenuItem>
-          ) : history.length === 0 ? (
-            <DropdownMenuItem disabled>Nothing published yet.</DropdownMenuItem>
-          ) : (
-            history.map((version) => {
-              const isLive = version.id === currentVersionId;
-              return (
-                <DropdownMenuItem
-                  key={version.id}
-                  disabled={isLive || version.status !== "built"}
-                  onSelect={() => void onRollback(version)}
-                >
-                  v{version.versionNumber} · {isLive ? "Live" : version.status} ·{" "}
-                  {new Date(version.createdAt).toLocaleString()}
-                </DropdownMenuItem>
-              );
-            })
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </SheetTrigger>
+        <SheetContent side="right" className="w-80 sm:max-w-80">
+          <SheetHeader>
+            <SheetTitle>Version history</SheetTitle>
+            <SheetDescription>
+              Every publish is a version. Select a built one to make it live — the pointer swap is
+              instant, no rebuild.
+            </SheetDescription>
+          </SheetHeader>
+          <Separator />
+          <div className="flex flex-col gap-1 overflow-y-auto px-4 pb-4">
+            {history === null ? (
+              <p className="text-muted-foreground text-sm">Loading…</p>
+            ) : history.length === 0 ? (
+              <p className="text-muted-foreground text-sm">Nothing published yet.</p>
+            ) : (
+              history.map((version) => {
+                const isLive = version.id === currentVersionId;
+                const rollbackable = !isLive && version.status === "built";
+                return (
+                  <button
+                    key={version.id}
+                    type="button"
+                    disabled={!rollbackable}
+                    onClick={() => void onRollback(version)}
+                    className="hover:bg-accent flex items-center justify-between gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors disabled:cursor-default disabled:hover:bg-transparent"
+                  >
+                    <span className="flex flex-col">
+                      <span className="font-medium">v{version.versionNumber}</span>
+                      <span className="text-muted-foreground text-xs">
+                        {new Date(version.createdAt).toLocaleString()}
+                      </span>
+                    </span>
+                    {isLive ? (
+                      <Badge>Live</Badge>
+                    ) : (
+                      <Badge
+                        variant={version.status === "failed" ? "destructive" : "secondary"}
+                        className="capitalize"
+                      >
+                        {version.status}
+                      </Badge>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
       {latest?.status === "failed" ? (
         <Button type="button" variant="outline" size="sm" onClick={onRetry}>
           Retry
