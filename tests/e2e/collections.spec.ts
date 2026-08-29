@@ -24,7 +24,7 @@ test("adding a project gives it a route the preview follows", async ({ page }) =
   await slug.fill(value);
   await expect(page.getByText("Saved", { exact: true })).toBeVisible();
 
-  // The path shown beside the switcher is the one the build will emit.
+  // The path shown in the route settings bar is the one the build will emit.
   await expect(page.getByText(`/projects/${value}/`)).toBeVisible();
 
   // The preview iframe follows the open route. An empty entry renders the
@@ -34,7 +34,12 @@ test("adding a project gives it a route the preview follows", async ({ page }) =
   await expect(preview.locator("[data-entry-invalid='projects']")).toBeVisible();
 
   // And it survives a reload, which is the proof the entry reached Postgres
-  // rather than living in client state.
+  // rather than living in client state — the outline rail lists it.
   await page.reload();
-  await expect(page.getByRole("combobox", { name: "Page" })).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Content outline" }).getByRole("button", {
+      name: value,
+      exact: true,
+    }),
+  ).toBeVisible();
 });

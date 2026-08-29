@@ -6,6 +6,7 @@ import { Button } from "@plinth/ui/components/button";
 import { useState } from "react";
 import { Editor } from "@/components/editor/editor";
 import { PublishBar } from "@/components/publish/publish-bar";
+import { useSetShellActions } from "@/components/shell-actions";
 
 /** Preview pane widths (ADR-0007): common device cuts plus the pane itself. */
 const PREVIEW_WIDTHS = [
@@ -16,10 +17,11 @@ const PREVIEW_WIDTHS = [
 ] as const;
 
 /**
- * The one-screen workspace: publish bar, editor, live preview. Client-side
- * because three concerns share state — the editor's saves feed the publish
- * bar's unpublished-changes cue, and the preview pane's width toggle is UI
- * state. The iframe still reloads itself (SSE inside the preview page).
+ * The one-screen workspace: outline rail, editor, live preview, with publish
+ * controls lifted into the shell header. Client-side because three concerns
+ * share state — the editor's saves feed the publish cue's unpublished-changes
+ * comparison, and the preview pane's width toggle is UI state. The iframe
+ * still reloads itself (SSE inside the preview page).
  */
 export function WorkspaceStudio({
   draftId,
@@ -50,21 +52,24 @@ export function WorkspaceStudio({
   // optional now, and the home page is the reason.
   const previewHref = `/preview/${draftId}/p${previewPath === "/" ? "" : previewPath}`;
 
+  // Publish state is page chrome, not content: it rides in the shell header,
+  // registered for as long as the studio is on screen.
+  useSetShellActions(<PublishBar initial={initialStatus} draftHash={draftHash} />);
+
   return (
-    <main className="mx-auto max-w-7xl space-y-6 p-8">
-      <PublishBar initial={initialStatus} draftHash={draftHash} />
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div className="min-w-0">
-          <Editor
-            draftId={draftId}
-            templateId={templateId}
-            initialDocument={initialDocument}
-            onSaved={setDraftHash}
-            onPageChange={setPreviewPath}
-          />
-        </div>
+    <main className="p-6">
+      {/* Three panes at desktop: outline | form | preview. Editor renders the
+          first two as grid children of this container. */}
+      <div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,1fr)_minmax(0,1.1fr)]">
+        <Editor
+          draftId={draftId}
+          templateId={templateId}
+          initialDocument={initialDocument}
+          onSaved={setDraftHash}
+          onPageChange={setPreviewPath}
+        />
         <aside className="hidden min-w-0 lg:block">
-          <div className="sticky top-8 space-y-2">
+          <div className="sticky top-6 space-y-2">
             <div className="flex items-baseline justify-between">
               <h2 className="text-muted-foreground text-sm font-medium">Preview</h2>
               <div className="flex items-center gap-1">
@@ -96,7 +101,7 @@ export function WorkspaceStudio({
               <iframe
                 src={previewHref}
                 title="Live preview"
-                className="h-[calc(100vh-8rem)] w-full rounded-lg border bg-white"
+                className="h-[calc(100vh-7rem)] w-full rounded-lg border bg-white"
               />
             </div>
           </div>
