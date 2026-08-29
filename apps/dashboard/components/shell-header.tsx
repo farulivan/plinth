@@ -9,6 +9,7 @@ import {
 import { Separator } from "@plinth/ui/components/separator";
 import { SidebarTrigger } from "@plinth/ui/components/sidebar";
 import { usePathname } from "next/navigation";
+import { ShellActionsSlot } from "@/components/shell-actions";
 
 const titles: Record<string, string> = {
   "/": "Studio",
@@ -39,6 +40,9 @@ export function ShellHeader() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
+      <div className="ml-auto flex items-center gap-2">
+        <ShellActionsSlot />
+      </div>
     </header>
   );
 }

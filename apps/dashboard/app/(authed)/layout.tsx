@@ -3,6 +3,7 @@ import { SidebarInset, SidebarProvider } from "@plinth/ui/components/sidebar";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
+import { ShellActionsProvider } from "@/components/shell-actions";
 import { ShellHeader } from "@/components/shell-header";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
@@ -38,18 +39,20 @@ export default async function AuthedLayout({ children }: { children: React.React
         userEmail={session.user.email}
       />
       <SidebarInset>
-        <ShellHeader />
-        {active ? (
-          children
-        ) : (
-          <main className="mx-auto flex max-w-md flex-col items-center gap-2 p-16 text-center">
-            <h1 className="text-xl font-semibold">No workspace yet</h1>
-            <p className="text-muted-foreground text-sm">
-              Your account has no workspace membership. Workspaces are provisioned during onboarding
-              — reply to your onboarding email and one will be linked to this account.
-            </p>
-          </main>
-        )}
+        <ShellActionsProvider>
+          <ShellHeader />
+          {active ? (
+            children
+          ) : (
+            <main className="mx-auto flex max-w-md flex-col items-center gap-2 p-16 text-center">
+              <h1 className="text-xl font-semibold">No workspace yet</h1>
+              <p className="text-muted-foreground text-sm">
+                Your account has no workspace membership. Workspaces are provisioned during
+                onboarding — reply to your onboarding email and one will be linked to this account.
+              </p>
+            </main>
+          )}
+        </ShellActionsProvider>
       </SidebarInset>
     </SidebarProvider>
   );
