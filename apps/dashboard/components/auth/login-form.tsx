@@ -12,8 +12,10 @@ import {
   FormMessage,
 } from "@plinth/ui/components/form";
 import { Input } from "@plinth/ui/components/input";
+import { ArrowLeft, MailOpen } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { authClient } from "@/lib/auth-client";
 
 /**
@@ -50,18 +52,39 @@ export function LoginForm({ callbackURL }: { callbackURL: string }) {
 
   if (sentTo) {
     return (
-      <main className="flex min-h-svh flex-col items-center justify-center gap-2">
-        <h1 className="text-xl font-semibold">Check your email</h1>
-        <p className="text-muted-foreground text-sm">A sign-in link is on its way to {sentTo}.</p>
-      </main>
+      <AuthShell>
+        <div className="flex w-full max-w-sm flex-col gap-3">
+          <span className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-lg">
+            <MailOpen className="size-5" />
+          </span>
+          <h1 className="text-2xl font-semibold tracking-tight">Check your email</h1>
+          <p className="text-muted-foreground text-sm">
+            A sign-in link is on its way to <span className="text-foreground">{sentTo}</span>. It
+            expires shortly and works once.
+          </p>
+          <button
+            type="button"
+            onClick={() => setSentTo(null)}
+            className="text-muted-foreground hover:text-foreground mt-2 flex items-center gap-1.5 text-sm transition-colors"
+          >
+            <ArrowLeft className="size-4" />
+            Use a different email
+          </button>
+        </div>
+      </AuthShell>
     );
   }
 
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center">
+    <AuthShell>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="w-full max-w-sm space-y-4">
-          <h1 className="text-2xl font-semibold">Sign in to Plinth</h1>
+          <div className="space-y-1.5">
+            <h1 className="text-2xl font-semibold tracking-tight">Sign in to Plinth</h1>
+            <p className="text-muted-foreground text-sm">
+              Enter your email and we will send you a sign-in link.
+            </p>
+          </div>
           <FormField
             control={form.control}
             name="email"
@@ -83,8 +106,11 @@ export function LoginForm({ callbackURL }: { callbackURL: string }) {
           <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting ? "Sending…" : "Send magic link"}
           </Button>
+          <p className="text-muted-foreground text-xs">
+            No password — the emailed link is the whole credential.
+          </p>
         </form>
       </Form>
-    </main>
+    </AuthShell>
   );
 }
