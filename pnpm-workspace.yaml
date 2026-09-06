@@ -65,10 +65,22 @@ overrides:
   # and never given untrusted CSS, but 8.5.25 is a patch release on a range we
   # already float.
   postcss: "^8.5.25"
-  # fast-uri (GHSA-7p8r-x3mc-p8w7): host confusion via backslash, via ajv in
-  # commitlint's config loader and Astro's language server. 3.1.5 is a patch
-  # inside the 3.x line the tree already resolves.
-  fast-uri: "^3.1.5"
+  # fast-uri (GHSA-7p8r-x3mc-p8w7, plus the 3.1.6 batch — 5jgf-p345-68v8,
+  # f65p-4m7j-42xc, fph4-wmhf-6fwf, jqff-g426-hqxp): host confusion and SSRF
+  # in URI normalization, via ajv in commitlint's config loader, Astro's
+  # language server, and webpack's schema-utils under @sentry/nextjs. All are
+  # SSRF-flavored and this tree never asks ajv to make an access decision
+  # from a URI, but 3.1.6 patches inside the 3.x line the tree already
+  # resolves, so there is nothing to weigh up.
+  fast-uri: "^3.1.6"
+  # browserslist (GHSA-c83g-rgw3-j3cx, GHSA-73wf-gq98-2v4g): unbounded memory
+  # growth on distinct queries, and a prototype write through an untrusted
+  # browserslist-stats.json. Reached at build time only — Babel under the
+  # Sentry bundler plugins and @vitejs/plugin-react, and webpack under
+  # @sentry/webpack-plugin — and nothing here feeds it a stats file it did
+  # not write. 4.28.7 is a patch on the 4.x line every parent already
+  # declares; an override touches the single lockfile entry.
+  browserslist: "^4.28.7"
   # brace-expansion (GHSA-rgw5-rvv9-x895): a bypass of the mitigation for the
   # advisory already accepted below, so the accepted entry no longer covers it.
   # Two lines are present — 2.x under inngest's OpenTelemetry chain, and the
