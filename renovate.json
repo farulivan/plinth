@@ -6,30 +6,32 @@
   "labels": ["dependencies"],
   "packageRules": [
     {
-      "description": "Group non-major updates per workspace to keep PRs reviewable.",
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "matchFileNames": ["apps/api/**"],
-      "groupName": "api deps"
+      "description": "Every non-major update lands in one weekly PR, across all workspaces and managers. The monorepo shares one pnpm-lock.yaml, so any split turns each merge into a rebase for the rest.",
+      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
+      "groupName": "all non-major dependencies"
     },
     {
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "matchFileNames": ["apps/dashboard/**"],
-      "groupName": "dashboard deps"
+      "description": "Majors wait on the Dependency Dashboard until ticked. Each needs code changes, and inside the weekly batch one breaking change would hold back every patch.",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
     },
     {
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "matchFileNames": ["packages/**"],
-      "groupName": "package deps"
+      "description": "Below 1.0 a minor is a breaking release under semver, so it is handled like a major: its own PR, opened from the dashboard.",
+      "matchUpdateTypes": ["minor"],
+      "matchCurrentVersion": "<1.0.0",
+      "groupName": null,
+      "dependencyDashboardApproval": true
     },
     {
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "matchFileNames": ["package.json"],
-      "groupName": "root deps"
-    },
-    {
-      "description": "All GitHub Actions bumps land in one PR.",
+      "description": "Action majors are mostly runtime bumps; once ticked they land together.",
       "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["major"],
       "groupName": "github actions"
+    },
+    {
+      "description": "The overrides in pnpm-workspace.yaml each pin a patched line for a stated reason and are retired by hand once upstream catches up, so Renovate leaves them alone.",
+      "matchDepTypes": ["pnpm-workspace.overrides"],
+      "enabled": false
     }
   ]
 }
