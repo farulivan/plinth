@@ -52,9 +52,10 @@ overrides:
   # call site. 0.35 is an API-compatible minor for that surface, and shipping a
   # high-severity advisory in a runtime image to respect the caret on a
   # dependency nothing calls is the worse trade. Revisit if next/image is ever
-  # adopted.
-  astro>sharp: "^0.35.3"
-  next>sharp: "^0.35.3"
+  # adopted. The floor is 0.35.4 for the libheif fixes (GHSA-rgj7-g3m4-5g8c),
+  # the same release the api's own sharp takes for its upload pipeline.
+  astro>sharp: "^0.35.4"
+  next>sharp: "^0.35.4"
 
   # Transitive advisories with no reachable first-party call, each pinned to
   # the first patched release rather than added to the accepted list below —
@@ -96,8 +97,10 @@ overrides:
   # exactly 0.10.1, whose `js-yaml: ^4.1.1` floats back to 4.2.0. Pinning the
   # leaf rather than the helper keeps this inside every declared range —
   # 4.3.1 satisfies both ^4.1.1 and ^4.3.0 — where overriding the helper would
-  # step past an exact pin. It also dedupes the tree to one copy.
-  js-yaml: "^4.3.1"
+  # step past an exact pin. It also dedupes the tree to one copy. The floor
+  # moved to 4.3.2 for GHSA-2883-xcg3-v3hh (maxTotalMergeKeys left CPU on empty
+  # merge sources unbounded), still inside both declared ranges.
+  js-yaml: "^4.3.2"
   # nanoid (GHSA-2v37-7h3g-55p8): a custom alphabet plus a size of zero spins
   # forever. Reached only through postcss, which is itself only reached by
   # Tailwind at build time, and nothing here calls nanoid at all — but the
@@ -110,6 +113,17 @@ overrides:
   # the whole lightningcss platform set — 53 packages moved to patch one. An
   # override touches the single entry it names.
   nanoid: "^3.3.18"
+  # smol-toml (GHSA-7w5x-hrqm-74c2): a malformed TOML document can hang the
+  # parser. Reached through @astrojs/internal-helpers at build time, and
+  # nothing here hands it tenant-authored TOML. The patched line sits inside
+  # the ^1.6.0 the helper declares; the astro bump alone left 1.7.0 locked.
+  smol-toml: "^1.7.1"
+  # svgo (GHSA-w27v-7q3p-w38r, GHSA-4vpr-x523-8j87): removeScripts lets
+  # executable links and foreignObject HTML through. Reached through Astro at
+  # build time, on the templates' own SVGs — uploads accept only JPEG, PNG,
+  # WebP and AVIF. 4.1.0 is inside the ^4.0.1 Astro declares; the astro bump
+  # alone left 4.0.2 locked.
+  svgo: "^4.1.0"
 
 # `pnpm audit --prod` runs as a CI gate (.github/workflows/ci.yml). These are
 # the advisories standing at the time the gate landed, each accepted with a
