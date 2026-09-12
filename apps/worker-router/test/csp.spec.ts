@@ -1,3 +1,4 @@
+import { CONTACT_FORM_ENDPOINT, CONTACT_FORM_ORIGIN } from "@plinth/schema/content";
 import { env, SELF } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -7,12 +8,10 @@ import { beforeEach, describe, expect, it } from "vitest";
  * these cover both halves: a tenant with a form gets exactly the origin it
  * needs, and one without is untouched.
  *
- * Nothing here writes R2, deliberately. The pool's isolated-storage stack
- * cannot pop an R2 frame in this environment — it asserts every file under the
- * bucket directory ends in `.sqlite` and trips over SQLite's own `-shm`
- * sidecar — so a suite that seeds R2 fails after its first test with "unable
- * to pop R2 storage", naming a test that did nothing wrong. Every assertion
- * below rides the 404 path, which reads R2 and never writes it.
+ * Nothing here writes R2, deliberately: every assertion rides the 404 path,
+ * which reads the bucket and never writes it. That dodged the old pool's
+ * isolated-storage stack, which tripped over SQLite's own sidecar files, and
+ * it still keeps these cases independent of what storage does between them.
  */
 const HOST = "norven.localhost";
 const FORM_HOST = "withform.localhost";
@@ -75,9 +74,11 @@ describe("per-tenant form policy", () => {
   // The worker ships with no runtime dependencies, so it keeps its own copy of
   // the origin the schema package defines. A test may import what the bundle
   // may not, and this is the only thing stopping the two drifting into a form
-  // rendered pointing at one host and permitted to reach another.
+  // rendered pointing at one host and permitted to reach another. The import
+  // sits at the top of the file rather than inside the test: pulling the schema
+  // package into the Workers runtime costs more than the 5s per-test budget on
+  // a cold runner.
   it("agrees with the schema package about where a form posts", async () => {
-    const { CONTACT_FORM_ENDPOINT, CONTACT_FORM_ORIGIN } = await import("@plinth/schema/content");
     await env.TENANT_HOSTS.put(FORM_HOST, mapping([CONTACT_FORM_ORIGIN]));
 
     expect(await cspFor(FORM_HOST)).toContain(`connect-src 'self' ${CONTACT_FORM_ORIGIN}`);
