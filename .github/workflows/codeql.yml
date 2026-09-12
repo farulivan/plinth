@@ -25,12 +25,12 @@ jobs:
       security-events: write # upload results to code scanning
       actions: read # required for private repos
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # One combined analysis covers the whole TS/JS monorepo; CodeQL extracts
       # from source, so no build step is needed.
-      - uses: github/codeql-action/init@e60ea984bd3baa95954f2856bcf24f9eaba46637 # v3
+      - uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
         with:
           languages: javascript-typescript
-      - uses: github/codeql-action/analyze@e60ea984bd3baa95954f2856bcf24f9eaba46637 # v3
+      - uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
         with:
           category: "/language:javascript-typescript"
