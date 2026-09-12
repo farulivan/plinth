@@ -11,6 +11,8 @@ on:
       - "packages/**"
       - "tests/e2e/**"
       - "playwright.config.ts"
+      # the suite boots these services before it runs
+      - "docker-compose.dev.yml"
       - ".github/workflows/e2e.yml"
 
 concurrency:
