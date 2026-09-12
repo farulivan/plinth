@@ -24,8 +24,7 @@ import { SectionCard } from "./section-card";
 import { SiteSettingsCard } from "./site-settings-card";
 
 type SaveState =
-  | { status: "idle" | "pending" | "saving" | "saved" }
-  | { status: "error"; detail: string };
+  { status: "idle" | "pending" | "saving" | "saved" } | { status: "error"; detail: string };
 
 const AUTOSAVE_DEBOUNCE_MS = 500;
 

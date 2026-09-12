@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
 #
 # Production image for @plinth/api. BUILD FROM THE MONOREPO ROOT so Turborepo can
 # prune the workspace:
@@ -12,7 +12,7 @@
 # libvips so Sharp (media pipeline, ADR-0006) has its native dependency ready.
 
 # --- base: Node 22 + libvips on Debian slim (alpine + Sharp is a known headache) ---
-FROM node:24-bookworm-slim AS base
+FROM node:24-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553 AS base
 # libvips: Sharp's native dependency (ADR-0006). postgresql-client-17: the
 # pg_dump binary the weekly backup reaper shells out to (ADR-0011) — pinned to
 # match Neon's Postgres 17 (pg_dump can't dump from a server newer than

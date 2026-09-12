@@ -76,8 +76,7 @@ export function MediaField({
       form.append("file", file);
       const response = await fetch("/api/media/upload", { method: "POST", body: form });
       const envelope = (await response.json()) as
-        | { ok: true; data: { item: MediaItem } }
-        | { ok: false; error: { message: string } };
+        { ok: true; data: { item: MediaItem } } | { ok: false; error: { message: string } };
       if (!envelope.ok) {
         setError(envelope.error.message);
         return;
