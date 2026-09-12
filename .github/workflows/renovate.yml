@@ -1,0 +1,88 @@
+name: Renovate
+
+# Self-hosted Renovate. The Mend-hosted app runs each job in a 3GB microVM,
+# where `pnpm install --lockfile-only` for this workspace peaks near 1.6GB and
+# the job was killed by the kernel — even with the tool heap capped as low as
+# resolution survives (1536MB; it fails outright at 1024MB). A GitHub-hosted
+# runner has 16GB and is free on a public repo, and it reads the same
+# renovate.json, so the grouping, dashboard approvals and override rules carry
+# over untouched.
+#
+# The cron only decides how often Renovate looks; renovate.json decides what it
+# may open. The weekly batch still waits for its Monday window, while security
+# branches, which carry no schedule, land the next morning.
+
+on:
+  schedule:
+    - cron: "0 1 * * *" # 08:00 Asia/Jakarta
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: Log level
+        type: choice
+        default: info
+        options:
+          - info
+          - debug
+      repoCache:
+        description: Reset or disable the repository cache?
+        type: choice
+        default: enabled
+        options:
+          - enabled
+          - disabled
+          - reset
+
+# One Renovate at a time — two runs would race for the same branches.
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+
+# Renovate authenticates with RENOVATE_TOKEN; the workflow itself only reads
+# the repository to check this file out.
+permissions:
+  contents: read
+
+env:
+  cache_dir: /tmp/renovate/cache/renovate/repository
+  cache_key: renovate-cache
+
+jobs:
+  renovate:
+    name: renovate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # The cache carries Renovate's view of the repo between runs, so a run
+      # that changes nothing doesn't rewrite open branches.
+      - name: Restore the repository cache
+        id: cache-restore
+        if: github.event.inputs.repoCache != 'disabled' && github.event.inputs.repoCache != 'reset'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.cache_dir }}
+          key: ${{ env.cache_key }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ${{ env.cache_key }}-
+
+      # Renovate reads the cache inside its container as uid 12021.
+      - name: Fix restored cache ownership
+        if: steps.cache-restore.outputs.cache-matched-key != ''
+        run: sudo chown -R 12021:0 /tmp/renovate/
+
+      - uses: renovatebot/github-action@c314dda4a9a93b08239ec978f2043b9a433b9ac4 # v46.3.0
+        with:
+          token: ${{ secrets.RENOVATE_TOKEN }}
+        env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          RENOVATE_REPOSITORY_CACHE: ${{ github.event.inputs.repoCache || 'enabled' }}
+          LOG_LEVEL: ${{ github.event.inputs.logLevel || 'info' }}
+
+      - name: Save the repository cache
+        if: github.event.inputs.repoCache != 'disabled' && steps.cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.cache_dir }}
+          key: ${{ env.cache_key }}-${{ github.run_id }}-${{ github.run_attempt }}
