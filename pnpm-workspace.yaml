@@ -35,27 +35,25 @@ allowBuilds:
 # Reintroduce a non-zero age once the dependency set stabilizes post-MVP.
 minimumReleaseAge: 0
 
-# Astro carries sharp as an optional dependency and still resolves the 0.34
-# line, which inherits four libvips CVEs (33327, 33328, 35590, 35591). Nothing
-# in the templates uses astro:assets, so that copy never decodes an image —
-# media is processed at upload by the api's own sharp (ADR-0006) — but the
-# package still ships inside the api runtime image, and a clean audit is worth
-# more than an unused-code argument. Astro's own range is
-# "^0.34.0 || ^0.35.0", so pinning the 0.35 line stays inside what it supports.
+# Overrides hold a transitive package at a patched release when one exists.
+# Each entry carries its reason and is retired by hand once the parent catches
+# up, which is why renovate.json tells Renovate to leave this block alone.
 overrides:
-  # Both parents pull the 0.34 line, which inherits four libvips CVEs (33327,
-  # 33328, 35590, 35591). Astro declares "^0.34.0 || ^0.35.0", so pinning 0.35
-  # sits inside its range. Next declares "^0.34.5" and this deliberately steps
-  # past it: sharp is an optional dependency there, used only by the built-in
-  # image optimizer, and this app never imports next/image or configures
-  # `images` — so the package ships in the standalone output without a single
-  # call site. 0.35 is an API-compatible minor for that surface, and shipping a
-  # high-severity advisory in a runtime image to respect the caret on a
-  # dependency nothing calls is the worse trade. Revisit if next/image is ever
-  # adopted. The floor is 0.35.4 for the libheif fixes (GHSA-rgj7-g3m4-5g8c),
-  # the same release the api's own sharp takes for its upload pipeline.
-  astro>sharp: "^0.35.4"
-  next>sharp: "^0.35.4"
+  # Every copy of sharp, whoever pulls it, is held to the patched line. Astro
+  # and Next carry it as an optional dependency for image work this codebase
+  # never asks for — nothing uses astro:assets, and the dashboard never imports
+  # next/image or configures `images` — and wrangler's miniflare keeps a third
+  # for local image emulation. Astro declares "^0.34.0 || ^0.35.0" and
+  # miniflare 0.35.2, so 0.35.4 sits inside both; Next declares "^0.34.5" and
+  # this steps past it deliberately, since shipping a high-severity advisory in
+  # a runtime image to respect a caret on a dependency nothing calls is the
+  # worse trade. Revisit if next/image is ever adopted. 0.35.4 is the floor for
+  # the libheif fixes (GHSA-rgj7-g3m4-5g8c, GHSA-g89c-p67h-r497,
+  # GHSA-2jg2-4ch7-h545), the release the api's own sharp already takes for its
+  # upload pipeline. One blanket entry replaces the per-parent pair, which
+  # missed miniflare — dependency review caught that the first time wrangler
+  # moved.
+  sharp: "^0.35.4"
 
   # Transitive advisories with no reachable first-party call, each pinned to
   # the first patched release rather than added to the accepted list below —
