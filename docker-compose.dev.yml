@@ -23,7 +23,7 @@ name: plinth-dev
 services:
   postgres:
     # Matches Neon's default major. Production floor is ≥16 (README stack table).
-    image: postgres:17-alpine
+    image: postgres:17-alpine@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73
     environment:
       POSTGRES_USER: plinth
       POSTGRES_PASSWORD: plinth
@@ -46,7 +46,7 @@ services:
   # @upstash/* client code runs against UPSTASH_REDIS_REST_URL=http://localhost:8079.
   redis:
     # Pinned to 7: closest to Upstash's Redis-compatible API; emulation > latest here.
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
     ports:
       - "6379:6379"
     healthcheck:
@@ -71,7 +71,7 @@ services:
     # The un-versioned upstreams (inngest, srh, minio, mc) are digest-pinned so
     # dev and CI stay reproducible; Renovate bumps the digests. postgres/redis
     # keep semantic version tags above.
-    image: inngest/inngest:latest@sha256:2260a12c955a0aa35ccc17f235bf9dd82b1b8eb03dd48de44e643de2445bd811
+    image: inngest/inngest:latest@sha256:d5365a31f8bf504dc2d54ddd114fcdc1a0413f8b57a450365c095ab6234ad8c2
     command: "inngest dev -u http://host.docker.internal:4000/api/inngest --no-discovery"
     ports:
       - "8288:8288"

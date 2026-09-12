@@ -1,10 +1,10 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
 #
 # Production image for @plinth/dashboard (Next.js standalone output). BUILD FROM
 # THE MONOREPO ROOT so Turborepo can prune the workspace:
 #   docker build -f apps/dashboard/Dockerfile -t plinth-dashboard .
 
-FROM node:24-bookworm-slim AS base
+FROM node:24-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553 AS base
 ENV PNPM_HOME="/pnpm" PATH="/pnpm:$PATH"
 RUN corepack enable
 WORKDIR /app
