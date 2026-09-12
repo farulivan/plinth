@@ -4,6 +4,12 @@
   "timezone": "Asia/Jakarta",
   "schedule": ["before 9am on monday"],
   "labels": ["dependencies"],
+  "toolSettings": {
+    "nodeMaxMemory": 1536
+  },
+  "lockFileMaintenance": {
+    "schedule": ["before 9am on the first day of the month"]
+  },
   "packageRules": [
     {
       "description": "Every non-major update lands in one weekly PR, across all workspaces and managers. The monorepo shares one pnpm-lock.yaml, so any split turns each merge into a rebase for the rest.",
