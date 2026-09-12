@@ -30,8 +30,7 @@ type Seo = Page["seo"];
  * the preview showing?".
  */
 export type Selection =
-  | { kind: "page"; id: string }
-  | { kind: "entry"; collection: string; id: string };
+  { kind: "page"; id: string } | { kind: "entry"; collection: string; id: string };
 
 const seoDescriptors = describeObjectFields(pageSeo);
 
