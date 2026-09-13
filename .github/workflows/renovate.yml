@@ -79,6 +79,9 @@ jobs:
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_REPOSITORY_CACHE: ${{ github.event.inputs.repoCache || 'enabled' }}
           LOG_LEVEL: ${{ github.event.inputs.logLevel || 'info' }}
+          # renovate.json asks for a formatter pass after each upgrade; only
+          # commands matching these run, and an empty list runs nothing.
+          RENOVATE_ALLOWED_COMMANDS: '["^pnpm install --frozen-lockfile --ignore-scripts$", "^pnpm exec prettier --write \\.$"]'
 
       - name: Save the repository cache
         if: github.event.inputs.repoCache != 'disabled' && steps.cache-restore.outputs.cache-hit != 'true'
