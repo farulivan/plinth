@@ -8,6 +8,11 @@
   "lockFileMaintenance": {
     "schedule": ["before 9am on the first day of the month"]
   },
+  "postUpgradeTasks": {
+    "commands": ["pnpm install --frozen-lockfile --ignore-scripts", "pnpm exec prettier --write ."],
+    "fileFilters": ["**/*"],
+    "executionMode": "branch"
+  },
   "packageRules": [
     {
       "description": "Every non-major update lands in one weekly PR, across all workspaces and managers. The monorepo shares one pnpm-lock.yaml, so any split turns each merge into a rebase for the rest.",
