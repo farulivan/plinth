@@ -80,12 +80,16 @@ overrides:
   # not write. 4.28.7 is a patch on the 4.x line every parent already
   # declares; an override touches the single lockfile entry.
   browserslist: "^4.28.7"
-  # brace-expansion (GHSA-rgw5-rvv9-x895): a bypass of the mitigation for the
-  # advisory already accepted below, so the accepted entry no longer covers it.
-  # Two lines are present — 2.x under inngest's OpenTelemetry chain, and the
-  # 4.x/5.x line under glob — and only the 2.x one has a patch inside its own
-  # major. The other's fix ships in 5.0.9, so that pin crosses a major on a
-  # package whose whole surface is one glob-expansion function.
+  # brace-expansion (GHSA-3jxr-9vmj-r5cp, GHSA-mh99-v99m-4gvg,
+  # GHSA-rgw5-rvv9-x895): DoS on untrusted glob patterns, and a bypass of the
+  # first mitigation. Three lines resolve here — 1.x through the minimatch that
+  # eslint, its config-array and eslint-plugin-react still use, 2.x under
+  # inngest's OpenTelemetry chain, and the 4.x/5.x line under glob. Each takes
+  # the first patched release inside what its parent declares; minimatch asks
+  # for ^1.1.7, so 1.1.18 sits inside it. The 5.0.9 pin is the exception,
+  # crossing a major on a package whose whole surface is one glob-expansion
+  # function, because that line has no patch below 5.
+  brace-expansion@1: "^1.1.18"
   brace-expansion@2: "^2.1.4"
   brace-expansion@>=4: "^5.0.9"
   # js-yaml (GHSA-5p4m-2wfm-xmqj): quadratic CPU resolving `!!omap`, and the
@@ -122,6 +126,12 @@ overrides:
   # WebP and AVIF. 4.1.0 is inside the ^4.0.1 Astro declares; the astro bump
   # alone left 4.0.2 locked.
   svgo: "^4.1.0"
+  # protobufjs (GHSA-j3f2-48v5-ccww): reached only through @grpc/proto-loader
+  # and dockerode, which testcontainers uses to run the RLS probe's Postgres
+  # (ADR-0002), and never built into an image. It sat on the accepted list
+  # until 7.6.5 shipped — a patch inside the ^7.5.5 and ^7.3.2 those parents
+  # declare, which makes it a pin like the rest.
+  protobufjs: "^7.6.5"
 
 # `pnpm audit --prod` runs as a CI gate (.github/workflows/ci.yml). These are
 # the advisories standing at the time the gate landed, each accepted with a
@@ -152,17 +162,8 @@ auditConfig:
     # in CI or in either image.
     - GHSA-g7r4-m6w7-qqqr
     - GHSA-67mh-4wv8-2f99
-    # brace-expansion — via eslint's config-array and OpenTelemetry's
-    # auto-instrumentation. DoS on untrusted glob patterns; the patterns are
-    # literals in our config.
-    - GHSA-3jxr-9vmj-r5cp
-    - GHSA-mh99-v99m-4gvg
     # fast-uri — via ajv, itself pulled by commitlint's config validator.
     # Host confusion in URI parsing, which matters to a URI-based access
     # decision; ajv here validates a JSON schema at lint time.
     - GHSA-v2hh-gcrm-f6hx
     - GHSA-4c8g-83qw-93j6
-    # protobufjs — via @grpc/proto-loader and dockerode, which testcontainers
-    # uses to run the RLS probe's Postgres (ADR-0002). Test-only, never built
-    # into an image.
-    - GHSA-j3f2-48v5-ccww
