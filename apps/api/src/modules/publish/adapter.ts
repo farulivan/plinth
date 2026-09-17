@@ -5,7 +5,7 @@ import { join, relative } from "node:path";
 import { promisify } from "node:util";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import type { LooseContentDocumentV2 } from "@plinth/schema";
-import { inngest } from "../../inngest/client";
+import { inngest, publishRequested, versionPromoted } from "../../inngest/client";
 import { env } from "../../lib/env";
 import { s3 } from "../../lib/s3";
 import { contentTypeFor } from "./contentTypes";
@@ -26,7 +26,7 @@ export async function enqueuePublish(input: {
   versionId: string;
   versionNumber: number;
 }): Promise<void> {
-  await inngest.send({ name: "site/publish.requested", data: input });
+  await inngest.send(publishRequested.create(input));
 }
 
 /** Announce a pointer swap that happened outside the build job (rollback) so
@@ -36,7 +36,7 @@ export async function emitPromoted(input: {
   versionId: string;
   versionNumber: number;
 }): Promise<void> {
-  await inngest.send({ name: "site/version.promoted", data: input });
+  await inngest.send(versionPromoted.create(input));
 }
 
 /**

@@ -10,7 +10,11 @@ vi.mock("../../lib/s3", () => ({ s3: { send: (...args: unknown[]) => send(...arg
 // Stubbing both keeps this test about the upload loop rather than about
 // whichever variables the api happens to require this week.
 vi.mock("../../lib/env", () => ({ env: { R2_BUCKET_SITES: "plinth-sites" } }));
-vi.mock("../../inngest/client", () => ({ inngest: { send: vi.fn() } }));
+vi.mock("../../inngest/client", () => ({
+  inngest: { send: vi.fn() },
+  publishRequested: { create: (data: unknown) => data },
+  versionPromoted: { create: (data: unknown) => data },
+}));
 
 const { uploadSiteDir } = await import("./adapter");
 

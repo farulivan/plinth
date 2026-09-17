@@ -1,6 +1,6 @@
 import { db } from "../../lib/db";
 import { syncWorkspaceHost } from "../../modules/domains/service";
-import { inngest } from "../client";
+import { inngest, versionPromoted } from "../client";
 
 /**
  * KV convergence after a promote (ADR-0004): pushes the workspace's hostname
@@ -9,8 +9,7 @@ import { inngest } from "../client";
  * the sync alone — the promote already happened and must not re-run.
  */
 export const syncTenantHosts = inngest.createFunction(
-  { id: "sync-tenant-hosts", retries: 2 },
-  { event: "site/version.promoted" },
+  { id: "sync-tenant-hosts", retries: 2, triggers: [versionPromoted] },
   async ({ event }) => {
     const { workspaceId, versionNumber } = event.data;
     return syncWorkspaceHost(db, { workspaceId, versionNumber });

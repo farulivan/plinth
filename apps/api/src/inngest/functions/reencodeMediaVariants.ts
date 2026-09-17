@@ -1,3 +1,4 @@
+import { cron } from "inngest";
 import { db } from "../../lib/db";
 import { reencodeMediaVariants } from "../../modules/media/service";
 import { inngest } from "../client";
@@ -15,7 +16,6 @@ import { inngest } from "../client";
  * widened is durable, and the next night resumes from what is still missing.
  */
 export const mediaReencoder = inngest.createFunction(
-  { id: "reencode-media-variants", retries: 0 },
-  { cron: "40 3 * * *" },
+  { id: "reencode-media-variants", retries: 0, triggers: [cron("40 3 * * *")] },
   async () => reencodeMediaVariants(db),
 );
