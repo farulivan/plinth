@@ -7,7 +7,7 @@ import {
   promoteVersion,
   UnbuildableVersionError,
 } from "../../modules/publish/service";
-import { inngest } from "../client";
+import { inngest, publishRequested } from "../client";
 
 /**
  * The publish build job (ADR-0003): snapshot → astro build → R2 upload →
@@ -36,8 +36,8 @@ export const buildSite = inngest.createFunction(
       const { workspaceId, versionId } = event.data.event.data;
       await markVersionFailed(db, workspaceId, versionId);
     },
+    triggers: [publishRequested],
   },
-  { event: "site/publish.requested" },
   async ({ event, step }) => {
     const { workspaceId, versionId, versionNumber } = event.data;
 

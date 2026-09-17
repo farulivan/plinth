@@ -1,3 +1,4 @@
+import { cron } from "inngest";
 import { db } from "../../lib/db";
 import { reapOldVersions } from "../../modules/reapers/service";
 import { inngest } from "../client";
@@ -6,7 +7,6 @@ import { inngest } from "../client";
  * workspace plus whichever one is currently live, deleting the rest along
  * with their R2 site artifacts. */
 export const versionReaper = inngest.createFunction(
-  { id: "reap-old-versions", retries: 2 },
-  { cron: "30 3 * * *" },
+  { id: "reap-old-versions", retries: 2, triggers: [cron("30 3 * * *")] },
   async () => reapOldVersions(db),
 );
