@@ -10,6 +10,8 @@ on:
     paths:
       - "apps/**"
       - "packages/**"
+      # packageManager here is the pnpm the api image must resolve offline
+      - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - "turbo.json"

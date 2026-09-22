@@ -35,13 +35,20 @@ ENV PNPM_HOME="/pnpm" PATH="/pnpm:$PATH"
 # (a different account than whoever builds this image) would have to
 # download it again on first use — needing outbound network at container
 # boot instead of build time, and failing entirely in an egress-restricted
-# environment. `corepack prepare` pins the exact version root's
-# package.json declares, matching what pnpm install already used.
+# environment.
 ENV COREPACK_HOME="/pnpm/corepack"
-RUN corepack enable \
-  && corepack prepare pnpm@11.8.0 --activate \
-  && chmod -R a+rX /pnpm
 WORKDIR /app
+# The version is read from root package.json's packageManager, never copied
+# here: that field is what corepack resolves at runtime (walking up from
+# apps/api) and what Renovate bumps. A hardcoded copy drifted once — the
+# runtime user can't write this cache, so the first publish after the bump
+# died trying to download the missing version. `install -g` also makes it
+# the default outside the workspace, as `prepare --activate` did. Only the
+# manifest is copied, so this layer reruns only when package.json changes.
+COPY package.json ./
+RUN corepack enable \
+  && corepack install -g "$(node -p "require('./package.json').packageManager")" \
+  && chmod -R a+rX /pnpm
 
 # --- pruner: emit a minimal subset of the monorepo for @plinth/api AND
 # @plinth/site-builder (ADR-0013): the api shells out to the builder's
@@ -81,6 +88,11 @@ USER hono
 # @plinth/site-builder run build:site` (runSiteBuild, ADR-0013) still finds
 # the workspace root from here exactly like it does from apps/api in `pnpm dev`.
 WORKDIR /app/apps/api
+# Fail the build, not the first publish: resolve pnpm exactly as runSiteBuild
+# will — this user, this cwd, no network — so a version the shared cache
+# doesn't hold, or this user can't read, stops the image here. /health never
+# touches pnpm, so without this the gap only surfaces when someone publishes.
+RUN COREPACK_ENABLE_NETWORK=0 pnpm --version
 EXPOSE 4000
 # instrument.js preloads Sentry before server.js imports the app.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
