@@ -1,7 +1,8 @@
 /**
  * The tenant edge router (ADR-0003/0004): Host → KV mapping → per-version R2
  * path. `wrangler dev` simulates both bindings locally (.wrangler/state);
- * `pnpm worker:sync` seeds them from Postgres + MinIO after a publish.
+ * `pnpm worker:sync` seeds them from Postgres + the local S3 gateway after a
+ * publish.
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",

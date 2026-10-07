@@ -2,9 +2,11 @@ import { S3Client } from "@aws-sdk/client-s3";
 import { env } from "./env";
 
 /**
- * The api's one S3-compatible client (R2 in production, MinIO locally),
- * shared by the publish and media adapters. Region "auto" + path-style:
- * R2 ignores the region and MinIO requires path-style addressing.
+ * The api's one S3-compatible client (R2 in production, the compose S3
+ * gateway locally), shared by the publish and media adapters. Region "auto"
+ * + path-style: R2 ignores the region, the local gateway is told to expect
+ * it (VGW_REGION in docker-compose.dev.yml), and a gateway on localhost has
+ * no per-bucket hostnames to address.
  */
 export const s3 = new S3Client({
   region: "auto",

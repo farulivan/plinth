@@ -47,9 +47,8 @@ echo "apps/dashboard/.env -> ../../.env"
 step "installing dependencies (also wires git hooks via lefthook)"
 pnpm install
 
-step "starting local services (postgres, redis + upstash proxy, inngest, minio)"
+step "starting local services (postgres, redis + upstash proxy, inngest, s3)"
 docker compose -f docker-compose.dev.yml up -d --wait
-docker compose -f docker-compose.dev.yml run --rm minio-init
 
 step "database migrations"
 if [ -f packages/db/package.json ]; then
@@ -68,7 +67,7 @@ cat <<'EOF'
     Postgres        postgres://plinth:plinth@localhost:5433/plinth
     Upstash REST    http://localhost:8079  (token: local-dev-token)
     Inngest UI      http://localhost:8288
-    MinIO console   http://localhost:9001  (plinth / plinth-local-dev)
+    S3 web UI       http://localhost:9001  (plinth / plinth-local-dev)
 
   Next:
     pnpm dev        # dashboard :3000 + api :4000 (once the app branches land)

@@ -17,7 +17,7 @@ fi
 if ! docker info >/dev/null 2>&1; then
   cat >&2 <<'EOF'
 
-  Docker is not running, so the dev services (postgres, redis, minio,
+  Docker is not running, so the dev services (postgres, redis, s3,
   inngest) cannot be started. Open Docker Desktop (or start dockerd) and
   re-run `pnpm dev` — the services then start automatically.
 
@@ -27,5 +27,4 @@ fi
 
 echo "dev services are not running — starting them…"
 docker compose -f docker-compose.dev.yml up -d --wait
-docker compose -f docker-compose.dev.yml run --rm minio-init
 echo "dev services ready."

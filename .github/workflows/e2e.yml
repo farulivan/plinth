@@ -35,13 +35,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      # Backing services (postgres, redis + upstash proxy, inngest, minio),
-      # same set `pnpm dev` boots locally. minio-init runs separately — it's a
-      # one-shot bucket creator, not a long-lived service.
+      # Backing services (postgres, redis + upstash proxy, inngest, s3), same
+      # set `pnpm dev` boots locally. The S3 gateway creates its own buckets
+      # on start, so waiting for health is the whole bootstrap.
       - name: start dev services
-        run: |
-          docker compose -f docker-compose.dev.yml up -d --wait
-          docker compose -f docker-compose.dev.yml run --rm minio-init
+        run: docker compose -f docker-compose.dev.yml up -d --wait
 
       # The env the apps read, same shape scripts/dev-setup.sh writes locally:
       # the example file plus two throwaway CI secrets (>=32 chars for the HMAC

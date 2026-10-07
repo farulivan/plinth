@@ -43,17 +43,27 @@ overrides:
   # and Next carry it as an optional dependency for image work this codebase
   # never asks for — nothing uses astro:assets, and the dashboard never imports
   # next/image or configures `images` — and wrangler's miniflare keeps a third
-  # for local image emulation. Astro declares "^0.34.0 || ^0.35.0" and
-  # miniflare 0.35.2, so 0.35.4 sits inside both; Next declares "^0.34.5" and
-  # this steps past it deliberately, since shipping a high-severity advisory in
-  # a runtime image to respect a caret on a dependency nothing calls is the
-  # worse trade. Revisit if next/image is ever adopted. 0.35.4 is the floor for
-  # the libheif fixes (GHSA-rgj7-g3m4-5g8c, GHSA-g89c-p67h-r497,
-  # GHSA-2jg2-4ch7-h545), the release the api's own sharp already takes for its
-  # upload pipeline. One blanket entry replaces the per-parent pair, which
-  # missed miniflare — dependency review caught that the first time wrangler
-  # moved.
-  sharp: "^0.35.4"
+  # for local image emulation. Astro and Next both declare "^0.35.4" now, so
+  # 0.35.5 sits inside them; miniflare pins its copy exactly (0.35.2 and 0.35.4
+  # across the two releases in the tree) and this steps past that deliberately,
+  # for a copy that only ever runs under `wrangler dev` and the worker-router
+  # tests.
+  #
+  # 0.35.5 is the floor for the librsvg fix (GHSA-wq5f-xc86-pv6w): memory
+  # corruption while decoding an SVG, with code execution possible on glibc
+  # Linux, which is what the api image runs. The api never hands sharp an SVG
+  # — uploads are sniffed down to JPEG, PNG, WebP and AVIF before it sees a
+  # byte — but the fix is a patch on the line every parent already takes. The
+  # floor it replaces, 0.35.4, was the libheif fixes (GHSA-rgj7-g3m4-5g8c,
+  # GHSA-g89c-p67h-r497, GHSA-2jg2-4ch7-h545).
+  #
+  # One blanket entry rather than one per parent. The pair it replaced missed
+  # miniflare, which dependency review caught the first time wrangler moved —
+  # and two versions in one tree is not harmless either: on Next 16.3.x, under
+  # the layout pnpm 11.28 produces, `next build` panics inside Turbopack's
+  # import tracer (vercel/next.js#98205, fixed in 16.4.0). The weekly batch
+  # hit exactly that by moving every copy but Next's.
+  sharp: "^0.35.5"
 
   # Transitive advisories with no reachable first-party call, each pinned to
   # the first patched release rather than added to the accepted list below —
@@ -70,8 +80,10 @@ overrides:
   # language server, and webpack's schema-utils under @sentry/nextjs. All are
   # SSRF-flavored and this tree never asks ajv to make an access decision
   # from a URI, but 3.1.6 patches inside the 3.x line the tree already
-  # resolves, so there is nothing to weigh up.
-  fast-uri: "^3.1.6"
+  # resolves, so there is nothing to weigh up. The floor moved to 3.1.8 for
+  # GHSA-hrr3-gc8f-f4qj, host case normalization slipping through
+  # percent-encoded octets — the same family, still inside ajv's ^3.0.1.
+  fast-uri: "^3.1.8"
   # browserslist (GHSA-c83g-rgw3-j3cx, GHSA-73wf-gq98-2v4g): unbounded memory
   # growth on distinct queries, and a prototype write through an untrusted
   # browserslist-stats.json. Reached at build time only — Babel under the
@@ -86,12 +98,18 @@ overrides:
   # eslint, its config-array and eslint-plugin-react still use, 2.x under
   # inngest's OpenTelemetry chain, and the 4.x/5.x line under glob. Each takes
   # the first patched release inside what its parent declares; minimatch asks
-  # for ^1.1.7, so 1.1.18 sits inside it. The 5.0.9 pin is the exception,
+  # for ^1.1.7, so the 1.x floor sits inside it. The 5.x pin is the exception,
   # crossing a major on a package whose whole surface is one glob-expansion
   # function, because that line has no patch below 5.
-  brace-expansion@1: "^1.1.18"
-  brace-expansion@2: "^2.1.4"
-  brace-expansion@>=4: "^5.0.9"
+  #
+  # The floors moved again for a second batch: stack exhaustion through nested
+  # brace groups and through parseCommaParts (GHSA-qhr7-859c-m2p7,
+  # GHSA-6j4f-fj2g-mc7p), and a quadratic `{a},b}` rewrite
+  # (GHSA-q2hr-2g5m-vwhr). All three lines shipped their fixes the same day,
+  # as 1.1.21, 2.1.7 and 5.0.12.
+  brace-expansion@1: "^1.1.21"
+  brace-expansion@2: "^2.1.7"
+  brace-expansion@>=4: "^5.0.12"
   # js-yaml (GHSA-5p4m-2wfm-xmqj): quadratic CPU resolving `!!omap`, and the
   # CVE-2026-59870 fix was not backported below 4.3.1. Two copies resolve
   # today. Astro itself already pulls the patched one through
@@ -119,7 +137,9 @@ overrides:
   # parser. Reached through @astrojs/internal-helpers at build time, and
   # nothing here hands it tenant-authored TOML. The patched line sits inside
   # the ^1.6.0 the helper declares; the astro bump alone left 1.7.0 locked.
-  smol-toml: "^1.7.1"
+  # 1.9.0 follows for GHSA-r4xh-jqrq-34v2, quadratic time from re-scanning
+  # the document on every key line — same reach, same range.
+  smol-toml: "^1.9.0"
   # svgo (GHSA-w27v-7q3p-w38r, GHSA-4vpr-x523-8j87): removeScripts lets
   # executable links and foreignObject HTML through. Reached through Astro at
   # build time, on the templates' own SVGs — uploads accept only JPEG, PNG,
@@ -132,6 +152,37 @@ overrides:
   # until 7.6.5 shipped — a patch inside the ^7.5.5 and ^7.3.2 those parents
   # declare, which makes it a pin like the rest.
   protobufjs: "^7.6.5"
+  # @grpc/grpc-js (GHSA-m9gg-hp2v-232j, GHSA-f596-whhp-79r4): getAuthContext
+  # can report an unauthorized client certificate as authorized, and a server
+  # leaks handler error text into its status messages. Both are about running
+  # a gRPC server, which nothing here does: the copy arrives under inngest's
+  # OpenTelemetry exporters, never switched on (see below), and under the
+  # dockerode that testcontainers drives. 1.14.5 is a patch inside the ^1.14.3
+  # and ^1.11.1 those parents declare.
+  "@grpc/grpc-js": "^1.14.5"
+  # source-map-js (GHSA-68fv-2mgg-jv7q): an indexed source map with crafted
+  # section offsets stalls the event loop. Reached through postcss, Tailwind
+  # and css-tree at build time, on source maps this toolchain wrote itself.
+  # 1.2.2 is the package's first release in two years, and sits inside every
+  # range asking for it — ^1.2.1, and ^1.0.1 from the older css-tree.
+  source-map-js: "^1.2.2"
+  # http-cache-semantics (GHSA-ch52-4w7c-c8xp): max-stale handling can hand
+  # one user's cached response to another. Astro pulls it for the remote-image
+  # cache behind astro:assets, which nothing here uses. 4.3.0 is inside the
+  # ^4.2.0 Astro declares.
+  http-cache-semantics: "^4.3.0"
+  # @opentelemetry/auto-instrumentations-node (GHSA-qqmp-wf37-98f9): eight of
+  # the database instrumentations it bundles — pg, knex, mysql, mysql2,
+  # mongoose, oracledb, tedious and cassandra-driver — put the database
+  # username on every span as db.user. Only inngest's experimental tracing
+  # entry loads the bundle, and the api imports `inngest` and `inngest/hono`
+  # alone; Sentry does this app's tracing with instrumentations of its own.
+  #
+  # One entry rather than eight, because the bundle is what inngest declares
+  # (">=0.75.0 <1.0.0") and 0.79.0 is the first whose carets land on every
+  # patched instrumentation. Pinning the eight directly would step outside
+  # the carets 0.78.0 declares for them.
+  "@opentelemetry/auto-instrumentations-node": "^0.79.0"
 
 # `pnpm audit --prod` runs as a CI gate (.github/workflows/ci.yml). These are
 # the advisories standing at the time the gate landed, each accepted with a
