@@ -81,7 +81,14 @@ jobs:
           LOG_LEVEL: ${{ github.event.inputs.logLevel || 'info' }}
           # renovate.json asks for a formatter pass after each upgrade; only
           # commands matching these run, and an empty list runs nothing.
-          RENOVATE_ALLOWED_COMMANDS: '["^pnpm install --frozen-lockfile --ignore-scripts$", "^pnpm exec prettier --write \\.$"]'
+          #
+          # The last one undoes the install the formatter needed. Renovate works
+          # through its branches in one checkout, and lock file maintenance
+          # deletes pnpm-lock.yaml to resolve from scratch — but pnpm seeds a
+          # missing lockfile from node_modules/.pnpm/lock.yaml when it finds
+          # one, so an install left behind by an earlier branch turns the
+          # refresh into a copy of that branch's resolution.
+          RENOVATE_ALLOWED_COMMANDS: '["^pnpm install --frozen-lockfile --ignore-scripts$", "^pnpm exec prettier --write \\.$", "^rm -rf node_modules$"]'
 
       - name: Save the repository cache
         if: github.event.inputs.repoCache != 'disabled' && steps.cache-restore.outputs.cache-hit != 'true'
