@@ -8,8 +8,8 @@
 # Run via `pnpm local-prod` (scripts/local-prod.sh: build → postgres →
 # migrate + seed from the host → apps → scripts/smoke.sh). Tear down with
 # `pnpm local-prod:down`. The apps publish the same :3000/:4000 as `pnpm dev`,
-# so stop the dev servers first. This file grows with the features: MinIO,
-# Redis, and Inngest join when the media and publish pipelines land.
+# so stop the dev servers first. This file grows with the features: an S3
+# gateway, Redis, and Inngest join when the media and publish pipelines land.
 
 name: plinth-local-prod
 

@@ -2,7 +2,7 @@
  * Local bridge for the publish loop (ADR-0013 companion): production
  * converges through the KV-sync Inngest function and the real R2 bucket, but
  * `wrangler dev` simulates both bindings in .wrangler/state — this script
- * copies the current truth (the Postgres version pointer + the MinIO
+ * copies the current truth (the Postgres version pointer + the local S3
  * artifacts) into that simulation.
  *
  * Run after a publish, with `wrangler dev` running or not:
