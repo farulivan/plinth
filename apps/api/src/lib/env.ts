@@ -30,7 +30,7 @@ const envSchema = z.object({
   INNGEST_EVENT_KEY: optionalEnv,
   INNGEST_SIGNING_KEY: optionalEnv,
   // R2 / S3-compatible storage for published sites (ADR-0003). Local: the
-  // compose MinIO. Production: the R2 account endpoint + scoped API tokens.
+  // compose S3 gateway. Production: the R2 account endpoint + scoped API tokens.
   R2_ENDPOINT_URL: z.url(),
   R2_ACCESS_KEY_ID: z.string().min(1),
   R2_SECRET_ACCESS_KEY: z.string().min(1),

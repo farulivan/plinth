@@ -28,7 +28,7 @@ Prerequisites:
 
 - Node `>=22.12.0` (`engines.node` floor; development tracks Node 24 via `.nvmrc`).
 - `pnpm >=11` (exact version pinned in root `package.json` `packageManager`).
-- Docker — runs the local service stack (`docker-compose.dev.yml`: Postgres, Redis behind an Upstash-REST proxy, the Inngest dev server, MinIO standing in for R2) and testcontainers Postgres during integration tests.
+- Docker — runs the local service stack (`docker-compose.dev.yml`: Postgres, Redis behind an Upstash-REST proxy, the Inngest dev server, an S3 gateway standing in for R2) and testcontainers Postgres during integration tests.
 - `openssl` (generates local secrets; preinstalled on macOS/Linux).
 
 Setup is three commands:
@@ -39,7 +39,7 @@ cd plinth
 ./scripts/dev-setup.sh
 ```
 
-The script is idempotent — it copies `.env.example` to `.env` (every default already matches the compose stack), generates `BETTER_AUTH_SECRET` and `INTERNAL_API_HMAC_SECRET` if empty, symlinks that root `.env` into `apps/dashboard/` so Next loads it for `pnpm dev` (the api reads the root `.env` directly via `--env-file`), installs dependencies, starts the services with health gates, creates the MinIO buckets, applies migrations, and seeds Norven as workspace #0. Re-run it anytime; it never overwrites values you've set. Then:
+The script is idempotent — it copies `.env.example` to `.env` (every default already matches the compose stack), generates `BETTER_AUTH_SECRET` and `INTERNAL_API_HMAC_SECRET` if empty, symlinks that root `.env` into `apps/dashboard/` so Next loads it for `pnpm dev` (the api reads the root `.env` directly via `--env-file`), installs dependencies, starts the services with health gates (the S3 gateway creates its own buckets), applies migrations, and seeds Norven as workspace #0. Re-run it anytime; it never overwrites values you've set. Then:
 
 ```bash
 pnpm dev                   # both apps via Turbo: dashboard:3000 and api:4000
@@ -47,7 +47,7 @@ pnpm dev                   # both apps via Turbo: dashboard:3000 and api:4000
 
 Sign in as `dev@plinth.local` (or any email). Without a Resend key the magic-link URL prints to the dashboard task's logs — open it from there.
 
-Useful local endpoints once the stack is up: Inngest dev UI at `http://localhost:8288`, MinIO console at `http://localhost:9001` (`plinth` / `plinth-local-dev`).
+Useful local endpoints once the stack is up: Inngest dev UI at `http://localhost:8288`, S3 web UI at `http://localhost:9001` (`plinth` / `plinth-local-dev`).
 
 ### Production-parity run
 
