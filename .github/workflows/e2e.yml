@@ -13,6 +13,11 @@ on:
       - "playwright.config.ts"
       # the suite boots these services before it runs
       - "docker-compose.dev.yml"
+      # a dependency move changes everything the suite drives, and a pull
+      # request that only rewrites the lockfile touches none of the paths above
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - ".github/workflows/e2e.yml"
 
 concurrency:
