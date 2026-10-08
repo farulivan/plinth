@@ -9,6 +9,11 @@ on:
       - "apps/dashboard/**"
       - "packages/ui/**"
       - "packages/renderer/**"
+      # the dashboard's bundle is mostly its dependencies, which a
+      # lockfile-only pull request can move without touching the paths above
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - ".lighthouserc.json"
       - ".github/workflows/lighthouse.yml"
 
