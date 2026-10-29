@@ -1,11 +1,13 @@
 name: Dependency review
 
-# The complement to ci.yml's audit job. That one asks "is the dependency graph
-# clean right now", against a baseline of accepted advisories; this one asks
-# "does this PR make it worse", by diffing the manifests against the base
-# branch. The difference matters: a newly introduced vulnerable package fails
-# here on the PR that adds it, with the offending dependency named, rather than
-# waiting for someone to widen the ignore list.
+# The complement to audit.yml. That one asks "is the dependency graph clean
+# right now", against a baseline of accepted advisories, and runs on main;
+# this one asks "does this PR make it worse", by diffing the manifests against
+# the base branch, and is the supply-chain gate a pull request sees. The
+# difference matters: a newly introduced vulnerable package fails here on the
+# PR that adds it, with the offending dependency named, while an advisory
+# published against something already locked is main's problem, not the
+# next PR's.
 #
 # It also checks the licence of anything new — this repo is MIT, and a
 # copyleft dependency arriving unnoticed is a licensing problem, not just a
@@ -28,9 +30,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
-          # Matches the audit job's posture: block on high and above, let
-          # moderate report. The standing moderates are all build tooling
-          # (see auditConfig.ignoreGhsas in pnpm-workspace.yaml).
+          # Block on high and above, let moderate report. This action does not
+          # read auditConfig.ignoreGhsas, and the standing moderates there are
+          # all build tooling (esbuild, postcss, fast-uri), so a lower bar
+          # would fail a Renovate bump that moves one of them to a release
+          # still under an advisory already accepted.
           fail-on-severity: high
           # GPL/AGPL/SSPL in a dependency of an MIT codebase is a decision
           # someone has to make deliberately, not one that lands in a lockfile.

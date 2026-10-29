@@ -40,7 +40,7 @@ There is no paid bug bounty at this scale. If a report meaningfully strengthens 
 
 ## What's out of scope
 
-- Issues in third-party dependencies that don't materially affect this deployment. File those upstream; `pnpm audit`, `actions/dependency-review-action`, and CodeQL already catch them at PR time.
+- Issues in third-party dependencies that don't materially affect this deployment. File those upstream; `actions/dependency-review-action` and CodeQL already catch them at PR time, and a daily `pnpm audit` catches advisories published against what is already locked.
 - DDoS, volumetric, or rate-limit reports against the hosted service — Cloudflare's free-tier DDoS protection plus the Upstash Redis rate limits handle the layer this product cares about. A novel rate-limit bypass against a tenant-scoped action is in scope.
 - Social-engineering reports against me.
 - Self-XSS or attacks that require an attacker-controlled browser extension on the victim's machine.
