@@ -36,7 +36,7 @@
     "@plinth/eslint-config": "workspace:*",
     "@plinth/typescript-config": "workspace:*",
     "@types/react": "^19.2.17",
-    "eslint": "^9.39.1",
+    "eslint": "^10.0.0",
     "react": "^19.2.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"

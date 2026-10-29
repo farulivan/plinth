@@ -30,7 +30,7 @@
     "@plinth/eslint-config": "workspace:*",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9.39.1",
+    "eslint": "^10.0.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"
   }
