@@ -21,7 +21,7 @@
   "devDependencies": {
     "@plinth/eslint-config": "workspace:*",
     "@plinth/typescript-config": "workspace:*",
-    "eslint": "^9.39.1",
+    "eslint": "^10.0.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"
   }

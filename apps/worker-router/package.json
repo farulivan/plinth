@@ -14,7 +14,7 @@
     "@cloudflare/vitest-plugin": "^1.0.0",
     "@plinth/eslint-config": "workspace:*",
     "@types/node": "^26.1.1",
-    "eslint": "^9.39.1",
+    "eslint": "^10.0.0",
     "typescript": "^6.0.3",
     "vitest": "~4.1.0",
     "wrangler": "^4.111.0",
