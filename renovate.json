@@ -3,10 +3,10 @@
   "extends": ["config:best-practices", ":semanticCommitScope(deps)"],
   "ignorePresets": [":pinDevDependencies"],
   "timezone": "Asia/Jakarta",
-  "schedule": ["before 9am on monday"],
+  "schedule": ["* * * * 1"],
   "labels": ["dependencies"],
   "lockFileMaintenance": {
-    "schedule": ["before 9am on the first day of the month"]
+    "schedule": ["* * * * 1"]
   },
   "postUpgradeTasks": {
     "commands": [

@@ -9,8 +9,16 @@ name: Renovate
 # over untouched.
 #
 # The cron only decides how often Renovate looks; renovate.json decides what it
-# may open. The weekly batch still waits for its Monday window, while security
-# branches, which carry no schedule, land the next morning.
+# may open. The weekly batch and lock file maintenance both wait for Monday,
+# while security branches, which carry no schedule, land the next morning.
+#
+# Those windows are whole days because GitHub starts this cron hours late:
+# every scheduled run from September to late October began between 05:10 and
+# 07:15 UTC, past noon in Jakarta. The windows used to be "before 9am", which
+# no scheduled run ever reached, so the batch only opened when ticked by hand.
+# Lock file maintenance moved from monthly to weekly in the same change: it is
+# the only update that re-resolves transitive dependencies, and a patched
+# transitive should not wait a month behind the batch.
 
 on:
   schedule:
