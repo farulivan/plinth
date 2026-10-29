@@ -184,11 +184,12 @@ overrides:
   # the carets 0.78.0 declares for them.
   "@opentelemetry/auto-instrumentations-node": "^0.79.0"
 
-# `pnpm audit --prod` runs as a CI gate (.github/workflows/ci.yml). These are
-# the advisories standing at the time the gate landed, each accepted with a
-# reason rather than a blanket severity threshold — the point of the gate is
-# that anything NOT on this list fails the build, which is what a new advisory
-# on hono, better-auth, next, drizzle or zod would do.
+# `pnpm audit --prod` runs daily and on every push to main
+# (.github/workflows/audit.yml). These are the advisories standing at the time
+# the gate landed, each accepted with a reason rather than a blanket severity
+# threshold — the point of the gate is that anything NOT on this list fails the
+# run, which is what a new advisory on hono, better-auth, next, drizzle or zod
+# would do.
 #
 # Every entry below is build- or test-toolchain. They are genuinely present in
 # the api image, which ships the pruned workspace so the publish job can shell

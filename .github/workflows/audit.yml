@@ -1,0 +1,53 @@
+name: Audit
+
+# The whole-graph half of the supply-chain checks: is the production
+# dependency graph clean right now, against the accepted advisories under
+# `auditConfig.ignoreGhsas` in pnpm-workspace.yaml. Its pull-request partner
+# is dependency-review.yml, which asks only what a change adds.
+#
+# It used to run on every pull request, which put it in the wrong place. The
+# audit reads the whole lockfile against today's advisory database, so an
+# advisory published against something already locked failed the next pull
+# request whatever that pull request touched — and with nothing running on
+# main in between, the next one was usually Renovate's, opened to clear it.
+# Here, a new advisory turns main red the day it is published, which is where
+# it belongs: it is nobody's diff.
+#
+# To check a fix before merging it, dispatch this on the branch, or run
+# `pnpm audit --prod` locally — same command, same accepted list.
+on:
+  push:
+    branches: [main]
+  schedule:
+    # 07:23 Asia/Jakarta. Off the hour, which GitHub names as the busiest time
+    # to queue a scheduled run.
+    - cron: "23 0 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: audit-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # --ignore-scripts: reading the lockfile's advisory surface needs no
+      # native builds, so don't pay for Sharp's or workerd's postinstall.
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      # Fails on any advisory in the production graph that isn't an explicit,
+      # justified entry under `auditConfig.ignoreGhsas` in pnpm-workspace.yaml
+      # — a severity threshold would have let a new high on hono or better-auth
+      # through beside the standing build-toolchain noise. Adding an entry is a
+      # reviewable diff with a reason attached, which is the point.
+      - run: pnpm audit --prod
