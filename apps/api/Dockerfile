@@ -12,7 +12,7 @@
 # libvips so Sharp (media pipeline, ADR-0006) has its native dependency ready.
 
 # --- base: Node 22 + libvips on Debian slim (alpine + Sharp is a known headache) ---
-FROM node:24-bookworm-slim@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c AS base
+FROM node:26-bookworm-slim@sha256:add5c17c14752c54d2f3d519ec46a3815684d41c33f198bcb09fb998f7dcbf68 AS base
 # libvips: Sharp's native dependency (ADR-0006). postgresql-client-17: the
 # pg_dump binary the weekly backup reaper shells out to (ADR-0011) — pinned to
 # match Neon's Postgres 17 (pg_dump can't dump from a server newer than

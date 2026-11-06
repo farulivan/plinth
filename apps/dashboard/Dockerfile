@@ -4,7 +4,7 @@
 # THE MONOREPO ROOT so Turborepo can prune the workspace:
 #   docker build -f apps/dashboard/Dockerfile -t plinth-dashboard .
 
-FROM node:24-bookworm-slim@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c AS base
+FROM node:26-bookworm-slim@sha256:add5c17c14752c54d2f3d519ec46a3815684d41c33f198bcb09fb998f7dcbf68 AS base
 ENV PNPM_HOME="/pnpm" PATH="/pnpm:$PATH"
 RUN corepack enable
 WORKDIR /app
