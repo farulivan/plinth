@@ -15,7 +15,7 @@ name: plinth-local-prod
 
 services:
   postgres:
-    image: postgres:17-alpine@sha256:d3244e8ce3f165ee3c93d9c4a4b1d0fe48b3a89e2287b717fdcbbde92d405065
+    image: postgres:18-alpine@sha256:b6972e1115a4ff8eba5d7f7d19184926d1e16d7d1136ae1e1a7ebf286da0f015
     environment:
       POSTGRES_USER: plinth
       POSTGRES_PASSWORD: plinth
