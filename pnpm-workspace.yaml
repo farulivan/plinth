@@ -69,8 +69,8 @@ overrides:
   # the first patched release rather than added to the accepted list below —
   # the fix exists, so accepting the advisory would be choosing to ship it.
   #
-  # postcss (GHSA-fxqj-rqcc-2cmp): an incomplete fix for one of the source-map
-  # advisories already accepted below. Reached through Tailwind at build time
+  # postcss (GHSA-fxqj-rqcc-2cmp): an incomplete fix for an earlier postcss
+  # source-map advisory. Reached through Tailwind at build time
   # and never given untrusted CSS, but 8.5.25 is a patch release on a range we
   # already float.
   postcss: "^8.5.25"
@@ -83,7 +83,15 @@ overrides:
   # resolves, so there is nothing to weigh up. The floor moved to 3.1.8 for
   # GHSA-hrr3-gc8f-f4qj, host case normalization slipping through
   # percent-encoded octets — the same family, still inside ajv's ^3.0.1.
-  fast-uri: "^3.1.8"
+  # 3.1.9 follows for a third batch of it: scheme spoofing through a
+  # percent-encoded scheme, host confusion past WHATWG host canonicalization,
+  # path equivalence in relative-reference normalization, and scheme
+  # injection through an unescaped colon (GHSA-w74x-v6f9-j3xg,
+  # GHSA-wjr9-j795-jxcr, GHSA-xhq7-xmqj-769h, GHSA-333x-w4r6-6crp). ajv also
+  # arrives as a peer of @hookform/resolvers in the dashboard, which puts it
+  # on the production graph, but the dashboard imports only the zod resolver
+  # and never calls ajv.
+  fast-uri: "^3.1.9"
   # browserslist (GHSA-c83g-rgw3-j3cx, GHSA-73wf-gq98-2v4g): unbounded memory
   # growth on distinct queries, and a prototype write through an untrusted
   # browserslist-stats.json. Reached at build time only — Babel under the
@@ -182,7 +190,61 @@ overrides:
   # (">=0.75.0 <1.0.0") and 0.79.0 is the first whose carets land on every
   # patched instrumentation. Pinning the eight directly would step outside
   # the carets 0.78.0 declares for them.
-  "@opentelemetry/auto-instrumentations-node": "^0.79.0"
+  #
+  # The floor moved to 0.81.2 for GHSA-3v2p-hm54-8qcq: instrumentation-http
+  # redacted signed query parameters on client spans but wrote them verbatim
+  # into server spans. 0.79.0 declares it at ^0.221.0, which on a 0.x line
+  # cannot reach the 0.222.0 fix, so the bundle moves rather than the leaf,
+  # for the same reason as above. 0.81.2 is the last bundle on OpenTelemetry
+  # SDK 2: from 0.82.0 it asks for @opentelemetry/resources ^3 and
+  # instrumentation ^0.300, past the ">=0.200.0 <0.300.0" inngest declares.
+  # A caret on a 0.x minor already stops short of 0.82.0, so this cannot
+  # drift onto SDK 3. Lift it when inngest does.
+  "@opentelemetry/auto-instrumentations-node": "^0.81.2"
+  # systeminformation (GHSA-3f7j-7jwc-fxfj): Windows command injection in
+  # services() through Unicode quotation marks. It arrives under the same
+  # inngest bundle, through instrumentation-host-metrics, which the api never
+  # loads; the api image is Linux and nothing calls services(). 5.33.16 is a
+  # patch inside the ^5.31.6 host-metrics declares.
+  systeminformation: "^5.33.16"
+  # undici 8.x (GHSA-2m5v-pch6-74hx, GHSA-4w7w-5xrc-9h26, GHSA-qrxm-fqhp-jwvm,
+  # GHSA-xjj6-f33q-929c, GHSA-9fm3-97px-rjf6, GHSA-55wc-3pg8-jfw6,
+  # GHSA-4qv8-2p9j-2685, GHSA-f72v-6w45-q472): an Agent that drops its TLS
+  # options and skips certificate checks, cache poisoning across a
+  # cross-origin redirect, a Subresource Integrity bypass, and five
+  # denial-of-service paths. Two parents pull it. testcontainers talks to
+  # Docker with it in the test suite, and Astro's unifont ships in the api
+  # image with the rest of Astro, but only runs for the fonts API, which
+  # site-builder's astro.config.mjs does not configure. 8.12.2 is a patch
+  # inside the ^8 both declare. The key is scoped to 8 because miniflare's
+  # copy is on the 7.x line, already at its own patched 7.30.1, and a bare
+  # key would drag it across a major.
+  undici@8: "^8.12.2"
+  # glob (GHSA-3g3m-2fjr-6pw4): an aborted async walk rejects but keeps
+  # reading directories, so a `signal` stops bounding the cost. Nothing here
+  # passes glob a signal. The callers are Sentry's bundler plugins finding
+  # source maps at build time, archiver under testcontainers, and the rimraf
+  # gaxios lists in the inngest bundle's GCP detector. Every release from
+  # 9.0.0 through 14.0.1 carries the bug and none below 14 has the fix, so
+  # this crosses majors, as the brace-expansion 5.x pin does, and is safe for
+  # the same kind of reason: all three call only the top-level entry points
+  # (glob(), glob.sync(), globSync()), which 14 keeps. Its breaking changes
+  # are to the Pattern, Processor and GlobWalker classes and to ignore
+  # patterns that start with `/`, none of which they use, and Sentry's own
+  # 11.x plugins already declare ^14.0.3. The `>=9` selector matches the
+  # advisory and leaves any older callback-API copy alone.
+  glob@>=9: "^14.0.2"
+  # minimatch (GHSA-g3hv-75wg-m249): a crafted pattern multiplies globParts
+  # during preprocessing, then pays for them quadratically. It needs an
+  # attacker to supply the pattern, and every pattern here is ours. The glob
+  # pin above drops the 9.x and 10.x copies glob pulled, which leaves
+  # @typescript-eslint/typescript-estree, calling minimatch() only for
+  # allowDefaultProject, a setting our ESLint config does not use. No fix
+  # exists below 11.0.1, and 11 removes public API (makeRe, Minimatch#regexp,
+  # the AST class), so the key holds only the 10.x line that one caller is on
+  # rather than the advisory's whole >=7 range: a later 7–10 consumer gets
+  # weighed on its own instead of losing an API under it.
+  minimatch@10: "^11.0.1"
 
 # `pnpm audit --prod` runs daily and on every push to main
 # (.github/workflows/audit.yml). These are the advisories standing at the time
@@ -203,19 +265,8 @@ overrides:
 # schedule. Drop it when the upstream fix lands — Renovate raises those.
 auditConfig:
   ignoreGhsas:
-    # postcss — via @tailwindcss/postcss and @tailwindcss/vite at build time.
-    # Source-map file read, path traversal, and XSS through an unescaped
-    # </style>; all need untrusted CSS, and the only CSS here is ours.
-    - GHSA-6g55-p6wh-862q
-    - GHSA-r28c-9q8g-f849
-    - GHSA-qx2v-qp2m-jg93
-    # esbuild — via vite, vitest and tsx. Both advisories are about esbuild's
-    # dev server accepting cross-origin requests; nothing runs `esbuild serve`,
-    # in CI or in either image.
-    - GHSA-g7r4-m6w7-qqqr
+    # esbuild 0.18 — via the @esbuild-kit loader inside drizzle-kit, which
+    # better-auth and @plinth/db pull. The advisory is esbuild's dev server
+    # accepting cross-origin requests; nothing runs `esbuild serve`, in CI or
+    # in either image.
     - GHSA-67mh-4wv8-2f99
-    # fast-uri — via ajv, itself pulled by commitlint's config validator.
-    # Host confusion in URI parsing, which matters to a URI-based access
-    # decision; ajv here validates a JSON schema at lint time.
-    - GHSA-v2hh-gcrm-f6hx
-    - GHSA-4c8g-83qw-93j6
