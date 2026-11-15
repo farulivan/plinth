@@ -69,8 +69,8 @@ overrides:
   # the first patched release rather than added to the accepted list below —
   # the fix exists, so accepting the advisory would be choosing to ship it.
   #
-  # postcss (GHSA-fxqj-rqcc-2cmp): an incomplete fix for one of the source-map
-  # advisories already accepted below. Reached through Tailwind at build time
+  # postcss (GHSA-fxqj-rqcc-2cmp): an incomplete fix for an earlier postcss
+  # source-map advisory. Reached through Tailwind at build time
   # and never given untrusted CSS, but 8.5.25 is a patch release on a range we
   # already float.
   postcss: "^8.5.25"
@@ -265,19 +265,8 @@ overrides:
 # schedule. Drop it when the upstream fix lands — Renovate raises those.
 auditConfig:
   ignoreGhsas:
-    # postcss — via @tailwindcss/postcss and @tailwindcss/vite at build time.
-    # Source-map file read, path traversal, and XSS through an unescaped
-    # </style>; all need untrusted CSS, and the only CSS here is ours.
-    - GHSA-6g55-p6wh-862q
-    - GHSA-r28c-9q8g-f849
-    - GHSA-qx2v-qp2m-jg93
-    # esbuild — via vite, vitest and tsx. Both advisories are about esbuild's
-    # dev server accepting cross-origin requests; nothing runs `esbuild serve`,
-    # in CI or in either image.
-    - GHSA-g7r4-m6w7-qqqr
+    # esbuild 0.18 — via the @esbuild-kit loader inside drizzle-kit, which
+    # better-auth and @plinth/db pull. The advisory is esbuild's dev server
+    # accepting cross-origin requests; nothing runs `esbuild serve`, in CI or
+    # in either image.
     - GHSA-67mh-4wv8-2f99
-    # fast-uri — via ajv, itself pulled by commitlint's config validator.
-    # Host confusion in URI parsing, which matters to a URI-based access
-    # decision; ajv here validates a JSON schema at lint time.
-    - GHSA-v2hh-gcrm-f6hx
-    - GHSA-4c8g-83qw-93j6
