@@ -7,6 +7,12 @@ on:
     paths:
       - "apps/dashboard/**"
       - "packages/**"
+      # the image installs from the root lockfile, so a change that only moves
+      # dependencies (an override, a lockfile refresh, a packageManager bump)
+      # still changes what ships
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - ".github/workflows/deploy-dashboard.yml"
 
 concurrency:
