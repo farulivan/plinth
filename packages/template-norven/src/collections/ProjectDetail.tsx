@@ -1,4 +1,4 @@
-import type { EntryComponentProps } from "@plinth/renderer";
+import { serializeJsonLd, type EntryComponentProps } from "@plinth/renderer";
 import { projectEntryFields } from "../manifest";
 import { Frame } from "../media/Frame";
 import { mediaRef } from "@plinth/schema/content";
@@ -35,7 +35,7 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
     <article data-collection="projects">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       <Frame
         media={project.cover}
