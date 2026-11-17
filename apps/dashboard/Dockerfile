@@ -6,8 +6,13 @@
 
 FROM node:24-bookworm-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54 AS base
 ENV PNPM_HOME="/pnpm" PATH="/pnpm:$PATH"
-RUN corepack enable
 WORKDIR /app
+# pnpm from npm at the version root package.json's packageManager names, not
+# from corepack: Node 25 stopped bundling corepack, and corepack can't provide
+# pnpm 12's native binary (apps/api/Dockerfile has the detail).
+COPY package.json ./
+RUN npm install -g "$(node -p "require('./package.json').packageManager")" \
+  && npm cache clean --force
 
 # --- pruner: minimal subset of the monorepo for @plinth/dashboard ---
 FROM base AS pruner

@@ -30,25 +30,21 @@ RUN apt-get update \
   && apt-get purge -y curl gnupg \
   && rm -rf /var/lib/apt/lists/*
 ENV PNPM_HOME="/pnpm" PATH="/pnpm:$PATH"
-# COREPACK_HOME pinned to a shared, world-readable path: corepack otherwise
-# caches the pnpm binary under $HOME per-user, so the non-root runtime user
-# (a different account than whoever builds this image) would have to
-# download it again on first use — needing outbound network at container
-# boot instead of build time, and failing entirely in an egress-restricted
-# environment.
-ENV COREPACK_HOME="/pnpm/corepack"
 WORKDIR /app
-# The version is read from root package.json's packageManager, never copied
-# here: that field is what corepack resolves at runtime (walking up from
-# apps/api) and what Renovate bumps. A hardcoded copy drifted once — the
-# runtime user can't write this cache, so the first publish after the bump
-# died trying to download the missing version. `install -g` also makes it
-# the default outside the workspace, as `prepare --activate` did. Only the
-# manifest is copied, so this layer reruns only when package.json changes.
+# pnpm is installed from npm at exactly the version root package.json's
+# packageManager names. That field is read, never copied: it is what Renovate
+# bumps and what pnpm checks when it runs, and a hardcoded copy drifted once,
+# so the first publish after the bump died trying to download the missing
+# version. npm rather than corepack, for two reasons: Node 25 stopped bundling
+# corepack, and from pnpm 12 the package is a launcher whose native binary
+# arrives through optional dependencies and a postinstall that corepack never
+# runs, so a corepack-provisioned pnpm 12 has nothing to execute offline. A
+# global npm install lands in /usr/local, readable by the non-root runtime
+# user, with nothing left to fetch on first use. Only the manifest is copied,
+# so this layer reruns only when package.json changes.
 COPY package.json ./
-RUN corepack enable \
-  && corepack install -g "$(node -p "require('./package.json').packageManager")" \
-  && chmod -R a+rX /pnpm
+RUN npm install -g "$(node -p "require('./package.json').packageManager")" \
+  && npm cache clean --force
 
 # --- pruner: emit a minimal subset of the monorepo for @plinth/api AND
 # @plinth/site-builder (ADR-0013): the api shells out to the builder's
@@ -88,11 +84,13 @@ USER hono
 # @plinth/site-builder run build:site` (runSiteBuild, ADR-0013) still finds
 # the workspace root from here exactly like it does from apps/api in `pnpm dev`.
 WORKDIR /app/apps/api
-# Fail the build, not the first publish: resolve pnpm exactly as runSiteBuild
-# will — this user, this cwd, no network — so a version the shared cache
-# doesn't hold, or this user can't read, stops the image here. /health never
-# touches pnpm, so without this the gap only surfaces when someone publishes.
-RUN COREPACK_ENABLE_NETWORK=0 pnpm --version
+# Fail the build, not the first publish: run pnpm as runSiteBuild will (this
+# user, this cwd, no network) and require the packageManager version. Any
+# other version makes pnpm fetch the pinned one from the registry before it
+# runs a script, which fails without network; `pnpm --version` alone only
+# warns, so the versions are compared. /health never touches pnpm, so without
+# this the gap only surfaces when someone publishes.
+RUN --network=none test "pnpm@$(pnpm --version)" = "$(node -p "require('/app/package.json').packageManager")"
 EXPOSE 4000
 # instrument.js preloads Sentry before server.js imports the app.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
