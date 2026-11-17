@@ -49,7 +49,7 @@ export function PublishBar({
   const [history, setHistory] = useState<VersionSummary[] | null>(null);
   const [requesting, setRequesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const pollBusy = useRef(false);
+  const pollBusyRef = useRef(false);
 
   const inFlight = latest?.status === "queued" || latest?.status === "building";
   const liveHash =
@@ -62,8 +62,8 @@ export function PublishBar({
   useEffect(() => {
     if (!inFlight) return;
     const timer = setInterval(() => {
-      if (pollBusy.current) return; // don't stack polls behind a slow answer
-      pollBusy.current = true;
+      if (pollBusyRef.current) return; // don't stack polls behind a slow answer
+      pollBusyRef.current = true;
       void getPublishStatus()
         .then((result) => {
           if (!result.ok) return;
@@ -74,7 +74,7 @@ export function PublishBar({
           }
         })
         .finally(() => {
-          pollBusy.current = false;
+          pollBusyRef.current = false;
         });
     }, POLL_INTERVAL_MS);
     return () => clearInterval(timer);
