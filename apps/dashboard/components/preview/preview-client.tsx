@@ -37,7 +37,10 @@ export function PreviewClient({ draftId, initialHash }: { draftId: string; initi
       if (hash && hash !== initialHash) window.location.reload();
     };
     source.addEventListener("draft-updated", onDraftUpdated);
-    return () => source.close();
+    return () => {
+      source.removeEventListener("draft-updated", onDraftUpdated);
+      source.close();
+    };
   }, [draftId, initialHash]);
 
   return null;

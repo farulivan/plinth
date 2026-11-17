@@ -28,7 +28,7 @@ export function MediaUpload({
   setUploads: Dispatch<SetStateAction<PendingUpload[]>>;
 }) {
   const router = useRouter();
-  const fileInput = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const busy = uploads.some((upload) => upload.status === "uploading");
 
@@ -99,7 +99,7 @@ export function MediaUpload({
         Drop images here, or
       </p>
       <input
-        ref={fileInput}
+        ref={fileInputRef}
         type="file"
         multiple
         accept="image/jpeg,image/png,image/webp,image/avif"
@@ -115,7 +115,7 @@ export function MediaUpload({
         size="sm"
         className="mt-2"
         disabled={busy}
-        onClick={() => fileInput.current?.click()}
+        onClick={() => fileInputRef.current?.click()}
       >
         {busy ? "Uploading…" : "Choose files"}
       </Button>

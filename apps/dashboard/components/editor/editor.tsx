@@ -126,9 +126,9 @@ export function Editor({
     ? resolveEntryPath(activeEntry.pathTemplate, activeEntry.entry.slug)
     : activePage!.path;
   const [save, setSave] = useState<SaveState>({ status: "idle" });
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const saveSeq = useRef(0);
-  const isFirstRender = useRef(true);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveSeqRef = useRef(0);
+  const isFirstRenderRef = useRef(true);
   const onSavedRef = useRef(onSaved);
   useEffect(() => {
     onSavedRef.current = onSaved;
@@ -147,18 +147,18 @@ export function Editor({
   }, [activePath]);
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
       return;
     }
     setSave({ status: "pending" });
-    if (timer.current) clearTimeout(timer.current);
-    const seq = ++saveSeq.current;
-    timer.current = setTimeout(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    const seq = ++saveSeqRef.current;
+    timerRef.current = setTimeout(() => {
       setSave({ status: "saving" });
       void saveDraft(draftId, document)
         .then((result) => {
-          if (seq !== saveSeq.current) return; // a newer edit superseded this save
+          if (seq !== saveSeqRef.current) return; // a newer edit superseded this save
           setSave(
             result.ok ? { status: "saved" } : { status: "error", detail: result.error.message },
           );
@@ -167,7 +167,7 @@ export function Editor({
         // The action itself never throws, so a rejection means the request
         // never got an answer (server down, offline). Same chip, plain words.
         .catch(() => {
-          if (seq !== saveSeq.current) return;
+          if (seq !== saveSeqRef.current) return;
           setSave({
             status: "error",
             detail: "could not reach the server — edits stay here and the next change retries.",
@@ -175,7 +175,7 @@ export function Editor({
         });
     }, AUTOSAVE_DEBOUNCE_MS);
     return () => {
-      if (timer.current) clearTimeout(timer.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [document, draftId]);
 

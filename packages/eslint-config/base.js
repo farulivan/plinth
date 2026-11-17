@@ -8,10 +8,6 @@ import tseslint from "typescript-eslint";
 /**
  * Shared flat config for every Plinth workspace.
  *
- * Pinned to ESLint 9 (not 10): `eslint-config-next` transitively requires
- * `eslint-plugin-react`, which peers only to ESLint `^9.7`. ESLint 9 is already
- * flat-config, so nothing is lost. See the version policy in README.md.
- *
  * `import-x` (not the classic `eslint-plugin-import`) is registered here so the
  * ADR-0009 layering rules in `./boundaries.js` resolve when an app spreads both.
  */

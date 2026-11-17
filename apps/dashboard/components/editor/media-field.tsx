@@ -37,7 +37,7 @@ export function MediaField({
   const [items, setItems] = useState<MediaItem[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function select(item: MediaItem) {
     field.onChange({
@@ -87,7 +87,7 @@ export function MediaField({
       setError("Upload failed — check your connection and try again.");
     } finally {
       setBusy(false);
-      if (fileInput.current) fileInput.current.value = "";
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
@@ -151,7 +151,7 @@ export function MediaField({
             <p className="text-sm font-medium">Media library</p>
             <div>
               <input
-                ref={fileInput}
+                ref={fileInputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/avif"
                 className="hidden"
@@ -164,7 +164,7 @@ export function MediaField({
                 type="button"
                 size="sm"
                 disabled={busy}
-                onClick={() => fileInput.current?.click()}
+                onClick={() => fileInputRef.current?.click()}
               >
                 {busy ? "Uploading…" : "Upload new"}
               </Button>

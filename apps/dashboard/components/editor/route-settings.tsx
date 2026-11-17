@@ -209,15 +209,15 @@ function SeoForm({
 
   // Latest callback in a ref so the parent re-rendering on every keystroke
   // does not churn the subscription — same reasoning as SectionCard.
-  const latest = useRef({ selection, onChange });
+  const latestRef = useRef({ selection, onChange });
   useEffect(() => {
-    latest.current = { selection, onChange };
+    latestRef.current = { selection, onChange };
   });
   useEffect(() => {
     const subscription = form.subscribe({
       formState: { values: true },
       callback: ({ values }) => {
-        latest.current.onChange(latest.current.selection, values as Seo);
+        latestRef.current.onChange(latestRef.current.selection, values as Seo);
       },
     });
     return subscription;

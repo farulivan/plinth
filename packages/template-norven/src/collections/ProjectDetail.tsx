@@ -35,6 +35,7 @@ export function ProjectDetail({ entry, prev, next }: EntryComponentProps) {
     <article data-collection="projects">
       <script
         type="application/ld+json"
+        // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml -- JSON-LD has to be raw script text, and serializeJsonLd escapes every "<", so no value can close the tag
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       <Frame

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, use, useEffect, useState, type ReactNode } from "react";
 
 // Two contexts, not one: the page registering actions must only subscribe to
 // the setter (stable), never to the registered node. A single {actions,
@@ -20,16 +20,14 @@ const ShellActionsStateContext = createContext<ReactNode>(null);
 export function ShellActionsProvider({ children }: { children: ReactNode }) {
   const [actions, setActions] = useState<ReactNode>(null);
   return (
-    <ShellActionsSetterContext.Provider value={setActions}>
-      <ShellActionsStateContext.Provider value={actions}>
-        {children}
-      </ShellActionsStateContext.Provider>
-    </ShellActionsSetterContext.Provider>
+    <ShellActionsSetterContext value={setActions}>
+      <ShellActionsStateContext value={actions}>{children}</ShellActionsStateContext>
+    </ShellActionsSetterContext>
   );
 }
 
 export function ShellActionsSlot() {
-  return useContext(ShellActionsStateContext);
+  return use(ShellActionsStateContext);
 }
 
 /**
@@ -39,7 +37,7 @@ export function ShellActionsSlot() {
  * subscribes only to the stable setter, the re-registration never loops.
  */
 export function useSetShellActions(node: ReactNode) {
-  const setActions = useContext(ShellActionsSetterContext);
+  const setActions = use(ShellActionsSetterContext);
   if (!setActions) throw new Error("useSetShellActions must be used within ShellActionsProvider.");
   useEffect(() => {
     setActions(node);
