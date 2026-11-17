@@ -9,6 +9,7 @@ export type {
   CollectionRendererMap,
 } from "./componentMap";
 export { resolveImageUrl } from "./resolveImageUrl";
+export { serializeJsonLd } from "./serializeJsonLd";
 export { MediaRef } from "./components/MediaRef";
 export { Section } from "./components/Section";
 export { Sections } from "./components/Sections";
