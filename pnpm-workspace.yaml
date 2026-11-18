@@ -29,11 +29,29 @@ allowBuilds:
   unrs-resolver: true
   workerd: true
 
-# This project deliberately tracks latest-stable releases (see the version policy
-# in README.md), so we opt out of pnpm's new-release age gating — otherwise fresh
-# majors (ESLint 10, TS 6, …) get held back and pnpm churns an auto-exclude list.
-# Reintroduce a non-zero age once the dependency set stabilizes post-MVP.
-minimumReleaseAge: 0
+# Supply-chain gates. Every install applies both, CI and the image builds
+# included, and re-checks the whole lockfile rather than only what it resolves
+# fresh, so a lockfile written without them fails the next install.
+#
+# A release must be a day old before it resolves, pnpm's default. A hijacked
+# publish is usually caught and pulled within hours. The day costs little here:
+# Renovate already waits three days on npm, so the gate holds back only a
+# hand-run `pnpm add` of a same-day release, or a transitive that lock file
+# maintenance would otherwise lock the morning it ships. A same-day fix that
+# can't wait goes under minimumReleaseAgeExclude, with its reason.
+minimumReleaseAge: 1440
+
+# Fail on a release published with weaker provenance than the versions before
+# it, such as trusted publishing or a provenance attestation followed by
+# neither. From the consumer's side, that is what a stolen maintainer token
+# looks like.
+trustPolicy: no-downgrade
+trustPolicyExclude:
+  # The maintainer published this wrapper by hand after the release workflow
+  # failed, so it lacks the provenance 2.2.1 carried; the platform binaries,
+  # which are what runs, kept theirs (evilmartians/lefthook#1600). Exact
+  # version only, so the next release is checked as usual.
+  - lefthook@2.2.2
 
 # Overrides hold a transitive package at a patched release when one exists.
 # Each entry carries its reason and is retired by hand once the parent catches
