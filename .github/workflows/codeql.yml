@@ -4,6 +4,11 @@ name: CodeQL
 # is source-based — no build — so it's cheap enough to gate PRs: it runs on
 # every PR and push to main, with a weekly scheduled sweep as the backstop for
 # rules that only ship in newer CodeQL releases.
+#
+# Two analyses: the TS/JS monorepo, and the workflows in this directory. The
+# second is the only thing that reads a workflow as code — expression
+# injection into `run:`, untrusted checkouts under a privileged trigger,
+# missing token permissions — and a workflow holds the deploy secrets.
 on:
   push:
     branches: [main]
@@ -25,15 +30,21 @@ jobs:
       contents: read
       security-events: write # upload results to code scanning
       actions: read # required for private repos
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [actions, javascript-typescript]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
       # One combined analysis covers the whole TS/JS monorepo; CodeQL extracts
-      # from source, so no build step is needed.
+      # from source for both languages, so no build step is needed.
       - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
-          languages: javascript-typescript
+          languages: ${{ matrix.language }}
       - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
-          category: "/language:javascript-typescript"
+          # "/language:javascript-typescript" is the category the source
+          # alerts were first recorded under; keeping it keeps their history.
+          category: "/language:${{ matrix.language }}"
