@@ -26,9 +26,12 @@ jobs:
   migrate:
     name: migrate
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: production
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
@@ -49,9 +52,12 @@ jobs:
     name: deploy
     needs: migrate
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: production
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       - uses: superfly/flyctl-actions/setup-flyctl@98172f70657cb3e15db199af139be99bd3e61200 # master
       # App-scoped deploy token (`fly tokens create deploy -a plinth-farulivan-api`), stored
       # as a repo secret — least privilege, not an account token. Builds on Fly's

@@ -28,11 +28,14 @@ jobs:
   lighthouse:
     name: lhci
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       # Build + serve without real secrets; the audited /login needs none.
       SKIP_ENV_VALIDATION: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
@@ -40,4 +43,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @plinth/dashboard build
-      - run: pnpm dlx @lhci/cli@latest autorun
+      # An exact version, never @latest. dlx installs outside the lockfile, so
+      # the audit, dependency review and the release-age wait all miss what it
+      # runs, and @latest would run whatever npm serves that minute. Renovate
+      # bumps the pin through the dlx entry under customManagers in
+      # renovate.json.
+      - run: pnpm dlx @lhci/cli@0.16.1 autorun

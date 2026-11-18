@@ -2,8 +2,8 @@ name: CI
 
 # The only always-on gate (the CI philosophy in ADR-0008 / README): fast and
 # fundamental, runs on every PR and on main. The heavy lanes — e2e + axe,
-# Lighthouse, CodeQL, Fly deploys — live in their own workflows and stay
-# dispatch-only until the product is demo-ready.
+# Lighthouse, image builds, Fly deploys — live in their own workflows,
+# filtered to the paths that can break them.
 on:
   pull_request:
   push:
@@ -21,12 +21,14 @@ jobs:
   secret-scan:
     name: secret scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: read # read the PR's commit range to scan
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          persist-credentials: false
           fetch-depth: 0 # full history so gitleaks can diff the PR's commits
       - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
         env:
@@ -37,11 +39,34 @@ jobs:
           GITLEAKS_ENABLE_COMMENTS: "false"
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
 
+  # The workflows are code too, and nothing else checks them before they run:
+  # a mistyped context, a `needs` pointing nowhere, or a quoting slip in a
+  # `run:` script fails only on the first trigger that reaches it — for a
+  # deploy, at deploy time. actionlint reads every workflow, and passes each
+  # `run:` block through shellcheck, which the image bundles. It runs in
+  # seconds, so it gates every PR rather than only those touching workflows.
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      # Pinned by digest: the actions SHA-pinning policy does not reach a
+      # docker:// step, so the digest is what holds the image still.
+      - uses: docker://rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+        with:
+          args: -color
+
   verify:
     name: verify
     runs-on: ubuntu-latest # Docker is preinstalled — the RLS probe needs it
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6 # version comes from package.json packageManager
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
