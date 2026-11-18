@@ -29,11 +29,50 @@ allowBuilds:
   unrs-resolver: true
   workerd: true
 
-# This project deliberately tracks latest-stable releases (see the version policy
-# in README.md), so we opt out of pnpm's new-release age gating — otherwise fresh
-# majors (ESLint 10, TS 6, …) get held back and pnpm churns an auto-exclude list.
-# Reintroduce a non-zero age once the dependency set stabilizes post-MVP.
-minimumReleaseAge: 0
+# Supply-chain gates. Every install applies both, CI and the image builds
+# included, and re-checks the whole lockfile rather than only what it resolves
+# fresh, so a lockfile written without them fails the next install.
+#
+# A release must be a day old before it resolves, pnpm's default. A hijacked
+# publish is usually caught and pulled within hours. The day costs little here:
+# Renovate already waits three days on npm, so the gate holds back only a
+# hand-run `pnpm add` of a same-day release, or a transitive that lock file
+# maintenance would otherwise lock the morning it ships. A same-day fix that
+# can't wait goes under minimumReleaseAgeExclude, with its reason.
+minimumReleaseAge: 1440
+
+# Fail on a release published with weaker provenance than the versions before
+# it, such as trusted publishing or a provenance attestation followed by
+# neither. From the consumer's side, that is what a stolen maintainer token
+# looks like.
+trustPolicy: no-downgrade
+trustPolicyExclude:
+  # The maintainer published this wrapper by hand after the release workflow
+  # failed, so it lacks the provenance 2.2.1 carried; the platform binaries,
+  # which are what runs, kept theirs (evilmartians/lefthook#1600). Exact
+  # version only, so the next release is checked as usual.
+  - lefthook@2.2.2
+  # Its releases moved into Chromium's own tooling in September 2026. Since
+  # 157.0.8080-0 it ships from Chromium's npm account, numbered by Chromium
+  # version and without the provenance its GitHub Actions releases carried,
+  # so every release reads as a downgrade and always will. It arrives only
+  # through `pnpm dlx @lhci/cli`, via lighthouse and then puppeteer-core,
+  # which carries provenance and pins it exactly. dlx keeps no lockfile, so
+  # that pin moves with each Puppeteer release; an exact-version entry would
+  # turn the Lighthouse lanes red with no change in this repository. Hence
+  # the whole name. The release-age gate still applies to it.
+  - chromium-bidi
+
+# pnpm 11 reads only auth, registry and network settings from .npmrc, so the
+# install settings live here.
+#
+# Refuse a dependency whose `engines` excludes the running Node, instead of
+# installing it with a warning.
+engineStrict: true
+# Fail on a peer conflict instead of warning. Missing peers are still
+# installed automatically (autoInstallPeers, on by default); a peer present at
+# an incompatible version is what fails, on the pull request that brings it.
+strictPeerDependencies: true
 
 # Overrides hold a transitive package at a patched release when one exists.
 # Each entry carries its reason and is retired by hand once the parent catches

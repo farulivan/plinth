@@ -35,7 +35,8 @@ There is no paid bug bounty at this scale. If a report meaningfully strengthens 
 - **Custom-hostname flow** — binding a hostname to a workspace you don't control; verification check bypass; TLS cert misissuance via the CF for SaaS flow.
 - **Publish pipeline** — injection of malicious content into a snapshot or a built tenant site that affects other tenants; build worker privilege escalation; bypassing the per-tenant rate cap to abuse build minutes.
 - **Media pipeline** — Sharp / libvips memory corruption from malicious uploads; path traversal in S3 keys; per-tenant storage cap bypass; orphaned-blob deletion that affects another tenant.
-- **Deploy infrastructure** — Fly.io OIDC trust policy issues; AWS IAM role scope; GitHub Actions workflow injection; secret exposure in CI logs.
+- **Deploy infrastructure** — the reach of the app-scoped Fly deploy tokens; a way for a branch other than `main` to read the `production` environment's secrets; GitHub Actions workflow injection; secret exposure in CI logs.
+- **Supply chain** — a way to land a dependency past the install policies in `pnpm-workspace.yaml` (release age, provenance downgrade, the build-script allow-list) or past the CI gates.
 - **Edge configuration** — Cloudflare Transform Rules; CSP gaps that allow injection from a tenant snapshot to escape its sandbox; KV namespace permission issues.
 
 ## What's out of scope
@@ -56,7 +57,8 @@ If you're evaluating the existing posture before reporting, these are the docume
 - [ADR-0003 · Publish pipeline](./docs/adr/0003-publish-pipeline.md) — idempotency keys, build privilege boundary, audit logging.
 - [ADR-0004 · Custom domains](./docs/adr/0004-custom-domains.md) — hostname verification flow, KV sync security model, unique hostname constraint at the DB level.
 - [ADR-0006 · Media pipeline](./docs/adr/0006-media-pipeline.md) — upload validation, MIME magic-byte sniffing, storage cap enforcement, orphan reaper boundary.
-- `docs/security-headers.md` (to be added) — the Cloudflare Transform Rules for both the dashboard and per-tenant sites, with rationale per directive.
-- `docs/deployment.md` (to be added) — the Fly.io OIDC trust policy, AWS IAM scope, secret separation per app, and the four-gate deploy auth chain.
+- [ADR-0011 · Operational baseline](./docs/adr/0011-operational-baseline.md) — the response-header policy, CSP included, for the dashboard and the tenant sites, with the reasoning per directive and where each header is set.
+- [Deployment](./docs/deployment.md) — the app-scoped Fly deploy tokens, the per-app secrets, and the `production` environment that confines them to deploys from `main`.
+- `pnpm-workspace.yaml` — the install policies: which dependencies may run build scripts, the one-day release age, refusal of a provenance downgrade, and each accepted advisory with its reason.
 
 Thank you for taking the time.
