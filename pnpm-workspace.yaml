@@ -52,6 +52,16 @@ trustPolicyExclude:
   # which are what runs, kept theirs (evilmartians/lefthook#1600). Exact
   # version only, so the next release is checked as usual.
   - lefthook@2.2.2
+  # Its releases moved into Chromium's own tooling in September 2026. Since
+  # 157.0.8080-0 it ships from Chromium's npm account, numbered by Chromium
+  # version and without the provenance its GitHub Actions releases carried,
+  # so every release reads as a downgrade and always will. It arrives only
+  # through `pnpm dlx @lhci/cli`, via lighthouse and then puppeteer-core,
+  # which carries provenance and pins it exactly. dlx keeps no lockfile, so
+  # that pin moves with each Puppeteer release; an exact-version entry would
+  # turn the Lighthouse lanes red with no change in this repository. Hence
+  # the whole name. The release-age gate still applies to it.
+  - chromium-bidi
 
 # pnpm 11 reads only auth, registry and network settings from .npmrc, so the
 # install settings live here.
