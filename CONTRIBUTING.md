@@ -113,7 +113,7 @@ These are the manual steps a fresh clone can't automate. I keep them here so the
   Check names are the job names as they appear on a pull request: `verify`, `secret scan`, `actionlint`, `review`, `analyze (actions)`, `analyze (javascript-typescript)`, `api`, `dashboard`, `playwright + axe`, `lhci`. `CodeQL` is the code-scanning result rather than a job, and the ruleset gates it through its own rule.
 - **Cloudflare Transform Rules**: none needed for the dashboard — its headers ship from the app itself (ADR-0011). Still worth a post-deploy check that nothing at the edge strips them: `curl -sI https://plinth.farulivan.com/login` and `curl -sI https://norven.farulivan.com/`.
 - **Cloudflare for SaaS**: configure the fallback origin and the Custom Hostnames API token, scoped to the Plinth zone only.
-- **Fly.io**: create two apps (`plinth-farulivan-dashboard`, `plinth-farulivan-api`); register the GitHub Actions OIDC issuer for deploy tokens.
+- **Fly.io**: create two apps (`plinth-farulivan-dashboard`, `plinth-farulivan-api`), and an app-scoped deploy token for each, stored on the `production` environment rather than the repository (`docs/deployment.md` §8).
 - **Neon**: create the production project. (Branch-per-PR previews are deferred until there's a UI worth previewing — CI uses testcontainers for now.)
 - **Inngest**: configure the production app and the signing key; mirror a staging environment for PR previews.
 - **Stripe**: register the webhook receiver URL (`api.plinth.farulivan.com/webhooks/stripe`) and rotate the signing secret into Fly.io secrets.
