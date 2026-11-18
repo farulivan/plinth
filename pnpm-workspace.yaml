@@ -53,6 +53,17 @@ trustPolicyExclude:
   # version only, so the next release is checked as usual.
   - lefthook@2.2.2
 
+# pnpm 11 reads only auth, registry and network settings from .npmrc, so the
+# install settings live here.
+#
+# Refuse a dependency whose `engines` excludes the running Node, instead of
+# installing it with a warning.
+engineStrict: true
+# Fail on a peer conflict instead of warning. Missing peers are still
+# installed automatically (autoInstallPeers, on by default); a peer present at
+# an incompatible version is what fails, on the pull request that brings it.
+strictPeerDependencies: true
+
 # Overrides hold a transitive package at a patched release when one exists.
 # Each entry carries its reason and is retired by hand once the parent catches
 # up, which is why renovate.json tells Renovate to leave this block alone.
