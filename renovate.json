@@ -17,6 +17,15 @@
     "fileFilters": ["**/*"],
     "executionMode": "branch"
   },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Workflows pin each `pnpm dlx` tool to an exact version, which no built-in manager reads. This one does, so the pin moves with the weekly batch instead of rotting.",
+      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      "matchStrings": ["pnpm dlx (?<depName>@?[a-z0-9][\\w./-]*)@(?<currentValue>\\d[^\\s]*)"],
+      "datasourceTemplate": "npm"
+    }
+  ],
   "packageRules": [
     {
       "description": "Every non-major update lands in one weekly PR, across all workspaces and managers. The monorepo shares one pnpm-lock.yaml, so any split turns each merge into a rebase for the rest.",

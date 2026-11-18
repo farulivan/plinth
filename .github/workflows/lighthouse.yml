@@ -43,4 +43,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @plinth/dashboard build
-      - run: pnpm dlx @lhci/cli@latest autorun
+      # An exact version, never @latest. dlx installs outside the lockfile, so
+      # the audit, dependency review and the release-age wait all miss what it
+      # runs, and @latest would run whatever npm serves that minute. Renovate
+      # bumps the pin through the dlx entry under customManagers in
+      # renovate.json.
+      - run: pnpm dlx @lhci/cli@0.16.1 autorun

@@ -86,5 +86,6 @@ jobs:
 
       - run: pnpm check:bundle
 
+      # Pinned exactly, for the reason given in lighthouse.yml.
       - name: lhci
-        run: pnpm dlx @lhci/cli@latest autorun --config=.lighthouserc.tenant.json
+        run: pnpm dlx @lhci/cli@0.16.1 autorun --config=.lighthouserc.tenant.json
