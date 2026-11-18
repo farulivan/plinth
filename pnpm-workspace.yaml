@@ -270,3 +270,11 @@ auditConfig:
     # accepting cross-origin requests; nothing runs `esbuild serve`, in CI or
     # in either image.
     - GHSA-67mh-4wv8-2f99
+    # picomatch through 4.0.7, the latest release, so nothing patched exists
+    # yet. It is reached through Astro (directly and via unstorage's
+    # anymatch), Vite, Vitest and tinyglobby, and the Rollup commonjs plugin
+    # inside Sentry's Next.js build plugin. The ReDoS needs the attacker to
+    # write the glob pattern itself (`+(*)`, `+(*a)`). Every pattern those tools
+    # compile comes from their own config or ours, and no first-party code
+    # imports a glob library.
+    - GHSA-fc5q-39xc-vjpf
