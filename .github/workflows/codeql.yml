@@ -40,10 +40,10 @@ jobs:
           persist-credentials: false
       # One combined analysis covers the whole TS/JS monorepo; CodeQL extracts
       # from source for both languages, so no build step is needed.
-      - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
+      - uses: github/codeql-action/init@915412ff23e8b7659517e607487dbeae018f2934 # v4
         with:
           languages: ${{ matrix.language }}
-      - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
+      - uses: github/codeql-action/analyze@915412ff23e8b7659517e607487dbeae018f2934 # v4
         with:
           # "/language:javascript-typescript" is the category the source
           # alerts were first recorded under; keeping it keeps their history.

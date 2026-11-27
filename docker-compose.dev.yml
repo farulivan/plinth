@@ -22,7 +22,7 @@ name: plinth-dev
 services:
   postgres:
     # Matches Neon's default major. Production floor is ≥16 (README stack table).
-    image: postgres:17-alpine@sha256:a77aa70e641402a21411b92b721c58d10f23b50ae5fdd2333efd22d166e1e5f7
+    image: postgres:17-alpine@sha256:f9cf3e1f0066f0eb0c48707d864f0ac5941e9ff454a072077d97a4d278d07d73
     environment:
       POSTGRES_USER: plinth
       POSTGRES_PASSWORD: plinth
@@ -45,7 +45,7 @@ services:
   # @upstash/* client code runs against UPSTASH_REDIS_REST_URL=http://localhost:8079.
   redis:
     # Pinned to 7: closest to Upstash's Redis-compatible API; emulation > latest here.
-    image: redis:8-alpine@sha256:7958cfbb9d152f87dadfbc89f1b0b15938f0b81ff8982feb327476f4911935c3
+    image: redis:8-alpine@sha256:5af80107c1eeecb484a2269b80a26d12bfa6521787da4663bd9f19f60a163483
     ports:
       - "6379:6379"
     healthcheck:
